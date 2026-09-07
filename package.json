@@ -1,0 +1,22 @@
+{
+  "name": "rezervo-kosova",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant booking infrastructure for Kosovo businesses.",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @rezervo/api\" \"npm run dev -w @rezervo/web\"",
+    "build": "npm run build -w @rezervo/shared && npm run build -w @rezervo/api && npm run build -w @rezervo/web",
+    "test": "npm run test -w @rezervo/api",
+    "lint": "npm run lint -w @rezervo/api && npm run lint -w @rezervo/web",
+    "format": "prettier --write .",
+    "db:generate": "npm run prisma:generate -w @rezervo/api",
+    "db:migrate": "npm run prisma:migrate -w @rezervo/api",
+    "db:seed": "npm run prisma:seed -w @rezervo/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.5.3"
+  },
+  "engines": { "node": ">=20.0.0", "npm": ">=10.0.0" }
+}

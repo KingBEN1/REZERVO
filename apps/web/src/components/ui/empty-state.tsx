@@ -1,0 +1,2 @@
+import type { ReactNode } from 'react';
+export function EmptyState({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) { return <div className="surface flex min-h-52 flex-col items-center justify-center px-6 text-center"><h3 className="font-semibold">{title}</h3><p className="mt-2 max-w-sm text-sm text-slate-500">{detail}</p>{action && <div className="mt-4">{action}</div>}</div>; }

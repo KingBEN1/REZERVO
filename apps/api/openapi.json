@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Rezervo API", "version": "0.1.0", "description": "Tenant-isolated booking API. Protected business calls require the authenticated cookie and x-business-id header." },
+  "servers": [{ "url": "http://localhost:4000/api" }],
+  "paths": {
+    "/auth/register": { "post": { "summary": "Create an account", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterInput" } } } }, "responses": { "201": { "description": "Created" } } } },
+    "/auth/login": { "post": { "summary": "Start secure session", "responses": { "200": { "description": "Authenticated" }, "401": { "$ref": "#/components/responses/ApiError" } } } },
+    "/auth/me": { "get": { "summary": "Current account and memberships", "responses": { "200": { "description": "Account" } } } },
+    "/public/businesses": { "get": { "summary": "Search public businesses", "parameters": [{ "name": "q", "in": "query", "schema": { "type": "string" } }, { "name": "city", "in": "query", "schema": { "type": "string" } }], "responses": { "200": { "description": "Businesses" } } } },
+    "/public/businesses/{slug}": { "get": { "summary": "Public business profile", "parameters": [{ "$ref": "#/components/parameters/Slug" }], "responses": { "200": { "description": "Business" }, "404": { "$ref": "#/components/responses/ApiError" } } } },
+    "/public/businesses/{slug}/availability": { "get": { "summary": "Calculated available slots", "parameters": [{ "$ref": "#/components/parameters/Slug" }, { "name": "serviceId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "staffId", "in": "query", "required": true, "schema": { "type": "string" } }, { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }], "responses": { "200": { "description": "Slots" } } } },
+    "/public/businesses/{slug}/bookings": { "post": { "summary": "Create a public booking", "parameters": [{ "$ref": "#/components/parameters/Slug" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicBookingInput" } } } }, "responses": { "201": { "description": "Created" }, "409": { "$ref": "#/components/responses/ApiError" } } } },
+    "/business/services": { "get": { "summary": "List tenant services", "parameters": [{ "$ref": "#/components/parameters/Tenant" }], "responses": { "200": { "description": "Services" } } }, "post": { "summary": "Create tenant service", "parameters": [{ "$ref": "#/components/parameters/Tenant" }], "responses": { "201": { "description": "Created" } } } },
+    "/business/bookings": { "get": { "summary": "List tenant bookings", "parameters": [{ "$ref": "#/components/parameters/Tenant" }], "responses": { "200": { "description": "Bookings" } } } },
+    "/admin/metrics": { "get": { "summary": "Platform metrics", "responses": { "200": { "description": "Metrics" } } } }
+  },
+  "components": {
+    "parameters": {
+      "Slug": { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } },
+      "Tenant": { "name": "x-business-id", "in": "header", "required": true, "schema": { "type": "string" }, "description": "Tenant selection, verified against the authenticated session." }
+    },
+    "schemas": {
+      "RegisterInput": { "type": "object", "required": ["firstName", "lastName", "email", "password"], "properties": { "firstName": { "type": "string" }, "lastName": { "type": "string" }, "email": { "type": "string", "format": "email" }, "password": { "type": "string", "minLength": 12 } } },
+      "PublicBookingInput": { "type": "object", "required": ["serviceId", "staffId", "startAt", "customer"], "properties": { "serviceId": { "type": "string" }, "staffId": { "type": "string" }, "startAt": { "type": "string", "format": "date-time" }, "customer": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string" }, "email": { "type": "string" }, "phone": { "type": "string" } } } } },
+      "ApiError": { "type": "object", "properties": { "success": { "type": "boolean", "example": false }, "error": { "type": "object", "properties": { "code": { "type": "string" }, "message": { "type": "string" } } } } }
+    },
+    "responses": { "ApiError": { "description": "Application error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } } }
+  }
+}

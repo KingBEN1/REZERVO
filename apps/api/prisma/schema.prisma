@@ -1,0 +1,571 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlatformRole {
+  SUPER_ADMIN
+  SUPPORT_ADMIN
+}
+enum BusinessRole {
+  BUSINESS_OWNER
+  MANAGER
+  STAFF
+}
+enum BusinessStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  DELETED
+}
+enum BusinessVerificationStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+enum BookingKind {
+  APPOINTMENT
+  ACCOMMODATION
+  TRANSPORT
+}
+enum PriceType {
+  FIXED
+  OPTIONAL
+  FREE
+  CUSTOM
+}
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+enum NotificationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  IN_APP
+}
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  READ
+}
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model User {
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  passwordHash       String?
+  firstName          String
+  lastName           String
+  phone              String?
+  platformRole       PlatformRole?
+  emailVerifiedAt    DateTime?         @db.Timestamptz(6)
+  deletedAt          DateTime?         @db.Timestamptz(6)
+  createdAt          DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(6)
+  memberships        BusinessMember[]
+  staffProfiles      Staff[]
+  customerProfiles   Customer[]
+  auditLogs          AuditLog[]
+  favorites          Favorite[]
+  tickets            SupportTicket[]
+  notifications      Notification[]
+}
+
+model Business {
+  id              String            @id @default(cuid())
+  name            String
+  slug            String            @unique
+  description     String?
+  categoryId      String?
+  phone           String?
+  email           String?
+  website         String?
+  address         String?
+  city            String
+  municipality    String?
+  latitude        Decimal?          @db.Decimal(10, 7)
+  longitude       Decimal?          @db.Decimal(10, 7)
+  logo            String?
+  coverImage      String?
+  timezone        String            @default("Europe/Pristina")
+  currency        String            @default("EUR")
+  status          BusinessStatus    @default(PENDING)
+  deletedAt       DateTime?         @db.Timestamptz(6)
+  createdAt       DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(6)
+  category        ServiceCategory?  @relation(fields: [categoryId], references: [id])
+  members         BusinessMember[]
+  staff           Staff[]
+  services        Service[]
+  customers       Customer[]
+  bookings        Booking[]
+  workingHours    WorkingHours[]
+  exceptions      AvailabilityException[]
+  blockedTimes    BlockedTime[]
+  settings        BusinessSettings?
+  subscription    Subscription?
+  images          BusinessImage[]
+  notifications   Notification[]
+  reviews         Review[]
+  customerNotes   CustomerNote[]
+  coupons         Coupon[]
+  invoices        Invoice[]
+  auditLogs       AuditLog[]
+  tickets         SupportTicket[]
+  favorites       Favorite[]
+  verification    BusinessVerification?
+  @@index([status, city])
+  @@index([categoryId, city])
+  @@index([createdAt])
+}
+
+model BusinessVerification {
+  id                 String                     @id @default(cuid())
+  businessId         String                     @unique
+  legalName          String
+  registrationNumber String
+  contactName        String
+  contactPhone       String
+  website            String?
+  status             BusinessVerificationStatus @default(DRAFT)
+  submittedAt        DateTime?                  @db.Timestamptz(6)
+  reviewedAt         DateTime?                  @db.Timestamptz(6)
+  reviewedByUserId   String?
+  reviewNote         String?
+  createdAt          DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime                   @updatedAt @db.Timestamptz(6)
+  business           Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  @@index([status, submittedAt])
+}
+
+model BusinessMember {
+  id          String       @id @default(cuid())
+  businessId  String
+  userId      String
+  role        BusinessRole
+  permissions Json?
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([businessId, userId])
+  @@index([userId])
+  @@index([businessId, role])
+}
+
+model ServiceCategory {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  icon        String?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  businesses  Business[]
+  services    Service[]
+}
+
+model Staff {
+  id          String       @id @default(cuid())
+  businessId  String
+  userId      String?
+  name        String
+  photo       String?
+  bio         String?
+  position    String?
+  capacity    Int          @default(1)
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  services    ServiceStaff[]
+  bookings    Booking[]
+  workingHours WorkingHours[]
+  exceptions  AvailabilityException[]
+  blockedTimes BlockedTime[]
+  @@index([businessId, active])
+  @@index([userId])
+}
+
+model Service {
+  id           String           @id @default(cuid())
+  businessId   String
+  categoryId   String?
+  name         String
+  description  String?
+  durationMin  Int
+  price        Decimal          @db.Decimal(10, 2)
+  priceType    PriceType        @default(FIXED)
+  image        String?
+  active       Boolean          @default(true)
+  bufferBefore Int              @default(0)
+  bufferAfter  Int              @default(0)
+  maxCapacity  Int              @default(1)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @db.Timestamptz(6)
+  business     Business         @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  category     ServiceCategory? @relation(fields: [categoryId], references: [id])
+  staff        ServiceStaff[]
+  bookings     Booking[]
+  @@index([businessId, active])
+}
+
+model ServiceStaff {
+  serviceId String
+  staffId   String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff     Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  @@id([serviceId, staffId])
+  @@index([staffId])
+}
+
+model Customer {
+  id          String         @id @default(cuid())
+  businessId  String
+  userId      String?
+  name        String
+  email       String?
+  phone       String?
+  deletedAt   DateTime?      @db.Timestamptz(6)
+  createdAt   DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @db.Timestamptz(6)
+  business    Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bookings    Booking[]
+  notes       CustomerNote[]
+  @@unique([businessId, email])
+  @@index([businessId, phone])
+  @@index([userId])
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  reference        String        @unique
+  manageToken      String        @unique @default(uuid())
+  businessId       String
+  serviceId        String
+  staffId          String
+  customerId       String
+  startAt          DateTime      @db.Timestamptz(6)
+  endAt            DateTime      @db.Timestamptz(6)
+  bufferStartAt    DateTime      @db.Timestamptz(6)
+  bufferEndAt      DateTime      @db.Timestamptz(6)
+  status           BookingStatus @default(PENDING)
+  kind             BookingKind   @default(APPOINTMENT)
+  checkInDate      DateTime?     @db.Timestamptz(6)
+  checkOutDate     DateTime?     @db.Timestamptz(6)
+  guestCount       Int?
+  pickupAddress    String?
+  destinationAddress String?
+  passengerCount   Int?
+  price            Decimal       @db.Decimal(10, 2)
+  currency         String        @default("EUR")
+  customerNote     String?
+  internalNote     String?
+  cancellationNote String?
+  cancelledAt      DateTime?     @db.Timestamptz(6)
+  completedAt      DateTime?     @db.Timestamptz(6)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(6)
+  business         Business      @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  service          Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  staff            Staff         @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  customer         Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  payment          Payment?
+  review           Review?
+  @@index([businessId, startAt])
+  @@index([businessId, status, startAt])
+  @@index([staffId, startAt])
+  @@index([customerId, startAt])
+  @@index([businessId, kind, checkInDate])
+}
+
+model WorkingHours {
+  id          String   @id @default(cuid())
+  businessId  String
+  staffId     String?
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isOpen      Boolean  @default(true)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  staff       Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  @@unique([businessId, staffId, dayOfWeek, startTime])
+  @@index([businessId, dayOfWeek])
+  @@index([staffId, dayOfWeek])
+}
+
+model AvailabilityException {
+  id          String    @id @default(cuid())
+  businessId  String
+  staffId     String?
+  startAt     DateTime  @db.Timestamptz(6)
+  endAt       DateTime  @db.Timestamptz(6)
+  available   Boolean   @default(false)
+  reason      String?
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  staff       Staff?    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  @@index([businessId, startAt])
+  @@index([staffId, startAt])
+}
+
+model BlockedTime {
+  id          String    @id @default(cuid())
+  businessId  String
+  staffId     String?
+  startAt     DateTime  @db.Timestamptz(6)
+  endAt       DateTime  @db.Timestamptz(6)
+  reason      String?
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  staff       Staff?    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  @@index([businessId, startAt])
+  @@index([staffId, startAt])
+}
+
+model BusinessSettings {
+  id                     String   @id @default(cuid())
+  businessId             String   @unique
+  requireApproval        Boolean  @default(false)
+  allowGuestBooking      Boolean  @default(true)
+  minNoticeMinutes       Int      @default(60)
+  maxBookingDays         Int      @default(30)
+  cancellationDeadlineMin Int     @default(120)
+  reschedulingEnabled    Boolean  @default(true)
+  reminderHours          Int      @default(24)
+  emailEnabled           Boolean  @default(true)
+  smsEnabled             Boolean  @default(false)
+  whatsappEnabled        Boolean  @default(false)
+  primaryColor           String   @default("#155e75")
+  hidePlatformBranding   Boolean  @default(false)
+  business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model SubscriptionPlan {
+  id             String         @id @default(cuid())
+  code           String         @unique
+  name           String
+  description    String?
+  monthlyPrice   Decimal        @db.Decimal(10, 2)
+  annualPrice    Decimal?       @db.Decimal(10, 2)
+  limits         Json
+  features       Json
+  active         Boolean        @default(true)
+  subscriptions  Subscription[]
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  businessId             String             @unique
+  planId                 String
+  status                 SubscriptionStatus @default(TRIALING)
+  provider               String             @default("none")
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime?          @db.Timestamptz(6)
+  currentPeriodEnd       DateTime?          @db.Timestamptz(6)
+  trialEnd               DateTime?          @db.Timestamptz(6)
+  cancelAtPeriodEnd      Boolean            @default(false)
+  business               Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  plan                   SubscriptionPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  @@index([status])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  businessId        String
+  bookingId         String?       @unique
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("EUR")
+  status            PaymentStatus @default(PENDING)
+  provider          String
+  providerPaymentId String?       @unique
+  metadata          Json?
+  createdAt         DateTime      @default(now()) @db.Timestamptz(6)
+  booking           Booking?      @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  @@index([businessId, status])
+}
+
+model BookingVerificationChallenge {
+  id        String    @id @default(cuid())
+  email     String
+  codeHash  String
+  attempts  Int       @default(0)
+  expiresAt DateTime  @db.Timestamptz(6)
+  verifiedAt DateTime? @db.Timestamptz(6)
+  usedAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  @@index([email, createdAt])
+  @@index([expiresAt])
+}
+
+model Notification {
+  id          String             @id @default(cuid())
+  businessId  String?
+  userId      String?
+  channel     NotificationChannel
+  status      NotificationStatus @default(QUEUED)
+  template    String
+  payload     Json
+  sentAt      DateTime?          @db.Timestamptz(6)
+  readAt      DateTime?          @db.Timestamptz(6)
+  createdAt   DateTime           @default(now()) @db.Timestamptz(6)
+  business    Business?          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user        User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([businessId, createdAt])
+  @@index([userId, readAt])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  businessId  String
+  bookingId   String   @unique
+  rating      Int
+  comment     String?
+  image       String?
+  reportedAt  DateTime? @db.Timestamptz(6)
+  moderatedAt DateTime? @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  @@index([businessId, createdAt])
+}
+
+model BusinessImage {
+  id          String   @id @default(cuid())
+  businessId  String
+  url         String
+  alt         String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  @@index([businessId, sortOrder])
+}
+
+model CustomerNote {
+  id          String   @id @default(cuid())
+  businessId  String
+  customerId  String
+  content     String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  @@index([businessId, customerId])
+}
+
+model Coupon {
+  id          String   @id @default(cuid())
+  businessId  String
+  code        String
+  percentOff  Int?
+  amountOff   Decimal? @db.Decimal(10, 2)
+  active      Boolean  @default(true)
+  startsAt    DateTime? @db.Timestamptz(6)
+  endsAt      DateTime? @db.Timestamptz(6)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  @@unique([businessId, code])
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  businessId  String
+  number      String   @unique
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("EUR")
+  provider    String
+  providerInvoiceId String?
+  paidAt      DateTime? @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  @@index([businessId, createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  businessId  String?
+  userId      String?
+  action      String
+  entity      String
+  entityId    String?
+  metadata    Json?
+  ip          String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([businessId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model SupportTicket {
+  id          String         @id @default(cuid())
+  businessId  String?
+  userId      String
+  subject     String
+  category    String
+  message     String
+  priority    TicketPriority @default(NORMAL)
+  status      TicketStatus   @default(OPEN)
+  response    String?
+  createdAt   DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime       @updatedAt @db.Timestamptz(6)
+  business    Business?      @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@index([businessId, status])
+}
+
+model Favorite {
+  userId      String
+  businessId  String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  @@id([userId, businessId])
+}
+
+model PlatformSetting {
+  key         String   @id
+  value       Json
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model FeatureFlag {
+  key         String   @id
+  enabled     Boolean  @default(false)
+  metadata    Json?
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+}

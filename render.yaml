@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: rezervo-api
+    runtime: docker
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECRET
+        generateValue: true
+      - key: EMAIL_PROVIDER
+        value: console
+      - key: PAYMENT_PROVIDER
+        value: none
+      - key: STORAGE_PROVIDER
+        value: local
+
