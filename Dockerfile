@@ -18,5 +18,4 @@ COPY --from=build /app /app
 EXPOSE 4000
 
 # Run database migrations as a separate release step before starting more than one instance.
-CMD ["npm", "run", "start", "-w", "@rezervo/api"]
-
+CMD ["sh", "-c", "npm run prisma:deploy -w @rezervo/api && npm run start -w @rezervo/api"]

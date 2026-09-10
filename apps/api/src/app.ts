@@ -50,6 +50,10 @@ export function createApp() {
     }),
   );
 
+  app.get('/', (_req, res) => {
+    res.json({ success: true, data: { service: 'rezervo-api', status: 'ok' } });
+  });
+
   app.get('/health', async (_req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
