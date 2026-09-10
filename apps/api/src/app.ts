@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
+import type { RequestHandler } from 'express';
 import { env, webOrigins } from './config.js';
 import { prisma } from './db.js';
 import { errorHandler, notFound } from './lib/errors.js';
@@ -17,10 +18,15 @@ import { publicRouter } from './routes/public.routes.js';
 import openapi from '../openapi.json' with { type: 'json' };
 
 export function createApp() {
+  // Vercel's TypeScript 5.9 resolver sees these dual ESM/CJS packages as module
+  // namespaces even though Node ESM exposes their documented default functions.
+  // Keep the runtime import intact and narrow it at the middleware boundary.
+  const helmetMiddleware = helmet as unknown as (options?: Record<string, unknown>) => RequestHandler;
+  const rateLimitMiddleware = rateLimit as unknown as (options?: Record<string, unknown>) => RequestHandler;
   const app = express();
   app.set('trust proxy', 1);
   app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie'] }));
-  app.use(helmet({ contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false }));
+  app.use(helmetMiddleware({ contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false }));
   app.use(
     cors({
       origin(origin, callback) {
@@ -34,7 +40,7 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   app.use(
-    rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false }),
+    rateLimitMiddleware({ windowMs: 60_000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false }),
   );
   app.use(
     '/uploads',
