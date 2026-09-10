@@ -239,7 +239,7 @@ export async function createPublicBooking(input: {
             endAt,
             bufferStartAt,
             bufferEndAt,
-            status: business.settings?.requireApproval ? 'PENDING' : 'CONFIRMED',
+            status: business.settings?.requireApproval || business.settings?.requirePrepayment ? 'PENDING' : 'CONFIRMED',
             kind: bookingKind,
             checkInDate,
             checkOutDate,
@@ -253,6 +253,18 @@ export async function createPublicBooking(input: {
           },
           include: { service: true, staff: true, customer: true, business: true },
         });
+        const payment = business.settings?.requirePrepayment
+          ? await tx.payment.create({
+              data: {
+                businessId: business.id,
+                bookingId: booking.id,
+                amount: new Prisma.Decimal(price).mul(business.settings.depositPercent).div(100),
+                currency: business.currency,
+                provider: 'paypal',
+                metadata: { depositPercent: business.settings.depositPercent },
+              },
+            })
+          : null;
         await tx.auditLog.create({
           data: {
             businessId: business.id,
@@ -261,11 +273,11 @@ export async function createPublicBooking(input: {
             entityId: booking.id,
           },
         });
-        return booking;
+        return { ...booking, payment };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
-    await notifyBookingEvent(booking.id, 'confirmed');
+    if (!booking.payment) await notifyBookingEvent(booking.id, 'confirmed');
     return booking;
   } catch (error) {
     if (error instanceof AppError) throw error;

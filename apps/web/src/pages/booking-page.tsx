@@ -51,6 +51,8 @@ type PublicBusiness = {
 };
 type Slot = { startAt: string; endAt: string };
 type SignedInUser = { user: { firstName: string; lastName: string; email: string } };
+type PayPalButtonApi = { Buttons: (options: Record<string, unknown>) => { render: (target: string) => Promise<void> } };
+declare global { interface Window { paypal?: PayPalButtonApi } }
 const detailsSchema = z.object({
   name: z.string().trim().min(2, 'Shkruani emrin.'),
   email: z.string().trim().email('Shkruani një email të vlefshëm.'),
@@ -153,6 +155,7 @@ function BookingFlow() {
     service: Service;
     staff: Staff;
     business: PublicBusiness;
+    payment?: { amount: string; currency: string; status: string } | null;
   }>();
   const me = useQuery({
     queryKey: ['me'],
@@ -334,16 +337,20 @@ function BookingFlow() {
             <CheckCircle2 size={34} />
           </span>
           <p className="eyebrow mt-5">
-            {business.settings?.requireApproval ? 'Kërkesa u pranua' : 'Rezervimi u konfirmua'}
+            {submitted.payment ? 'Pagesa kërkohet' : business.settings?.requireApproval ? 'Kërkesa u pranua' : 'Rezervimi u konfirmua'}
           </p>
           <h1 className="display mt-2 text-3xl font-bold">
-            {business.settings?.requireApproval
+            {submitted.payment
+              ? 'Kryeni pagesën e sigurt për ta konfirmuar termin. Pa pagesë, kërkesa mbetet në pritje.'
+              : business.settings?.requireApproval
               ? 'Biznesi do ta konfirmojë së shpejti.'
               : 'Shihemi së shpejti!'}
           </h1>
           <p className="mt-3 text-slate-600">
             Ruajeni referencën më poshtë.{' '}
-            {business.settings?.requireApproval
+            {submitted.payment
+              ? `Për të paguar tani: ${money(submitted.payment.amount, submitted.payment.currency)}.`
+              : business.settings?.requireApproval
               ? 'Do të merrni njoftim pasi biznesi ta miratojë kërkesën.'
               : 'Do të merrni konfirmimin e rezervimit në email ose telefon.'}
           </p>
@@ -369,6 +376,7 @@ function BookingFlow() {
               </div>
             </dl>
           </div>
+          {submitted.payment && <PayPalPayment manageToken={submitted.manageToken} amount={submitted.payment.amount} currency={submitted.payment.currency} />}
           <Link to={`/manage/${submitted.manageToken}`} className="mt-5 block">
             <Button className="w-full">Menaxho ose anulo rezervimin</Button>
           </Link>
@@ -928,4 +936,46 @@ function BookingFlow() {
       </div>
     </main>
   );
+}
+
+function PayPalPayment({ manageToken, amount, currency }: { manageToken: string; amount: string; currency: string }) {
+  const [error, setError] = useState<string>();
+  const [paid, setPaid] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const mount = async () => {
+      try {
+        const config = await api<{ enabled: boolean; clientId?: string }>('/public/payments/paypal/config');
+        if (!config.enabled || !config.clientId) throw new Error('PayPal nuk është konfiguruar ende nga platforma.');
+        const clientId = config.clientId;
+        const existing = document.querySelector('script[data-rezervo-paypal]');
+        if (!existing) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.dataset.rezervoPaypal = 'true';
+            script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=${encodeURIComponent(currency)}&intent=capture`;
+            script.onload = () => resolve(); script.onerror = () => reject(new Error('PayPal nuk u ngarkua.'));
+            document.head.appendChild(script);
+          });
+        }
+        if (cancelled || !window.paypal) return;
+        await window.paypal.Buttons({
+          createOrder: async () => (await api<{ orderId: string }>('/public/payments/paypal/order', {
+            method: 'POST', body: JSON.stringify({ manageToken }),
+          })).orderId,
+          onApprove: async (data: { orderID: string }) => {
+            await api('/public/payments/paypal/capture', { method: 'POST', body: JSON.stringify({ manageToken, orderId: data.orderID }) });
+            if (!cancelled) setPaid(true);
+          },
+          onError: () => !cancelled && setError('Pagesa nuk u krye. Provoni përsëri.'),
+        }).render('#rezervo-paypal-button');
+      } catch (cause) {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'PayPal nuk mund të hapet tani.');
+      }
+    };
+    void mount();
+    return () => { cancelled = true; };
+  }, [currency, manageToken]);
+  if (paid) return <p className="mt-5 rounded-xl bg-green-100 p-4 font-semibold text-forest">✓ Pagesa u pranua. Rezervimi u konfirmua.</p>;
+  return <section className="mt-5 text-left"><p className="mb-2 text-sm font-semibold">Paguaj {money(amount, currency)} me PayPal</p><div id="rezervo-paypal-button" />{error && <p className="mt-2 text-sm text-red-600">{error}</p>}</section>;
 }

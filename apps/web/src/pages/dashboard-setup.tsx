@@ -25,6 +25,8 @@ type Settings = {
   emailEnabled: boolean;
   smsEnabled: boolean;
   whatsappEnabled: boolean;
+  requirePrepayment: boolean;
+  depositPercent: number;
 };
 type CurrentBusiness = {
   business: {
@@ -214,6 +216,8 @@ export function BusinessProfilePage() {
     emailEnabled: true,
     smsEnabled: false,
     whatsappEnabled: false,
+    requirePrepayment: false,
+    depositPercent: 100,
   };
   const saveProfile = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -249,6 +253,8 @@ export function BusinessProfilePage() {
       emailEnabled: data.get('emailEnabled') === 'on',
       smsEnabled: data.get('smsEnabled') === 'on',
       whatsappEnabled: data.get('whatsappEnabled') === 'on',
+      requirePrepayment: data.get('requirePrepayment') === 'on',
+      depositPercent: Number(data.get('depositPercent')),
     });
   };
   return (
@@ -493,6 +499,19 @@ export function BusinessProfilePage() {
                 Klienti mund të rezervojë vetëm me emër, telefon dhe email opsional.
               </small>
             </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
+            <input name="requirePrepayment" type="checkbox" className="mt-1 size-4 accent-[#155e75]"
+              defaultChecked={currentSettings.requirePrepayment} />
+            <span>
+              <b className="block text-sm">Kërko pagesë para konfirmimit</b>
+              <small className="text-slate-500">Klienti nuk konfirmohet derisa pagesa PayPal të kryhet me sukses.</small>
+            </span>
+          </label>
+          <label>
+            <span className="mb-1.5 block text-sm font-medium">Depozita që paguhet tani (%)</span>
+            <input required name="depositPercent" type="number" min="1" max="100" className="input"
+              defaultValue={currentSettings.depositPercent} />
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
             <input

@@ -19,6 +19,8 @@ import {
 import { createPublicBooking } from '../services/booking.service.js';
 import { getPublicAvailability } from '../services/availability.service.js';
 import { confirmBookingEmailVerification, requestBookingEmailVerification } from '../services/booking-verification.service.js';
+import { capturePayPalOrder, createPayPalOrder, paypalPublicConfig } from '../services/paypal.service.js';
+import { notifyBookingEvent } from '../services/notification.service.js';
 import {
   cancelManagedBooking,
   createManagedBookingReview,
@@ -28,6 +30,51 @@ import {
 
 export const publicRouter = Router();
 publicRouter.use(publicApiLimiter);
+
+publicRouter.get('/payments/paypal/config', (_req, res) => {
+  res.json({ success: true, data: paypalPublicConfig() });
+});
+
+publicRouter.post(
+  '/payments/paypal/order',
+  bookingLimiter,
+  asyncHandler(async (req, res) => {
+    const manageToken = String(req.body.manageToken ?? '');
+    const booking = await prisma.booking.findUnique({ where: { manageToken }, include: { payment: true } });
+    if (!booking?.payment || booking.payment.status !== 'PENDING')
+      throw new AppError(422, 'PAYMENT_NOT_AVAILABLE', 'Kjo pagesë nuk është e disponueshme.');
+    const order = await createPayPalOrder({
+      amount: booking.payment.amount.toFixed(2), currency: booking.payment.currency, reference: booking.reference,
+    });
+    await prisma.payment.update({ where: { id: booking.payment.id }, data: { providerPaymentId: order.id } });
+    res.status(201).json({ success: true, data: { orderId: order.id } });
+  }),
+);
+
+publicRouter.post(
+  '/payments/paypal/capture',
+  bookingLimiter,
+  asyncHandler(async (req, res) => {
+    const manageToken = String(req.body.manageToken ?? '');
+    const orderId = String(req.body.orderId ?? '');
+    const booking = await prisma.booking.findUnique({
+      where: { manageToken }, include: { payment: true, business: { include: { settings: true } } },
+    });
+    if (!booking?.payment || booking.payment.status !== 'PENDING' || booking.payment.providerPaymentId !== orderId)
+      throw new AppError(422, 'PAYMENT_NOT_AVAILABLE', 'Pagesa nuk përputhet me rezervimin.');
+    const captured = await capturePayPalOrder(orderId);
+    if (captured.status !== 'COMPLETED') throw new AppError(422, 'PAYMENT_NOT_COMPLETED', 'Pagesa nuk u përfundua.');
+    await prisma.$transaction([
+      prisma.payment.update({ where: { id: booking.payment.id }, data: { status: 'PAID' } }),
+      prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: booking.business.settings?.requireApproval ? 'PENDING' : 'CONFIRMED' },
+      }),
+    ]);
+    await notifyBookingEvent(booking.id, 'confirmed');
+    res.json({ success: true, data: { paid: true } });
+  }),
+);
 
 publicRouter.post(
   '/booking-verification/request',
@@ -263,6 +310,8 @@ publicRouter.get(
             maxBookingDays: true,
             cancellationDeadlineMin: true,
             reschedulingEnabled: true,
+            requirePrepayment: true,
+            depositPercent: true,
           },
         },
       },

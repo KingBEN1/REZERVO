@@ -146,6 +146,8 @@ export const businessSettingsSchema = z.object({
     emailEnabled: z.boolean(),
     smsEnabled: z.boolean(),
     whatsappEnabled: z.boolean(),
+    requirePrepayment: z.boolean(),
+    depositPercent: z.number().int().min(1).max(100),
   }),
   query: z.object({}),
   params: z.object({}),

@@ -40,6 +40,9 @@ type DashboardData = {
     customer: { name: string };
     service: { name: string };
     staff: { name: string };
+    kind: string;
+    pickupAddress: string | null;
+    destinationAddress: string | null;
   }>;
 };
 type SetupData = {
@@ -368,7 +371,9 @@ export function DashboardHome() {
                 <span>
                   <b className="block text-sm">{booking.customer.name}</b>
                   <small className="text-slate-500">
-                    {booking.service.name} · {booking.staff.name}
+                    {booking.kind === 'TRANSPORT'
+                      ? `${booking.pickupAddress ?? 'Nisja'} → ${booking.destinationAddress ?? 'Destinacioni'}`
+                      : `${booking.service.name} · ${booking.staff.name}`}
                   </small>
                 </span>
                 <span className="w-fit rounded-full bg-green-50 px-2 py-1 text-xs font-semibold text-forest">

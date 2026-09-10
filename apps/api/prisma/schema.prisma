@@ -370,6 +370,8 @@ model BusinessSettings {
   emailEnabled           Boolean  @default(true)
   smsEnabled             Boolean  @default(false)
   whatsappEnabled        Boolean  @default(false)
+  requirePrepayment      Boolean  @default(false)
+  depositPercent         Int      @default(100)
   primaryColor           String   @default("#155e75")
   hidePlatformBranding   Boolean  @default(false)
   business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

@@ -31,10 +31,37 @@ type Booking = {
   status: string;
   price: string;
   customerNote: string | null;
+  kind: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT';
+  checkInDate: string | null;
+  checkOutDate: string | null;
+  guestCount: number | null;
+  pickupAddress: string | null;
+  destinationAddress: string | null;
+  passengerCount: number | null;
+  payment: { status: string; amount: string; currency: string } | null;
   customer: { name: string; phone: string | null; email: string | null };
   service: { name: string };
   staff: { name: string };
 };
+function BookingDetails({ booking }: { booking: Booking }) {
+  if (booking.kind === 'TRANSPORT') return (
+    <span className="mt-1 block max-w-md text-xs leading-5 text-slate-600">
+      Rruga: <b>{booking.pickupAddress}</b> → <b>{booking.destinationAddress}</b>{booking.passengerCount ? ` · ${booking.passengerCount} udhëtarë` : ''}
+    </span>
+  );
+  if (booking.kind === 'ACCOMMODATION') return (
+    <span className="mt-1 block text-xs leading-5 text-slate-600">
+      Qëndrim: <b>{booking.checkInDate?.slice(0, 10)}</b> → <b>{booking.checkOutDate?.slice(0, 10)}</b>{booking.guestCount ? ` · ${booking.guestCount} mysafirë` : ''}
+    </span>
+  );
+  return booking.customerNote ? <span className="mt-1 block max-w-64 text-xs leading-5 text-slate-500">Shënim: {booking.customerNote}</span> : null;
+}
+function PaymentStatus({ payment }: { payment: Booking['payment'] }) {
+  if (!payment) return null;
+  return <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${payment.status === 'PAID' ? 'bg-green-50 text-forest' : 'bg-amber-50 text-amber-800'}`}>
+    {payment.status === 'PAID' ? `Paguar · ${money(payment.amount, payment.currency)}` : `Në pritje të pagesës · ${money(payment.amount, payment.currency)}`}
+  </span>;
+}
 type Customer = {
   id: string;
   name: string;
@@ -85,6 +112,8 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
                   <span className="text-sm text-slate-500">
                     {booking.service.name} · {booking.staff.name}
                   </span>
+                  <BookingDetails booking={booking} />
+                  <PaymentStatus payment={booking.payment} />
                 </div>
                 <Status status={booking.status} />
               </article>
@@ -137,11 +166,8 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
                   <td className="px-5 py-4">
                     {booking.service.name}
                     <span className="block text-xs text-slate-500">{booking.staff.name}</span>
-                    {booking.customerNote && (
-                      <span className="mt-1 block max-w-64 text-xs leading-5 text-slate-500">
-                        Shënim: {booking.customerNote}
-                      </span>
-                    )}
+                    <BookingDetails booking={booking} />
+                    <PaymentStatus payment={booking.payment} />
                   </td>
                   <td className="px-5 py-4">{dateTime(booking.startAt)}</td>
                   <td className="px-5 py-4">

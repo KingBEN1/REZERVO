@@ -556,7 +556,7 @@ businessRouter.get(
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
         where: { businessId: req.tenant!.businessId },
-        include: { customer: true, service: true, staff: true },
+        include: { customer: true, service: true, staff: true, payment: true },
         orderBy: { startAt: 'asc' },
         skip: (page - 1) * limit,
         take: limit,
@@ -658,7 +658,7 @@ businessRouter.get(
         },
         take: 5,
         orderBy: { startAt: 'asc' },
-        include: { service: true, customer: true, staff: true },
+        include: { service: true, customer: true, staff: true, payment: true },
       }),
       prisma.customer.count({ where: { businessId, deletedAt: null } }),
       prisma.booking.aggregate({
