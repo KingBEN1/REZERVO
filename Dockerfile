@@ -17,5 +17,6 @@ ENV NODE_ENV=production
 COPY --from=build /app /app
 EXPOSE 4000
 
-# Run database migrations as a separate release step before starting more than one instance.
-CMD ["sh", "-c", "npm run prisma:deploy -w @rezervo/api && npm run start -w @rezervo/api"]
+# `SEED_DEMO_DATA=true` is an explicit, one-time opt-in for a fresh demo database.
+# The seed is idempotent, but production operators should switch it off after the first deploy.
+CMD ["sh", "-c", "npm run prisma:deploy -w @rezervo/api && if [ \"$SEED_DEMO_DATA\" = \"true\" ]; then npm run prisma:seed -w @rezervo/api; fi && npm run start -w @rezervo/api"]

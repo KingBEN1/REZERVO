@@ -139,7 +139,8 @@ function BookingFlow() {
     customerNote: '',
     website: '',
   });
-  const [verification, setVerification] = useState<{ challengeId: string; email: string; verified: boolean }>();
+  const [verification, setVerification] = useState<{ challengeId: string; channel: 'EMAIL' | 'SMS'; contact: string; verified: boolean }>();
+  const [verificationChannel, setVerificationChannel] = useState<'EMAIL' | 'SMS'>('EMAIL');
   const [verificationCode, setVerificationCode] = useState('');
   const [stay, setStay] = useState({
     checkInDate: localIsoDate(1),
@@ -249,10 +250,10 @@ function BookingFlow() {
   });
   const requestVerification = useMutation({
     mutationFn: () => api<{ challengeId: string }>('/public/booking-verification/request', {
-      method: 'POST', body: JSON.stringify({ email: details.email.trim() }),
+      method: 'POST', body: JSON.stringify({ channel: verificationChannel, contact: verificationChannel === 'EMAIL' ? details.email.trim() : details.phone.trim() }),
     }),
     onSuccess: (data) => {
-      setVerification({ challengeId: data.challengeId, email: details.email.trim().toLowerCase(), verified: false });
+      setVerification({ challengeId: data.challengeId, channel: verificationChannel, contact: (verificationChannel === 'EMAIL' ? details.email : details.phone).trim().toLowerCase(), verified: false });
       setVerificationCode('');
     },
   });
@@ -417,6 +418,7 @@ function BookingFlow() {
             </div>
             <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <div>
+                {business.slug === 'blend-barber' && <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-900">BIZNES DEMO · Testoni rezervimin</span>}
                 <p className="text-xs font-semibold text-moss">
                   {business.category?.name ?? 'Rezervime online'}
                 </p>
@@ -766,7 +768,10 @@ function BookingFlow() {
                       className="input"
                       inputMode="tel"
                       value={details.phone}
-                      onChange={(event) => setDetails({ ...details, phone: event.target.value })}
+                      onChange={(event) => {
+                        setDetails({ ...details, phone: event.target.value });
+                        if (verification?.channel === 'SMS' && verification.contact !== event.target.value.trim().toLowerCase()) setVerification(undefined);
+                      }}
                     />
                   </label>
                   <label>
@@ -780,15 +785,19 @@ function BookingFlow() {
                       value={details.email}
                       onChange={(event) => {
                         setDetails({ ...details, email: event.target.value });
-                        if (verification?.email !== event.target.value.trim().toLowerCase()) setVerification(undefined);
+                        if (verification?.channel === 'EMAIL' && verification.contact !== event.target.value.trim().toLowerCase()) setVerification(undefined);
                       }}
                     />
                   </label>
                   <div className="rounded-xl border border-line bg-sand p-4">
-                    <p className="font-semibold">Verifiko emailin për rezervim</p>
+                    <p className="font-semibold">Verifiko kontaktin për rezervim</p>
                     <p className="mt-1 text-sm text-slate-500">
                       Për siguri, kodi 6-shifror është i detyrueshëm para se të dërgoni rezervimin.
                     </p>
+                    <div className="mt-3 flex gap-2 text-sm">
+                      <button type="button" onClick={() => { setVerificationChannel('EMAIL'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'EMAIL' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me email</button>
+                      <button type="button" onClick={() => { setVerificationChannel('SMS'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'SMS' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me SMS</button>
+                    </div>
                     {!verification?.verified ? (
                       <>
                         {verification && (
@@ -803,7 +812,7 @@ function BookingFlow() {
                           </div>
                         )}
                         <Button type="button" variant="ghost" className="mt-3"
-                          disabled={!detailsSchema.shape.email.safeParse(details.email.trim()).success || requestVerification.isPending}
+                          disabled={(verificationChannel === 'EMAIL' ? !detailsSchema.shape.email.safeParse(details.email.trim()).success : !detailsSchema.shape.phone.safeParse(details.phone.trim()).success) || requestVerification.isPending}
                           onClick={() => requestVerification.mutate()}>
                           {requestVerification.isPending ? 'Po dërgohet…' : verification ? 'Dërgo kod të ri' : 'Dërgo kodin'}
                         </Button>
@@ -815,7 +824,7 @@ function BookingFlow() {
                           </p>
                         )}
                       </>
-                    ) : <p className="mt-3 text-sm font-semibold text-forest">✓ Emaili u verifikua.</p>}
+                    ) : <p className="mt-3 text-sm font-semibold text-forest">✓ {verification?.channel === 'SMS' ? 'Telefoni' : 'Emaili'} u verifikua.</p>}
                   </div>
                   <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" name="website"
                     value={details.website} onChange={(event) => setDetails({ ...details, website: event.target.value })} />
@@ -849,8 +858,9 @@ function BookingFlow() {
                       alert(parsed.error.issues[0]?.message);
                       return;
                     }
-                    if (!verification?.verified || verification.email !== details.email.trim().toLowerCase()) {
-                      alert('Verifikoni emailin me kodin 6-shifror para rezervimit.');
+                    const currentContact = (verificationChannel === 'EMAIL' ? details.email : details.phone).trim().toLowerCase();
+                    if (!verification?.verified || verification.channel !== verificationChannel || verification.contact !== currentContact) {
+                      alert('Verifikoni emailin ose telefonin me kodin 6-shifror para rezervimit.');
                       return;
                     }
                     booking.mutate();
@@ -859,7 +869,7 @@ function BookingFlow() {
                   {booking.isPending
                     ? 'Duke konfirmuar...'
                     : !verification?.verified
-                      ? 'Verifiko emailin për të vazhduar'
+                      ? 'Verifiko kontaktin për të vazhduar'
                     : business.settings?.requireApproval
                       ? 'Dërgo kërkesën për rezervim'
                       : 'Konfirmo rezervimin'}

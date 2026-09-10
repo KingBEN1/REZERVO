@@ -196,7 +196,7 @@ export async function createPublicBooking(input: {
           : null;
         const email = account?.email ?? input.customer.email?.toLowerCase();
         if (!email) throw new AppError(422, 'VERIFICATION_REQUIRED', 'Shkruani dhe verifikoni emailin tuaj.');
-        await consumeBookingVerification(tx, input.bookingVerificationId, email);
+        await consumeBookingVerification(tx, input.bookingVerificationId, email, input.customer.phone);
         const existingCustomer = account || email
           ? await tx.customer.findFirst({
               where: {

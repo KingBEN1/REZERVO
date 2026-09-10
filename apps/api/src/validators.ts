@@ -41,6 +41,16 @@ export const verifyEmailSchema = z.object({
   params: z.object({}),
 });
 
+export const customerProfileSchema = z.object({
+  body: z.object({
+    firstName: z.string().trim().min(2).max(80),
+    lastName: z.string().trim().min(2).max(80),
+    phone: z.string().trim().min(6).max(32).optional().or(z.literal('')),
+  }),
+  query: z.object({}),
+  params: z.object({}),
+});
+
 export const createBusinessSchema = z.object({
   body: z.object({
     name: z.string().trim().min(2).max(120),
@@ -304,7 +314,15 @@ export const publicBookingSchema = z.object({
 });
 
 export const bookingVerificationRequestSchema = z.object({
-  body: z.object({ email }),
+  body: z.object({
+    channel: z.enum(['EMAIL', 'SMS']).default('EMAIL'),
+    contact: z.string().trim().min(6).max(254),
+  }).superRefine((data, context) => {
+    if (data.channel === 'EMAIL' && !email.safeParse(data.contact).success)
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['contact'], message: 'Shkruani një email të vlefshëm.' });
+    if (data.channel === 'SMS' && !/^\+?[0-9\s()-]{6,32}$/.test(data.contact))
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['contact'], message: 'Shkruani një numër telefoni të vlefshëm.' });
+  }),
   query: z.object({}),
   params: z.object({}),
 });

@@ -41,8 +41,8 @@ export function SiteHeader() {
   });
   const links = [
     { to: '/businesses', label: t('discover') },
-    { to: '/account', label: 'Rezervimet e mia' },
-    { to: '/about', label: 'Rreth nesh' },
+    { to: '/account', label: t('myBookings') },
+    { to: '/about', label: t('about') },
   ];
   const userActions = me.data ? (
     <>
@@ -52,12 +52,12 @@ export function SiteHeader() {
         </Button>
       </Link>
       <Button variant="ghost" onClick={() => logout.mutate()} disabled={logout.isPending}>
-        <LogOut size={16} /> Dil
+        <LogOut size={16} /> {t('logout')}
       </Button>
       {hasBusiness && (
         <Link to="/dashboard">
           <Button variant="secondary">
-            <Store size={16} /> Paneli i biznesit
+            <Store size={16} /> {t('dashboard')}
           </Button>
         </Link>
       )}
@@ -65,10 +65,10 @@ export function SiteHeader() {
   ) : (
     <>
       <Link to="/login">
-        <Button variant="ghost">Hyr</Button>
+        <Button variant="ghost">{t('login')}</Button>
       </Link>
       <Link to="/register">
-        <Button>Krijo llogari</Button>
+        <Button>{t('createAccount')}</Button>
       </Link>
     </>
   );
@@ -89,7 +89,7 @@ export function SiteHeader() {
         </nav>
         <div className="hidden items-center gap-2 md:flex">
           <button
-            aria-label="Ndrysho gjuhën"
+            aria-label={t('language')}
             onClick={() => setLocale(locale === 'sq' ? 'en' : 'sq')}
             className="grid size-10 place-items-center rounded-xl hover:bg-white"
           >
@@ -100,7 +100,7 @@ export function SiteHeader() {
             to="/for-business"
             className="ml-1 text-sm font-semibold text-forest hover:underline"
           >
-            Për bizneset
+            {t('businesses')}
           </Link>
         </div>
         <button
@@ -129,11 +129,11 @@ export function SiteHeader() {
               to={me.data ? '/account' : '/login'}
               className="font-medium"
             >
-              {me.data ? 'Llogaria ime' : 'Hyr'}
+              {me.data ? t('account') : t('login')}
             </Link>
             {hasBusiness && (
               <Link onClick={() => setOpen(false)} to="/dashboard" className="font-medium">
-                Paneli i biznesit
+                {t('dashboard')}
               </Link>
             )}
             {me.data && (
@@ -144,7 +144,7 @@ export function SiteHeader() {
                 }}
                 className="flex items-center gap-2 font-medium text-slate-700"
               >
-                <LogOut size={17} /> Dil nga llogaria
+                <LogOut size={17} /> {t('logout')}
               </button>
             )}
             <Link
@@ -152,11 +152,11 @@ export function SiteHeader() {
               to="/for-business"
               className="flex items-center gap-2 font-semibold text-forest"
             >
-              <Store size={17} /> Për bizneset
+              <Store size={17} /> {t('businesses')}
             </Link>
             {!me.data && (
               <Link onClick={() => setOpen(false)} to="/register">
-                <Button className="w-full">Krijo llogari klienti</Button>
+                <Button className="w-full">{t('createAccount')}</Button>
               </Link>
             )}
           </nav>

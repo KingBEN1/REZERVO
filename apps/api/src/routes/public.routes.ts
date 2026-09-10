@@ -18,7 +18,7 @@ import {
 } from '../validators.js';
 import { createPublicBooking } from '../services/booking.service.js';
 import { getPublicAvailability } from '../services/availability.service.js';
-import { confirmBookingEmailVerification, requestBookingEmailVerification } from '../services/booking-verification.service.js';
+import { confirmBookingEmailVerification, requestBookingVerification } from '../services/booking-verification.service.js';
 import { capturePayPalOrder, createPayPalOrder, paypalPublicConfig } from '../services/paypal.service.js';
 import { notifyBookingEvent } from '../services/notification.service.js';
 import {
@@ -81,7 +81,7 @@ publicRouter.post(
   bookingVerificationLimiter,
   validate(bookingVerificationRequestSchema),
   asyncHandler(async (req, res) => {
-    const verification = await requestBookingEmailVerification(req.body.email);
+    const verification = await requestBookingVerification(req.body.channel, req.body.contact);
     res.status(201).json({ success: true, data: verification });
   }),
 );

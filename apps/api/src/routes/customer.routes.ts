@@ -3,16 +3,31 @@ import { prisma } from '../db.js';
 import { asyncHandler } from '../lib/async.js';
 import { AppError } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { customerProfileSchema } from '../validators.js';
 
 export const customerRouter = Router();
 customerRouter.use(requireAuth);
+
+customerRouter.patch(
+  '/profile',
+  validate(customerProfileSchema),
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.update({
+      where: { id: req.auth!.userId },
+      data: { firstName: req.body.firstName, lastName: req.body.lastName, phone: req.body.phone || null },
+      select: { firstName: true, lastName: true, email: true, phone: true, emailVerifiedAt: true },
+    });
+    res.json({ success: true, data: { user } });
+  }),
+);
 
 customerRouter.get(
   '/dashboard',
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUniqueOrThrow({
       where: { id: req.auth!.userId },
-      select: { id: true, firstName: true, lastName: true, email: true },
+      select: { id: true, firstName: true, lastName: true, email: true, phone: true, emailVerifiedAt: true, createdAt: true },
     });
     const customerWhere = { OR: [{ userId: user.id }, { email: user.email }] };
     const [upcoming, past, favorites] = await Promise.all([

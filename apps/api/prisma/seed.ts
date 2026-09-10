@@ -121,7 +121,7 @@ async function main() {
       city: 'Prishtinë',
       address: 'Rr. Garibaldi, Prishtinë',
       phone: '+383 44 123 456',
-      description: 'Prerje të sakta dhe stil modern në zemër të Prishtinës.',
+      description: 'BIZNES DEMO — provoni rezervimin, kodin e verifikimit dhe profilin e klientit pa pagesë reale.',
       categorySlug: 'barbers',
       coverImage:
         'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1400&q=80',
