@@ -4,7 +4,6 @@ import {
   Heart,
   MapPin,
   ShieldCheck,
-  Sparkles,
   Store,
   Star,
 } from 'lucide-react';
@@ -115,13 +114,13 @@ export function HomePage() {
           </div>
         </section>
         <section className="bg-ink py-16 text-white sm:py-20">
-          <div className="page-shell grid gap-8 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
-            <div>
+          <div className="page-shell">
+            <div className="mx-auto max-w-4xl text-center">
               <p className="eyebrow text-green-300">E thjeshtë për klientin</p>
               <h2 className="display mt-3 text-3xl font-bold sm:text-4xl">
                 Kërko, zgjidh dhe menaxho çdo rezervim nga një llogari e vetme.
               </h2>
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="mt-8 grid gap-4 text-left sm:grid-cols-2">
                 {[
                   'Disponueshmëri në kohë reale',
                   'Vlerësime nga klientë të verifikuar',
@@ -134,24 +133,6 @@ export function HomePage() {
                   </p>
                 ))}
               </div>
-            </div>
-            <div className="rounded-3xl bg-white p-6 text-ink">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-slate-500">Hotel në Prishtinë</p>
-                  <b className="text-lg">Dhomë dyshe</b>
-                </div>
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
-                  ★ 4.8
-                </span>
-              </div>
-              <p className="mt-5 rounded-xl bg-sand p-3 text-sm">
-                Hyrje: 14 shtator · Dalje: 16 shtator
-              </p>
-              <p className="mt-3 flex gap-2 text-sm text-forest">
-                <Sparkles size={17} /> Vetëm 2 dhoma të lira
-              </p>
-              <Button className="mt-5 w-full">Shiko disponueshmërinë</Button>
             </div>
           </div>
         </section>
