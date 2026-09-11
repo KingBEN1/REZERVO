@@ -69,6 +69,7 @@ async function readAccountToken(token: string, purpose: 'password-reset' | 'veri
 async function emailAccountLink(
   user: { id: string; email: string; firstName: string; passwordHash: string | null },
   purpose: 'password-reset' | 'verify-email',
+  reportDeliveryFailure = false,
 ) {
   if (!user.passwordHash) return;
   const token = await createAccountToken({ id: user.id, passwordHash: user.passwordHash }, purpose);
@@ -87,6 +88,7 @@ async function emailAccountLink(
     await sendTransactionalEmail({ to: user.email, subject, text });
   } catch (error) {
     console.error(`Account ${purpose} email could not be sent`, error);
+    if (reportDeliveryFailure) throw new AppError(503, 'EMAIL_DELIVERY_FAILED', 'Emaili nuk mund të dërgohet tani. Provoni përsëri pas pak.');
   }
 }
 
@@ -233,7 +235,7 @@ authRouter.post(
       where: { id: req.auth!.userId },
       select: { id: true, email: true, firstName: true, passwordHash: true, emailVerifiedAt: true },
     });
-    if (!user.emailVerifiedAt) await emailAccountLink(user, 'verify-email');
+    if (!user.emailVerifiedAt) await emailAccountLink(user, 'verify-email', true);
     res.json({
       success: true,
       data: { message: 'Nëse nevojitet, lidhja e verifikimit është dërguar.' },
