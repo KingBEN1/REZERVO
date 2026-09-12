@@ -1,6 +1,7 @@
 import { prisma } from '../db.js';
 import { env } from '../config.js';
 import { sendTransactionalEmail } from './email.service.js';
+import { sendTransactionalSms } from './sms.service.js';
 import { runtimeTimezone } from '../lib/timezone.js';
 
 type BookingEvent = 'confirmed' | 'cancelled' | 'rescheduled';
@@ -86,11 +87,17 @@ export async function notifyBookingEvent(bookingId: string, event: BookingEvent)
           payload,
         },
       });
-      if (env.SMS_PROVIDER === 'console') {
-        console.info(`[sms:console] To: ${booking.customer.phone}\n${payload.message}`);
+      try {
+        await sendTransactionalSms(booking.customer.phone, payload.message);
         await prisma.notification.update({
           where: { id: notification.id },
           data: { status: 'SENT', sentAt: new Date() },
+        });
+      } catch (error) {
+        console.error('Booking SMS could not be sent', error);
+        await prisma.notification.update({
+          where: { id: notification.id },
+          data: { status: 'FAILED' },
         });
       }
     }

@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import { AppError } from '../lib/errors.js';
 import { sendTransactionalEmail } from './email.service.js';
-import { env } from '../config.js';
+import { sendTransactionalSms } from './sms.service.js';
 
 const ttlMs = 10 * 60_000;
 const hashCode = (challengeId: string, code: string) =>
@@ -13,18 +13,7 @@ type VerificationChannel = 'EMAIL' | 'SMS';
 
 async function sendSmsCode(phone: string, code: string) {
   const text = `Rezervo: kodi juaj i verifikimit është ${code}. Skadon pas 10 minutash. Mos e ndani me askënd.`;
-  if (env.SMS_PROVIDER === 'console') {
-    console.info(`[sms:console] To: ${phone}\n${text}`);
-    return;
-  }
-  if (env.SMS_PROVIDER !== 'twilio' || !env.SMS_ACCOUNT_SID || !env.SMS_AUTH_TOKEN || !env.SMS_FROM)
-    throw new AppError(503, 'SMS_NOT_CONFIGURED', 'Verifikimi me SMS nuk është aktivizuar ende. Zgjidhni emailin.');
-  const token = Buffer.from(`${env.SMS_ACCOUNT_SID}:${env.SMS_AUTH_TOKEN}`).toString('base64');
-  const body = new URLSearchParams({ To: phone, From: env.SMS_FROM, Body: text });
-  const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${env.SMS_ACCOUNT_SID}/Messages.json`, {
-    method: 'POST', headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body,
-  });
-  if (!response.ok) throw new AppError(502, 'SMS_DELIVERY_FAILED', 'SMS nuk mund të dërgohet tani. Provoni emailin.');
+  await sendTransactionalSms(phone, text);
 }
 
 export async function requestBookingVerification(channel: VerificationChannel, contact: string) {
