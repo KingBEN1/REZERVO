@@ -69,17 +69,22 @@ type Customer = {
   phone: string | null;
   bookings: Array<{ status: string; price: string; startAt: string }>;
 };
-function useBusinessQuery<T>(key: string, path: string) {
+function useBusinessQuery<T>(key: string, path: string, refresh = false) {
   const { membership } = useTenant();
   return useQuery({
     queryKey: [key, membership?.business.id],
     enabled: Boolean(membership),
     queryFn: () => api<T>(path, {}, membership!.business.id),
+    refetchInterval: refresh ? 15_000 : false,
   });
 }
 export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
   const { membership } = useTenant();
-  const query = useBusinessQuery<{ bookings: Booking[] }>('bookings', '/business/bookings');
+  const query = useBusinessQuery<{ bookings: Booking[] }>(
+    calendar ? 'calendar-bookings' : 'bookings',
+    calendar ? '/business/bookings?scope=upcoming&limit=100' : '/business/bookings?limit=100',
+    true,
+  );
   const client = useQueryClient();
   const mutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>

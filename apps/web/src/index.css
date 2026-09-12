@@ -5,8 +5,8 @@
 
 @layer base {
   * { @apply border-line; }
-  html { @apply bg-sand text-ink antialiased; }
-  body { @apply min-h-screen bg-sand font-sans; }
+  html { @apply overflow-x-hidden bg-sand text-ink antialiased; }
+  body { @apply min-h-screen overflow-x-hidden bg-sand font-sans; }
   button, input, select { font: inherit; }
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { @apply outline-none ring-2 ring-forest ring-offset-2; }
 }
@@ -15,6 +15,20 @@
   .page-shell { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
   .eyebrow { @apply text-xs font-bold uppercase tracking-[.16em] text-moss; }
   .display { font-family: 'Fraunces', Georgia, serif; }
-  .surface { @apply rounded-3xl border border-line bg-white shadow-card; }
+  .surface { @apply rounded-3xl border border-line/90 bg-white shadow-card; }
   .input { @apply h-11 w-full rounded-xl border border-line bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-forest focus:ring-2 focus:ring-forest/15; }
+}
+
+@keyframes hero-reveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-reveal { animation: hero-reveal .55s ease-out both; }
+.hero-delay-1 { animation-delay: .08s; }
+.hero-delay-2 { animation-delay: .16s; }
+.hero-delay-3 { animation-delay: .24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal { animation: none; }
 }

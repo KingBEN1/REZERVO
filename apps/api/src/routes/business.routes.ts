@@ -1,4 +1,5 @@
 import { raw, Router } from 'express';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import { asyncHandler } from '../lib/async.js';
 import { audit } from '../lib/audit.js';
@@ -553,15 +554,22 @@ businessRouter.get(
   asyncHandler(async (req, res) => {
     const page = Math.max(1, Number(req.query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(req.query.limit ?? 25)));
+    const upcomingOnly = req.query.scope === 'upcoming';
+    const where: Prisma.BookingWhereInput = {
+      businessId: req.tenant!.businessId,
+      ...(upcomingOnly
+        ? { startAt: { gte: new Date() }, status: { in: ['PENDING', 'CONFIRMED'] } }
+        : {}),
+    };
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
-        where: { businessId: req.tenant!.businessId },
+        where,
         include: { customer: true, service: true, staff: true, payment: true },
-        orderBy: { startAt: 'asc' },
+        orderBy: { startAt: upcomingOnly ? 'asc' : 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.booking.count({ where: { businessId: req.tenant!.businessId } }),
+      prisma.booking.count({ where }),
     ]);
     res.json({ success: true, data: { bookings, page, limit, total } });
   }),

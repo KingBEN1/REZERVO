@@ -19,9 +19,10 @@ services:
       - key: COOKIE_SECRET
         generateValue: true
       - key: EMAIL_PROVIDER
-        value: console
+        value: none
       - key: PAYMENT_PROVIDER
         value: none
       - key: STORAGE_PROVIDER
         value: local
-
+      - key: SEED_DEMO_DATA
+        value: false

@@ -7,7 +7,6 @@ import {
   Store,
   Star,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/site-header';
 import { Button } from '../components/ui/button';
@@ -28,39 +27,22 @@ export function HomePage() {
     <>
       <SiteHeader />
       <main>
-        <section className="overflow-hidden bg-[#e6f3e7] pb-16 pt-14 sm:pb-24 sm:pt-20">
-          <div className="page-shell">
+        <section className="relative isolate overflow-hidden bg-[linear-gradient(145deg,#edf8ee_0%,#e2f2e7_55%,#f8f2df_100%)] pb-16 pt-14 sm:pb-24 sm:pt-20">
+          <div aria-hidden className="absolute -left-24 top-10 -z-10 size-72 rounded-full bg-white/50 blur-3xl" />
+          <div aria-hidden className="absolute -right-24 bottom-0 -z-10 size-80 rounded-full bg-green-300/20 blur-3xl" />
+          <div className="page-shell relative">
             <div className="mx-auto max-w-3xl text-center">
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="eyebrow"
-              >
+              <p className="hero-reveal mx-auto inline-flex items-center gap-2 rounded-full border border-forest/15 bg-white/70 px-4 py-2 text-xs font-bold uppercase tracking-[.14em] text-moss shadow-sm">
                 Rezervo shpejt. Shko pa stres.
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 }}
-                className="display mt-4 text-4xl font-bold leading-[1.04] tracking-tight text-ink sm:text-6xl"
-              >
+              </p>
+              <h1 className="hero-reveal hero-delay-1 display mx-auto mt-5 max-w-4xl text-[2.55rem] font-bold leading-[1.04] tracking-[-.025em] text-ink sm:text-6xl lg:text-7xl">
                 Gjej, krahaso dhe <span className="text-forest">rezervo</span> online.
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.16 }}
-                className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg"
-              >
+              </h1>
+              <p className="hero-reveal hero-delay-2 mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
                 Hotele, taksi, bukuri, klinika, restorante dhe shërbime pranë jush — me
                 disponueshmëri, çmime dhe konfirmim të qartë.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.24 }}
-                className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"
-              >
+              </p>
+              <div className="hero-reveal hero-delay-3 mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <Link to="/businesses">
                   <Button size="lg" className="w-full sm:w-auto">
                     Gjej një rezervim <ArrowRight size={16} />
@@ -71,12 +53,12 @@ export function HomePage() {
                     Krijo llogari klienti
                   </Button>
                 </Link>
-              </motion.div>
+              </div>
               <p className="mt-4 text-xs text-slate-500">
                 Rezervim i sigurt · Menaxho terminin nga llogaria jote
               </p>
             </div>
-            <div className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-3">
+            <div className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Preview
                 icon={MapPin}
                 title="Gjej pranë teje"
@@ -105,10 +87,10 @@ export function HomePage() {
               <Link
                 key={category}
                 to={`/businesses?q=${encodeURIComponent(category)}`}
-                className="surface flex items-center justify-between p-5 transition hover:-translate-y-0.5 hover:border-forest"
+                className="surface group flex items-center justify-between p-5 transition duration-200 hover:-translate-y-1 hover:border-forest/50 hover:shadow-lg"
               >
                 <span className="font-bold">{category}</span>
-                <ArrowRight className="text-forest" size={18} />
+                <ArrowRight className="text-forest transition group-hover:translate-x-1" size={18} />
               </Link>
             ))}
           </div>
@@ -183,8 +165,10 @@ function Preview({
   text: string;
 }) {
   return (
-    <article className="rounded-2xl border border-white/60 bg-white/80 p-5 text-left shadow-sm">
-      <Icon className="text-forest" size={22} />
+    <article className="rounded-3xl border border-white/70 bg-white/80 p-6 text-left shadow-[0_14px_40px_rgba(24,74,51,.08)] backdrop-blur transition duration-200 hover:-translate-y-1 hover:bg-white">
+      <span className="grid size-11 place-items-center rounded-2xl bg-forest/10">
+        <Icon className="text-forest" size={22} />
+      </span>
       <h2 className="mt-4 font-bold">{title}</h2>
       <p className="mt-1 text-sm leading-6 text-slate-600">{text}</p>
     </article>

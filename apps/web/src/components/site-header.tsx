@@ -73,10 +73,10 @@ export function SiteHeader() {
     </>
   );
   return (
-    <header className="border-b border-line bg-sand/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line/80 bg-sand/90 shadow-[0_1px_0_rgba(15,42,31,.04)] backdrop-blur-xl">
       <div className="page-shell flex h-16 items-center justify-between">
         <Logo />
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-6 lg:flex">
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -87,7 +87,7 @@ export function SiteHeader() {
             </NavLink>
           ))}
         </nav>
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <button
             aria-label={t('language')}
             onClick={() => setLocale(locale === 'sq' ? 'en' : 'sq')}
@@ -105,14 +105,14 @@ export function SiteHeader() {
         </div>
         <button
           onClick={() => setOpen(!open)}
-          className="grid size-10 place-items-center md:hidden"
+          className="grid size-10 place-items-center rounded-xl transition hover:bg-white lg:hidden"
           aria-label="Hap menunë"
         >
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <div className="border-t border-line bg-white px-4 py-4 md:hidden">
+        <div className="border-t border-line bg-white/95 px-4 py-4 shadow-lg backdrop-blur-xl lg:hidden">
           <nav className="flex flex-col gap-3">
             {links.map((link) => (
               <Link

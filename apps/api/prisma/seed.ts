@@ -107,11 +107,14 @@ async function main() {
       prisma.subscriptionPlan.updateMany({ where: { code }, data: { active: false } }),
     ),
   ]);
-  const [admin, owner, customerUser] = await Promise.all([
-    upsertUser('admin@example.com', 'Arbër', 'Administrator', 'SUPER_ADMIN'),
+  const [owner, customerUser] = await Promise.all([
     upsertUser('business@example.com', 'Ardit', 'Krasniqi'),
     upsertUser('customer@example.com', 'Elira', 'Gashi'),
   ]);
+  // A public production database must never receive a known SUPER_ADMIN password.
+  if (process.env.NODE_ENV !== 'production') {
+    await upsertUser('admin@example.com', 'Arbër', 'Administrator', 'SUPER_ADMIN');
+  }
   const freePlan = monthlyPlan;
 
   const demoBusinesses = [
@@ -509,7 +512,9 @@ async function main() {
     create: { key: 'ENABLE_PAYMENTS', enabled: false },
   });
   console.info(
-    'Seed completed. Demo accounts: admin@example.com, business@example.com, customer@example.com',
+    `Seed completed. Demo accounts: business@example.com, customer@example.com${
+      process.env.NODE_ENV !== 'production' ? ', admin@example.com' : ''
+    }`,
   );
 }
 
