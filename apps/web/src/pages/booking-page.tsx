@@ -886,6 +886,8 @@ function BookingFlow() {
                     ? 'Duke konfirmuar...'
                     : !verification?.verified
                       ? 'Verifiko kontaktin për të vazhduar'
+                    : business.settings?.requirePrepayment
+                      ? 'Vazhdo te pagesa PayPal'
                     : business.settings?.requireApproval
                       ? 'Dërgo kërkesën për rezervim'
                       : 'Konfirmo rezervimin'}
@@ -933,16 +935,19 @@ function BookingFlow() {
                   </b>
                 </div>
                 {business.settings?.requirePrepayment && (
-                  <div className="flex justify-between rounded-xl bg-amber-50 p-3 text-amber-950">
-                    <span>Parapagimi me PayPal ({business.settings.depositPercent}%)</span>
-                    <b>
-                      {money(
-                        (isHotel ? Number(service.price) * nights : Number(service.price)) *
-                          business.settings.depositPercent /
-                          100,
-                        business.currency,
-                      )}
-                    </b>
+                  <div className="rounded-xl bg-amber-50 p-3 text-amber-950">
+                    <div className="flex justify-between gap-3">
+                      <span>Parapagimi me PayPal ({business.settings.depositPercent}%)</span>
+                      <b>
+                        {money(
+                          (isHotel ? Number(service.price) * nights : Number(service.price)) *
+                            business.settings.depositPercent /
+                            100,
+                          business.currency,
+                        )}
+                      </b>
+                    </div>
+                    <p className="mt-2 text-xs">Verifikoni kontaktin dhe shtypni “Vazhdo te pagesa PayPal”. Butoni i sigurt PayPal hapet në hapin tjetër.</p>
                   </div>
                 )}
               </div>
