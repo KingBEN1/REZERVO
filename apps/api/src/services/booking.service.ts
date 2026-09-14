@@ -197,6 +197,22 @@ export async function createPublicBooking(input: {
         const email = account?.email ?? input.customer.email?.toLowerCase();
         if (!email) throw new AppError(422, 'VERIFICATION_REQUIRED', 'Shkruani dhe verifikoni emailin tuaj.');
         await consumeBookingVerification(tx, input.bookingVerificationId, email, input.customer.phone);
+        const activeBookings = await tx.booking.count({
+          where: {
+            businessId: business.id,
+            status: { in: ['PENDING', 'CONFIRMED'] },
+            startAt: { gte: new Date() },
+            customer: {
+              OR: [
+                { email },
+                ...(input.customer.phone ? [{ phone: input.customer.phone }] : []),
+                ...(account ? [{ userId: account.id }] : []),
+              ],
+            },
+          },
+        });
+        if (activeBookings >= 3)
+          throw new AppError(429, 'ACTIVE_BOOKING_LIMIT', 'Keni arritur kufirin prej 3 rezervimeve aktive te ky biznes. Menaxhoni rezervimet ekzistuese para se të krijoni një tjetër.');
         const existingCustomer = account || email
           ? await tx.customer.findFirst({
               where: {

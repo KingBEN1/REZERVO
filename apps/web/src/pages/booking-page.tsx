@@ -4,6 +4,7 @@ import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '../components/ui/button';
+import { TurnstileWidget } from '../components/security-widgets';
 import { api, ApiError } from '../lib/api';
 import { dateTime, localIsoDate, money } from '../lib/utils';
 
@@ -142,6 +143,8 @@ function BookingFlow() {
   const [verification, setVerification] = useState<{ challengeId: string; channel: 'EMAIL' | 'SMS'; contact: string; verified: boolean }>();
   const [verificationChannel, setVerificationChannel] = useState<'EMAIL' | 'SMS'>('EMAIL');
   const [verificationCode, setVerificationCode] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileAttempt, setTurnstileAttempt] = useState(0);
   const [stay, setStay] = useState({
     checkInDate: localIsoDate(1),
     checkOutDate: localIsoDate(2),
@@ -250,11 +253,13 @@ function BookingFlow() {
   });
   const requestVerification = useMutation({
     mutationFn: () => api<{ challengeId: string }>('/public/booking-verification/request', {
-      method: 'POST', body: JSON.stringify({ channel: verificationChannel, contact: verificationChannel === 'EMAIL' ? details.email.trim() : details.phone.trim() }),
+      method: 'POST', body: JSON.stringify({ channel: verificationChannel, contact: verificationChannel === 'EMAIL' ? details.email.trim() : details.phone.trim(), turnstileToken }),
     }),
     onSuccess: (data) => {
       setVerification({ challengeId: data.challengeId, channel: verificationChannel, contact: (verificationChannel === 'EMAIL' ? details.email : details.phone).trim().toLowerCase(), verified: false });
       setVerificationCode('');
+      setTurnstileToken('');
+      setTurnstileAttempt((current) => current + 1);
     },
   });
   const confirmVerification = useMutation({
@@ -794,6 +799,7 @@ function BookingFlow() {
                     <p className="mt-1 text-sm text-slate-500">
                       Për siguri, kodi 6-shifror është i detyrueshëm para se të dërgoni rezervimin.
                     </p>
+                    <div className="mt-3"><TurnstileWidget key={turnstileAttempt} onToken={setTurnstileToken} /></div>
                     <div className="mt-3 flex gap-2 text-sm">
                       <button type="button" onClick={() => { setVerificationChannel('EMAIL'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'EMAIL' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me email</button>
                       <button type="button" onClick={() => { setVerificationChannel('SMS'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'SMS' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me SMS</button>
@@ -812,7 +818,7 @@ function BookingFlow() {
                           </div>
                         )}
                         <Button type="button" variant="ghost" className="mt-3"
-                          disabled={(verificationChannel === 'EMAIL' ? !detailsSchema.shape.email.safeParse(details.email.trim()).success : !detailsSchema.shape.phone.safeParse(details.phone.trim()).success) || requestVerification.isPending}
+                          disabled={(verificationChannel === 'EMAIL' ? !detailsSchema.shape.email.safeParse(details.email.trim()).success : !detailsSchema.shape.phone.safeParse(details.phone.trim()).success) || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !turnstileToken) || requestVerification.isPending}
                           onClick={() => requestVerification.mutate()}>
                           {requestVerification.isPending ? 'Po dërgohet…' : verification ? 'Dërgo kod të ri' : 'Dërgo kodin'}
                         </Button>

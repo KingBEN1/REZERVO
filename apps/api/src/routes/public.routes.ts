@@ -21,6 +21,7 @@ import { getPublicAvailability } from '../services/availability.service.js';
 import { confirmBookingEmailVerification, requestBookingVerification } from '../services/booking-verification.service.js';
 import { capturePayPalOrder, createPayPalOrder, paypalPublicConfig } from '../services/paypal.service.js';
 import { notifyBookingEvent } from '../services/notification.service.js';
+import { verifyHuman } from '../services/turnstile.service.js';
 import {
   cancelManagedBooking,
   createManagedBookingReview,
@@ -81,6 +82,7 @@ publicRouter.post(
   bookingVerificationLimiter,
   validate(bookingVerificationRequestSchema),
   asyncHandler(async (req, res) => {
+    await verifyHuman(req.body.turnstileToken, req.ip);
     const verification = await requestBookingVerification(req.body.channel, req.body.contact);
     res.status(201).json({ success: true, data: verification });
   }),

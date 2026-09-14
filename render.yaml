@@ -18,6 +18,10 @@ services:
         generateValue: true
       - key: COOKIE_SECRET
         generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
       - key: EMAIL_PROVIDER
         value: none
       - key: PAYMENT_PROVIDER

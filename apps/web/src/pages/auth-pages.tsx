@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Logo } from '../components/site-header';
 import { Button } from '../components/ui/button';
+import { GoogleSignInButton, TurnstileWidget } from '../components/security-widgets';
 import { api, ApiError } from '../lib/api';
 
 const loginSchema = z.object({
@@ -83,6 +85,11 @@ export function LoginPage() {
       api('/auth/login', { method: 'POST', body: JSON.stringify(values) }),
     onSuccess: () => navigate(businessIntent ? '/dashboard' : '/account'),
   });
+  const google = useMutation({
+    mutationFn: (credential: string) => api('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
+    onSuccess: () => navigate(businessIntent ? '/dashboard' : '/account'),
+  });
+  const googleCredential = useCallback((credential: string) => google.mutate(credential), [google]);
   return (
     <AuthShell>
       <div className="mt-14">
@@ -90,6 +97,8 @@ export function LoginPage() {
         <h2 className="display mt-2 text-3xl font-bold">
           {businessIntent ? 'Hyni në biznesin tuaj' : 'Hyni në llogarinë tuaj'}
         </h2>
+        <div className="mt-7"><GoogleSignInButton onCredential={googleCredential} /></div>
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-line" />ose me email<span className="h-px flex-1 bg-line" /></div>}
         <form
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
           className="mt-8 space-y-4"
@@ -146,11 +155,17 @@ export function RegisterPage() {
   const [params] = useSearchParams();
   const businessIntent = params.get('intent') === 'business';
   const form = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
+  const [turnstileToken, setTurnstileToken] = useState('');
   const mutation = useMutation({
     mutationFn: (values: RegisterValues) =>
-      api('/auth/register', { method: 'POST', body: JSON.stringify(values) }),
+      api('/auth/register', { method: 'POST', body: JSON.stringify({ ...values, turnstileToken }) }),
     onSuccess: () => navigate(businessIntent ? '/onboarding' : '/account'),
   });
+  const google = useMutation({
+    mutationFn: (credential: string) => api('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
+    onSuccess: () => navigate(businessIntent ? '/onboarding' : '/account'),
+  });
+  const googleCredential = useCallback((credential: string) => google.mutate(credential), [google]);
   return (
     <AuthShell>
       <div className="mt-10">
@@ -158,6 +173,8 @@ export function RegisterPage() {
         <h2 className="display mt-2 text-3xl font-bold">
           {businessIntent ? 'Krijoni llogarinë e biznesit' : 'Krijoni llogarinë tuaj'}
         </h2>
+        <div className="mt-6"><GoogleSignInButton onCredential={googleCredential} /></div>
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID && <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-line" />ose regjistrohu me email<span className="h-px flex-1 bg-line" /></div>}
         <form
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
           className="mt-7 grid gap-4 sm:grid-cols-2"
@@ -183,6 +200,7 @@ export function RegisterPage() {
               {...form.register('email')}
             />
           </div>
+          <div className="sm:col-span-2"><TurnstileWidget onToken={setTurnstileToken} /></div>
           <div className="sm:col-span-2">
             <Field
               label="Fjalëkalimi"

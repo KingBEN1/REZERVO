@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { createHmac } from 'node:crypto';
 import { Router } from 'express';
-import { SignJWT, jwtVerify } from 'jose';
+import { createRemoteJWKSet, SignJWT, jwtVerify } from 'jose';
 import { env, webOrigins } from '../config.js';
 import { prisma } from '../db.js';
 import { asyncHandler } from '../lib/async.js';
@@ -18,11 +18,13 @@ import { validate } from '../middleware/validate.js';
 import { sendTransactionalEmail } from '../services/email.service.js';
 import {
   forgotPasswordSchema,
+  googleLoginSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
   verifyEmailSchema,
 } from '../validators.js';
+import { verifyHuman } from '../services/turnstile.service.js';
 
 export const authRouter = Router();
 
@@ -97,7 +99,8 @@ authRouter.post(
   authLimiter,
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, turnstileToken } = req.body;
+    await verifyHuman(turnstileToken, req.ip);
     const exists = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
       select: { id: true },
@@ -266,7 +269,31 @@ authRouter.get(
   }),
 );
 
-// OAuth is intentionally an explicit adapter boundary, not a pretend sign-in button.
-authRouter.get('/google', (_req, _res, next) =>
-  next(new AppError(501, 'OAUTH_NOT_CONFIGURED', 'Google hyrja nuk është konfiguruar ende.')),
+const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+authRouter.post(
+  '/google',
+  authLimiter,
+  validate(googleLoginSchema),
+  asyncHandler(async (req, res) => {
+    if (!env.GOOGLE_CLIENT_ID)
+      throw new AppError(503, 'OAUTH_NOT_CONFIGURED', 'Hyrja me Google nuk është aktivizuar ende.');
+    const verified = await jwtVerify(req.body.credential, googleKeys, {
+      audience: env.GOOGLE_CLIENT_ID,
+      issuer: ['https://accounts.google.com', 'accounts.google.com'],
+    });
+    const email = typeof verified.payload.email === 'string' ? verified.payload.email.toLowerCase() : '';
+    if (!email || verified.payload.email_verified !== true)
+      throw new AppError(401, 'GOOGLE_ACCOUNT_INVALID', 'Llogaria Google nuk ka email të verifikuar.');
+    const firstName = typeof verified.payload.given_name === 'string' ? verified.payload.given_name : 'Përdorues';
+    const lastName = typeof verified.payload.family_name === 'string' ? verified.payload.family_name : 'Google';
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { emailVerifiedAt: new Date() },
+      create: { email, firstName, lastName, emailVerifiedAt: new Date() },
+    });
+    if (user.deletedAt) throw new AppError(403, 'ACCOUNT_DISABLED', 'Kjo llogari është çaktivizuar.');
+    setSessionCookie(res, await createSession(user.id, user.platformRole));
+    await audit({ action: 'USER_LOGIN_GOOGLE', entity: 'User', entityId: user.id, userId: user.id, ip: req.ip });
+    res.json({ success: true, data: { user: { id: user.id, email, firstName: user.firstName, lastName: user.lastName, platformRole: user.platformRole } } });
+  }),
 );

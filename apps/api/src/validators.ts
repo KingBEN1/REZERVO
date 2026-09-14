@@ -12,6 +12,7 @@ export const registerSchema = z.object({
     lastName: z.string().trim().min(2).max(80),
     email,
     password: z.string().min(12).max(128),
+    turnstileToken: z.string().max(2048).optional(),
   }),
   query: z.object({}),
   params: z.object({}),
@@ -19,6 +20,12 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   body: z.object({ email, password: z.string().min(1).max(128) }),
+  query: z.object({}),
+  params: z.object({}),
+});
+
+export const googleLoginSchema = z.object({
+  body: z.object({ credential: z.string().min(100).max(8192) }),
   query: z.object({}),
   params: z.object({}),
 });
@@ -317,6 +324,7 @@ export const bookingVerificationRequestSchema = z.object({
   body: z.object({
     channel: z.enum(['EMAIL', 'SMS']).default('EMAIL'),
     contact: z.string().trim().min(6).max(254),
+    turnstileToken: z.string().max(2048).optional(),
   }).superRefine((data, context) => {
     if (data.channel === 'EMAIL' && !email.safeParse(data.contact).success)
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['contact'], message: 'Shkruani një email të vlefshëm.' });

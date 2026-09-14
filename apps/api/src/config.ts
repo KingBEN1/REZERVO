@@ -9,6 +9,8 @@ const envSchema = z.object({
   API_PUBLIC_URL: z.string().url().default('http://localhost:4000'),
   JWT_SECRET: z.string().min(32),
   COOKIE_SECRET: z.string().min(32),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  TURNSTILE_SECRET_KEY: z.string().optional(),
   EMAIL_PROVIDER: z.enum(['console', 'resend', 'none']).default('console'),
   EMAIL_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('Rezervo <noreply@example.com>'),
