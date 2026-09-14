@@ -48,6 +48,8 @@ type PublicBusiness = {
     maxBookingDays: number;
     cancellationDeadlineMin: number;
     reschedulingEnabled: boolean;
+    requirePrepayment: boolean;
+    depositPercent: number;
   } | null;
 };
 type Slot = { startAt: string; endAt: string };
@@ -834,6 +836,14 @@ function BookingFlow() {
                   </div>
                   <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" name="website"
                     value={details.website} onChange={(event) => setDetails({ ...details, website: event.target.value })} />
+                  {business.settings?.requirePrepayment && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                      <b className="block">Kërkohet parapagim me PayPal</b>
+                      <span className="mt-1 block">
+                        Pas dërgimit të rezervimit do të paguani {business.settings.depositPercent}% të shumës. Termini konfirmohet vetëm pasi pagesa të përfundojë.
+                      </span>
+                    </div>
+                  )}
                   <label>
                     <span className="mb-1.5 block text-sm font-medium">
                       Kod promocional <small className="text-slate-400">(opsional)</small>
@@ -922,6 +932,19 @@ function BookingFlow() {
                     )}
                   </b>
                 </div>
+                {business.settings?.requirePrepayment && (
+                  <div className="flex justify-between rounded-xl bg-amber-50 p-3 text-amber-950">
+                    <span>Parapagimi me PayPal ({business.settings.depositPercent}%)</span>
+                    <b>
+                      {money(
+                        (isHotel ? Number(service.price) * nights : Number(service.price)) *
+                          business.settings.depositPercent /
+                          100,
+                        business.currency,
+                      )}
+                    </b>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="mt-3 text-sm text-slate-500">
@@ -942,7 +965,9 @@ function BookingFlow() {
                   : 'Ndryshimi i terminit nuk është aktiv për këtë biznes.'}
               </p>
               <p>
-                {business.settings?.requireApproval
+                {business.settings?.requirePrepayment
+                  ? 'Rezervimi konfirmohet vetëm pasi parapagimi me PayPal të kryhet me sukses.'
+                  : business.settings?.requireApproval
                   ? 'Rezervimi konfirmohet pas miratimit nga biznesi.'
                   : 'Rezervimi konfirmohet menjëherë pasi ta dërgoni.'}
               </p>
