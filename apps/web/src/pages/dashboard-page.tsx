@@ -9,6 +9,7 @@ import {
   CreditCard,
   ExternalLink,
   LayoutDashboard,
+  Languages,
   LogOut,
   Menu,
   Plus,
@@ -23,6 +24,7 @@ import { Button } from '../components/ui/button';
 import { EmptyState } from '../components/ui/empty-state';
 import { api } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
+import { useI18n } from '../lib/i18n';
 
 type Membership = {
   role: string;
@@ -67,16 +69,16 @@ type SetupData = {
   };
 };
 const nav = [
-  { to: '/dashboard', end: true, icon: LayoutDashboard, label: 'Paneli' },
-  { to: '/dashboard/calendar', icon: CalendarDays, label: 'Kalendari' },
-  { to: '/dashboard/bookings', icon: ClipboardList, label: 'Rezervimet' },
-  { to: '/dashboard/customers', icon: Users, label: 'Klientët' },
-  { to: '/dashboard/services', icon: Scissors, label: 'Shërbimet / ofertat' },
-  { to: '/dashboard/promotions', icon: BadgePercent, label: 'Kuponet & ofertat' },
-  { to: '/dashboard/staff', icon: Users, label: 'Ekipi / burimet' },
-  { to: '/dashboard/hours', icon: Clock3, label: 'Orari i punës' },
-  { to: '/dashboard/profile', icon: Settings, label: 'Profili & rregullat' },
-  { to: '/dashboard/billing', icon: CreditCard, label: 'Abonimi' },
+  { to: '/dashboard', end: true, icon: LayoutDashboard, label: 'Paneli', labelEn: 'Overview' },
+  { to: '/dashboard/calendar', icon: CalendarDays, label: 'Kalendari', labelEn: 'Calendar' },
+  { to: '/dashboard/bookings', icon: ClipboardList, label: 'Rezervimet', labelEn: 'Bookings' },
+  { to: '/dashboard/customers', icon: Users, label: 'Klientët', labelEn: 'Customers' },
+  { to: '/dashboard/services', icon: Scissors, label: 'Shërbimet / ofertat', labelEn: 'Services / offers' },
+  { to: '/dashboard/promotions', icon: BadgePercent, label: 'Kuponet & ofertat', labelEn: 'Coupons & promotions' },
+  { to: '/dashboard/staff', icon: Users, label: 'Ekipi / burimet', labelEn: 'Team / resources' },
+  { to: '/dashboard/hours', icon: Clock3, label: 'Orari i punës', labelEn: 'Working hours' },
+  { to: '/dashboard/profile', icon: Settings, label: 'Profili & rregullat', labelEn: 'Profile & rules' },
+  { to: '/dashboard/billing', icon: CreditCard, label: 'Abonimi', labelEn: 'Subscription' },
 ];
 export function useTenant() {
   const me = useQuery({ queryKey: ['me'], queryFn: () => api<Me>('/auth/me'), retry: false });
@@ -87,6 +89,7 @@ export function useTenant() {
   return { ...me, membership };
 }
 export function DashboardLayout() {
+  const { locale, setLocale } = useI18n();
   const { data, membership, isLoading } = useTenant();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -132,7 +135,7 @@ export function DashboardLayout() {
         <p className="mt-0.5 text-xs text-cyan-300">{membership.role.replace('_', ' ')}</p>
       </div>
       <nav className="mt-5 space-y-1 px-3">
-        {nav.map(({ to, icon: Icon, label, end }) => (
+        {nav.map(({ to, icon: Icon, label, labelEn, end }) => (
           <NavLink
             end={end}
             key={to}
@@ -143,7 +146,7 @@ export function DashboardLayout() {
             }
           >
             <Icon size={18} />
-            {label}
+            {locale === 'en' ? labelEn : label}
           </NavLink>
         ))}
       </nav>
@@ -154,14 +157,14 @@ export function DashboardLayout() {
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
         >
           <ExternalLink size={18} />
-          Faqja e rezervimeve
+          {locale === 'en' ? 'Booking page' : 'Faqja e rezervimeve'}
         </Link>
         <button
           onClick={() => logout.mutate()}
           className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
         >
           <LogOut size={18} />
-          Dil
+          {locale === 'en' ? 'Log out' : 'Dil'}
         </button>
       </div>
     </>
@@ -188,6 +191,7 @@ export function DashboardLayout() {
           </button>
           <span className="hidden text-sm text-slate-500 lg:block">Europe/Pristina · EUR</span>
           <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setLocale(locale === 'sq' ? 'en' : 'sq')} title={locale === 'sq' ? 'Switch to English' : 'Kalo në shqip'} className="flex h-9 items-center gap-1.5 rounded-xl border border-line bg-white px-3 text-xs font-bold text-slate-600 shadow-sm hover:border-indigo-200 hover:text-indigo-700"><Languages size={15} /> {locale === 'sq' ? 'EN' : 'SQ'}</button>
             <span className="hidden text-sm font-medium sm:inline">{data.user.firstName}</span>
             <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 text-sm font-bold text-white shadow-lg">
               {data.user.firstName.slice(0, 1)}

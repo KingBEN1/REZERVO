@@ -116,6 +116,10 @@ export const serviceSchema = z.object({
   params: z.object({}),
 });
 
+export const serviceUpdateSchema = serviceSchema.extend({
+  params: z.object({ id: z.string().cuid() }),
+});
+
 export const staffSchema = z.object({
   body: z.object({
     name: z.string().trim().min(2).max(120),

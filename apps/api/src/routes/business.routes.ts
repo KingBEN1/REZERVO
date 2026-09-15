@@ -15,6 +15,7 @@ import {
   couponSchema,
   createBusinessSchema,
   serviceSchema,
+  serviceUpdateSchema,
   staffSchema,
   workingHoursSchema,
 } from '../validators.js';
@@ -107,6 +108,40 @@ businessRouter.post(
       ip: req.ip,
     });
     res.status(201).json({ success: true, data: { business } });
+  }),
+);
+
+businessRouter.patch(
+  '/services/:id',
+  requireAuth,
+  requireTenant('BUSINESS_OWNER', 'MANAGER'),
+  validate(serviceUpdateSchema),
+  asyncHandler(async (req, res) => {
+    const serviceId = String(req.params.id);
+    const existing = await prisma.service.findFirst({
+      where: { id: serviceId, businessId: req.tenant!.businessId },
+      select: { id: true },
+    });
+    if (!existing) throw new AppError(404, 'SERVICE_NOT_FOUND', 'Oferta nuk u gjet.');
+    const { staffIds, ...data } = req.body;
+    const verifiedStaff = await prisma.staff.count({
+      where: { id: { in: staffIds }, businessId: req.tenant!.businessId, active: true },
+    });
+    if (verifiedStaff !== staffIds.length)
+      throw new AppError(422, 'INVALID_STAFF', 'Një ose më shumë burime nuk janë të vlefshme.');
+    const service = await prisma.$transaction(async (tx) => {
+      await tx.serviceStaff.deleteMany({ where: { serviceId: existing.id } });
+      return tx.service.update({
+        where: { id: existing.id },
+        data: { ...data, staff: { create: staffIds.map((staffId: string) => ({ staffId })) } },
+        include: { staff: { include: { staff: true } } },
+      });
+    });
+    await audit({
+      action: 'SERVICE_UPDATED', entity: 'Service', entityId: service.id,
+      businessId: req.tenant!.businessId, userId: req.auth!.userId, ip: req.ip,
+    });
+    res.json({ success: true, data: { service } });
   }),
 );
 

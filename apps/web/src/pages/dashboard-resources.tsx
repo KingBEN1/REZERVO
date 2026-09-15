@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Check, ChevronDown, Clock3, Info, Plus, Sparkles, UserPlus } from 'lucide-react';
+import { CalendarDays, Check, ChevronDown, Clock3, Info, Pencil, Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/empty-state';
 import { api, ApiError } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
 import { useTenant } from './dashboard-page';
+import { useI18n } from '../lib/i18n';
 
 type Staff = {
   id: string;
@@ -22,6 +23,8 @@ type Service = {
   description: string | null;
   durationMin: number;
   price: string;
+  bufferBefore: number;
+  bufferAfter: number;
   active: boolean;
   staff: Array<{ staff: Staff }>;
 };
@@ -361,10 +364,13 @@ export function StaffPage() {
 }
 export function ServicesPage() {
   const { membership } = useTenant();
+  const { locale } = useI18n();
   const services = useBusinessQuery<{ services: Service[] }>('services', '/business/services');
   const staff = useBusinessQuery<{ staff: Staff[] }>('staff', '/business/staff');
+  const current = useBusinessQuery<{ business: { category: { slug: string } | null } }>('business-current', '/business/current');
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string>();
   const [values, setValues] = useState({
     name: '',
     description: '',
@@ -377,13 +383,14 @@ export function ServicesPage() {
   const mutation = useMutation({
     mutationFn: () =>
       api(
-        '/business/services',
-        { method: 'POST', body: JSON.stringify(values) },
+        editingId ? `/business/services/${editingId}` : '/business/services',
+        { method: editingId ? 'PATCH' : 'POST', body: JSON.stringify(values) },
         membership!.business.id,
       ),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ['services'] });
       setOpen(false);
+      setEditingId(undefined);
       setValues({
         name: '',
         description: '',
@@ -395,28 +402,63 @@ export function ServicesPage() {
       });
     },
   });
+  const category = current.data?.business.category?.slug ?? '';
+  const isHotel = category === 'hotels';
+  const isTaxi = category === 'taxi-transport';
+  const copy = locale === 'en'
+    ? {
+        eyebrow: 'Your catalog', title: 'What can customers book?', add: 'Create offer',
+        intro: 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
+        offer: 'Offer', resource: 'Provider / resource', newTitle: editingId ? 'Edit offer' : 'New offer',
+        newHelp: 'Add only the information customers need before booking.', name: isHotel ? 'Room or stay name' : isTaxi ? 'Route or transfer name' : 'Offer name',
+        namePlaceholder: isHotel ? 'e.g. Standard double room' : isTaxi ? 'e.g. Prishtina Airport transfer' : 'e.g. Haircut or consultation',
+        duration: isHotel ? 'Default booking block' : isTaxi ? 'Estimated trip duration' : 'Booking duration',
+        price: isHotel ? 'Price per night (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
+        description: 'Offer description', select: 'Who or which resource provides this?', close: 'Close without saving',
+        save: editingId ? 'Save changes' : 'Create and publish offer', edit: 'Edit', assigned: 'Provider / resource:', minutes: 'minutes',
+      }
+    : {
+        eyebrow: 'Katalogu juaj', title: 'Çfarë mund të rezervojnë klientët?', add: 'Krijo ofertë',
+        intro: 'Krijoni një ofertë për çdo shërbim, qëndrim, transfer, tavolinë ose aktivitet, pastaj lidheni me personin apo burimin që e realizon.',
+        offer: 'Oferta', resource: 'Ofruesi / burimi', newTitle: editingId ? 'Ndrysho ofertën' : 'Ofertë e re',
+        newHelp: 'Plotësoni vetëm informacionin që klienti duhet të shohë para rezervimit.', name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTaxi ? 'Emri i rrugës ose transferit' : 'Emri i ofertës',
+        namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : 'p.sh. Prerje flokësh ose konsultë',
+        duration: isHotel ? 'Blloku bazë i rezervimit' : isTaxi ? 'Kohëzgjatja e parashikuar e udhëtimit' : 'Kohëzgjatja e rezervimit',
+        price: isHotel ? 'Çmimi për një natë (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
+        description: 'Përshkrimi i ofertës', select: 'Kush ose cili burim e ofron këtë?', close: 'Mbyll pa ruajtur',
+        save: editingId ? 'Ruaj ndryshimet' : 'Krijo dhe publiko ofertën', edit: 'Ndrysho', assigned: 'Ofruesi / burimi:', minutes: 'minuta',
+      };
+  const editService = (service: Service) => {
+    setValues({
+      name: service.name, description: service.description ?? '', durationMin: service.durationMin,
+      price: Number(service.price), bufferBefore: service.bufferBefore, bufferAfter: service.bufferAfter,
+      staffIds: service.staff.map((item) => item.staff.id),
+    });
+    setEditingId(service.id);
+    setOpen(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   return (
     <>
       <div className="flex items-end justify-between">
         <div>
-          <p className="eyebrow">Oferta juaj</p>
-          <h1 className="display mt-1 text-3xl font-bold">Çfarë mund të rezervojnë klientët?</h1>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h1 className="display mt-1 text-3xl font-bold">{copy.title}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Krijoni një ofertë për çdo shërbim, qëndrim, transfer, tavolinë ose aktivitet.
-            Pastaj lidheni me personin apo burimin që e realizon.
+            {copy.intro}
           </p>
         </div>
         <Button size="sm" title="Hap formularin për të krijuar një ofertë të re" onClick={() => setOpen(!open)}>
-          <Plus size={15} /> Krijo ofertë
+          <Plus size={15} /> {copy.add}
         </Button>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-sm text-slate-600">
-          <b className="flex items-center gap-2 text-ink"><Sparkles size={16} className="text-cyan-700" /> Oferta</b>
+          <b className="flex items-center gap-2 text-ink"><Sparkles size={16} className="text-cyan-700" /> {copy.offer}</b>
           <p className="mt-1">Ajo që blen klienti: p.sh. “Dhomë standarde”, “Prerje flokësh” ose “Transfer aeroporti”.</p>
         </div>
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-slate-600">
-          <b className="flex items-center gap-2 text-ink"><UserPlus size={16} className="text-indigo-700" /> Ofruesi / burimi</b>
+          <b className="flex items-center gap-2 text-ink"><UserPlus size={16} className="text-indigo-700" /> {copy.resource}</b>
           <p className="mt-1">Kush ose çfarë rezervohet: p.sh. Arditi, Dhoma 101, Taksi 01 ose Tavolina 4.</p>
         </div>
       </div>
@@ -430,16 +472,16 @@ export function ServicesPage() {
         >
           <div className="mb-6 flex items-start gap-3 border-b border-line pb-5">
             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-100 to-indigo-100 text-indigo-700"><Plus size={18} /></span>
-            <div><h2 className="font-bold">Ofertë e re</h2><p className="mt-1 text-sm text-slate-500">Plotësoni vetëm informacionin që klienti duhet të shohë para rezervimit.</p></div>
+            <div><h2 className="font-bold">{copy.newTitle}</h2><p className="mt-1 text-sm text-slate-500">{copy.newHelp}</p></div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label>
-              <span className="mb-1.5 block text-sm font-semibold">Emri i ofertës</span>
-              <input required className="input" placeholder="p.sh. Dhomë standarde" value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} />
+              <span className="mb-1.5 block text-sm font-semibold">{copy.name}</span>
+              <input required className="input" placeholder={copy.namePlaceholder} value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} />
               <small className="mt-1.5 block text-slate-500">Shfaqet si zgjedhja kryesore për klientin.</small>
             </label>
             <label>
-              <span className="mb-1.5 block text-sm font-semibold">Kohëzgjatja e rezervimit</span>
+              <span className="mb-1.5 block text-sm font-semibold">{copy.duration}</span>
               <input
                 required
                 aria-label="Kohëzgjatja në minuta"
@@ -456,7 +498,7 @@ export function ServicesPage() {
               <small className="mt-1.5 block text-slate-500">Në minuta. Për hotelin çmimi llogaritet për natë.</small>
             </label>
             <label>
-              <span className="mb-1.5 block text-sm font-semibold">Çmimi për një rezervim (€)</span>
+              <span className="mb-1.5 block text-sm font-semibold">{copy.price}</span>
               <input
                 required
                 aria-label="Çmimi në euro"
@@ -471,7 +513,7 @@ export function ServicesPage() {
               <small className="mt-1.5 block text-slate-500">Për hotel: çmimi për natë. Vendos 0 vetëm kur është falas.</small>
             </label>
             <label>
-              <span className="mb-1.5 block text-sm font-semibold">Përshkrimi i ofertës</span>
+              <span className="mb-1.5 block text-sm font-semibold">{copy.description}</span>
               <textarea className="input min-h-24 py-3" placeholder="p.sh. Dhomë për 2 persona, Wi-Fi dhe mëngjes i përfshirë." value={values.description} onChange={(event) => setValues({ ...values, description: event.target.value })} />
               <small className="mt-1.5 block text-slate-500">Tregoni shkurt çfarë përfshihet.</small>
             </label>
@@ -509,7 +551,7 @@ export function ServicesPage() {
             </label>
           </div>
           <fieldset className="mt-4">
-            <legend className="text-sm font-semibold">Kush ose cili burim e ofron këtë?</legend>
+            <legend className="text-sm font-semibold">{copy.select}</legend>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><Info size={14} /> Zgjidhni të paktën një person, dhomë, automjet ose burim.</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {(staff.data?.staff ?? []).map((person) => (
@@ -537,10 +579,10 @@ export function ServicesPage() {
           </fieldset>
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Mbyll pa ruajtur
+              {copy.close}
             </Button>
             <Button type="submit" disabled={!values.staffIds.length || mutation.isPending}>
-              Krijo dhe publiko ofertën
+              {copy.save}
             </Button>
           </div>
           {mutation.error && (
@@ -555,20 +597,21 @@ export function ServicesPage() {
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         {(services.data?.services ?? []).map((service) => (
           <article className="surface lift-3d p-5" key={service.id}>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <div>
                 <h2 className="font-bold">{service.name}</h2>
-                <p className="mt-1 text-sm text-slate-500">Kohëzgjatja: {service.durationMin} minuta</p>
+                {!isHotel && <p className="mt-1 text-sm text-slate-500">{copy.duration}: {service.durationMin} {copy.minutes}</p>}
               </div>
-              <b className="text-forest">{money(service.price)}</b>
+              <div className="text-right"><b className="block text-forest">{money(service.price)}</b>{isHotel && <small className="text-slate-500">/{locale === 'en' ? 'night' : 'natë'}</small>}</div>
             </div>
             {service.description && (
               <p className="mt-3 text-sm leading-6 text-slate-600">{service.description}</p>
             )}
             <p className="mt-5 border-t border-line pt-3 text-xs text-slate-500">
-              <b className="text-slate-700">Ofruesi / burimi:</b>{' '}
+              <b className="text-slate-700">{copy.assigned}</b>{' '}
               {service.staff.map((item) => item.staff.name).join(' · ') || 'Nuk është caktuar'}
             </p>
+            <Button type="button" size="sm" variant="secondary" className="mt-4 w-full" title={locale === 'en' ? 'Change the name, price, details or assigned resource' : 'Ndrysho emrin, çmimin, detajet ose burimin e caktuar'} onClick={() => editService(service)}><Pencil size={14} /> {copy.edit}</Button>
           </article>
         ))}
       </div>
