@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Check, ChevronDown, Clock3, Plus, UserPlus } from 'lucide-react';
+import { CalendarDays, Check, ChevronDown, Clock3, Info, Plus, Sparkles, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -400,11 +400,25 @@ export function ServicesPage() {
       <div className="flex items-end justify-between">
         <div>
           <p className="eyebrow">Oferta juaj</p>
-          <h1 className="display mt-1 text-3xl font-bold">Shërbimet / ofertat</h1>
+          <h1 className="display mt-1 text-3xl font-bold">Çfarë mund të rezervojnë klientët?</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Krijoni një ofertë për çdo shërbim, qëndrim, transfer, tavolinë ose aktivitet.
+            Pastaj lidheni me personin apo burimin që e realizon.
+          </p>
         </div>
-        <Button size="sm" onClick={() => setOpen(!open)}>
-          <Plus size={15} /> Shto ofertë
+        <Button size="sm" title="Hap formularin për të krijuar një ofertë të re" onClick={() => setOpen(!open)}>
+          <Plus size={15} /> Krijo ofertë
         </Button>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-sm text-slate-600">
+          <b className="flex items-center gap-2 text-ink"><Sparkles size={16} className="text-cyan-700" /> Oferta</b>
+          <p className="mt-1">Ajo që blen klienti: p.sh. “Dhomë standarde”, “Prerje flokësh” ose “Transfer aeroporti”.</p>
+        </div>
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-slate-600">
+          <b className="flex items-center gap-2 text-ink"><UserPlus size={16} className="text-indigo-700" /> Ofruesi / burimi</b>
+          <p className="mt-1">Kush ose çfarë rezervohet: p.sh. Arditi, Dhoma 101, Taksi 01 ose Tavolina 4.</p>
+        </div>
       </div>
       {open && (
         <form
@@ -412,18 +426,20 @@ export function ServicesPage() {
             event.preventDefault();
             mutation.mutate();
           }}
-          className="surface mt-5 p-5"
+          className="surface mt-5 p-5 sm:p-7"
         >
-          <div className="grid gap-3 sm:grid-cols-3">
-            <input
-              required
-              className="input"
-              placeholder="p.sh. Vizitë, Dhoma 101, Transfer aeroporti"
-              value={values.name}
-              onChange={(event) => setValues({ ...values, name: event.target.value })}
-            />
+          <div className="mb-6 flex items-start gap-3 border-b border-line pb-5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-100 to-indigo-100 text-indigo-700"><Plus size={18} /></span>
+            <div><h2 className="font-bold">Ofertë e re</h2><p className="mt-1 text-sm text-slate-500">Plotësoni vetëm informacionin që klienti duhet të shohë para rezervimit.</p></div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
             <label>
-              <span className="sr-only">Kohëzgjatja</span>
+              <span className="mb-1.5 block text-sm font-semibold">Emri i ofertës</span>
+              <input required className="input" placeholder="p.sh. Dhomë standarde" value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} />
+              <small className="mt-1.5 block text-slate-500">Shfaqet si zgjedhja kryesore për klientin.</small>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-sm font-semibold">Kohëzgjatja e rezervimit</span>
               <input
                 required
                 aria-label="Kohëzgjatja në minuta"
@@ -432,13 +448,15 @@ export function ServicesPage() {
                 min="5"
                 max="480"
                 value={values.durationMin}
+                placeholder="30"
                 onChange={(event) =>
                   setValues({ ...values, durationMin: Number(event.target.value) })
                 }
               />
+              <small className="mt-1.5 block text-slate-500">Në minuta. Për hotelin çmimi llogaritet për natë.</small>
             </label>
             <label>
-              <span className="sr-only">Çmimi</span>
+              <span className="mb-1.5 block text-sm font-semibold">Çmimi për një rezervim (€)</span>
               <input
                 required
                 aria-label="Çmimi në euro"
@@ -447,16 +465,17 @@ export function ServicesPage() {
                 min="0"
                 step="0.5"
                 value={values.price}
+                placeholder="p.sh. 45"
                 onChange={(event) => setValues({ ...values, price: Number(event.target.value) })}
               />
+              <small className="mt-1.5 block text-slate-500">Për hotel: çmimi për natë. Vendos 0 vetëm kur është falas.</small>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-sm font-semibold">Përshkrimi i ofertës</span>
+              <textarea className="input min-h-24 py-3" placeholder="p.sh. Dhomë për 2 persona, Wi-Fi dhe mëngjes i përfshirë." value={values.description} onChange={(event) => setValues({ ...values, description: event.target.value })} />
+              <small className="mt-1.5 block text-slate-500">Tregoni shkurt çfarë përfshihet.</small>
             </label>
           </div>
-          <textarea
-            className="input mt-3 min-h-24 py-3"
-            placeholder="Përshkruani çfarë përfshihet në këtë ofertë. Ky tekst i ndihmon klientët të zgjedhin."
-            value={values.description}
-            onChange={(event) => setValues({ ...values, description: event.target.value })}
-          />
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label>
               <span className="mb-1.5 block text-sm font-medium">
@@ -491,6 +510,7 @@ export function ServicesPage() {
           </div>
           <fieldset className="mt-4">
             <legend className="text-sm font-semibold">Kush ose cili burim e ofron këtë?</legend>
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><Info size={14} /> Zgjidhni të paktën një person, dhomë, automjet ose burim.</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {(staff.data?.staff ?? []).map((person) => (
                 <label
@@ -517,10 +537,10 @@ export function ServicesPage() {
           </fieldset>
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Anulo
+              Mbyll pa ruajtur
             </Button>
             <Button type="submit" disabled={!values.staffIds.length || mutation.isPending}>
-              Ruaj ofertën
+              Krijo dhe publiko ofertën
             </Button>
           </div>
           {mutation.error && (
@@ -534,11 +554,11 @@ export function ServicesPage() {
       )}
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         {(services.data?.services ?? []).map((service) => (
-          <article className="surface p-5" key={service.id}>
+          <article className="surface lift-3d p-5" key={service.id}>
             <div className="flex justify-between">
               <div>
                 <h2 className="font-bold">{service.name}</h2>
-                <p className="mt-1 text-sm text-slate-500">{service.durationMin} minuta</p>
+                <p className="mt-1 text-sm text-slate-500">Kohëzgjatja: {service.durationMin} minuta</p>
               </div>
               <b className="text-forest">{money(service.price)}</b>
             </div>
@@ -546,7 +566,8 @@ export function ServicesPage() {
               <p className="mt-3 text-sm leading-6 text-slate-600">{service.description}</p>
             )}
             <p className="mt-5 border-t border-line pt-3 text-xs text-slate-500">
-              {service.staff.map((item) => item.staff.name).join(' · ')}
+              <b className="text-slate-700">Ofruesi / burimi:</b>{' '}
+              {service.staff.map((item) => item.staff.name).join(' · ') || 'Nuk është caktuar'}
             </p>
           </article>
         ))}

@@ -5,6 +5,9 @@ import {
   ClipboardCheck,
   Clock3,
   Image,
+  ExternalLink,
+  LocateFixed,
+  MapPin,
   Save,
   ShieldCheck,
 } from 'lucide-react';
@@ -61,6 +64,51 @@ type DayHours = {
   startTime: string;
   endTime: string;
 };
+
+function LocationPicker({ business }: { business: CurrentBusiness['business'] }) {
+  const [address, setAddress] = useState(business.address ?? '');
+  const [latitude, setLatitude] = useState(business.latitude ?? '');
+  const [longitude, setLongitude] = useState(business.longitude ?? '');
+  const [locationError, setLocationError] = useState('');
+  const hasCoordinates = Boolean(latitude && longitude);
+  const mapUrl = hasCoordinates
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${Number(longitude) - 0.01}%2C${Number(latitude) - 0.007}%2C${Number(longitude) + 0.01}%2C${Number(latitude) + 0.007}&layer=mapnik&marker=${latitude}%2C${longitude}`
+    : 'https://www.openstreetmap.org/export/embed.html?bbox=20.5%2C41.8%2C21.9%2C43.3&layer=mapnik';
+  const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || `${latitude},${longitude}` || business.city)}`;
+  const useCurrentLocation = () => {
+    setLocationError('');
+    if (!navigator.geolocation) return setLocationError('Shfletuesi nuk e mbështet lokacionin automatik.');
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLatitude(coords.latitude.toFixed(7));
+        setLongitude(coords.longitude.toFixed(7));
+      },
+      () => setLocationError('Nuk morëm leje për lokacionin. Mund ta kërkoni adresën në hartë.'),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+  return (
+    <div className="sm:col-span-2">
+      <div className="rounded-2xl border border-line bg-slate-50/70 p-4 sm:p-5">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div><b className="flex items-center gap-2"><MapPin size={17} className="text-indigo-600" /> Lokacioni i biznesit</b><p className="mt-1 text-xs text-slate-500">Shkruani adresën ose përdorni lokacionin aktual për ta vendosur pinin saktë.</p></div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="secondary" title="Merr koordinatat nga pajisja juaj" onClick={useCurrentLocation}><LocateFixed size={15} /> Përdor lokacionin tim</Button>
+            <a href={searchUrl} target="_blank" rel="noreferrer" title="Kërko adresën në Google Maps"><Button type="button" size="sm" variant="secondary"><ExternalLink size={15} /> Kërko në hartë</Button></a>
+          </div>
+        </div>
+        <label className="mt-4 block"><span className="mb-1.5 block text-sm font-medium">Adresa që shohin klientët</span><input name="address" className="input" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="p.sh. Rr. Garibaldi 12, Prishtinë" /></label>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label><span className="mb-1.5 block text-xs font-medium text-slate-600">Gjerësia (latitude)</span><input name="latitude" type="number" step="any" min="-90" max="90" className="input" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="42.6629000" /></label>
+          <label><span className="mb-1.5 block text-xs font-medium text-slate-600">Gjatësia (longitude)</span><input name="longitude" type="number" step="any" min="-180" max="180" className="input" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="21.1655000" /></label>
+        </div>
+        {locationError && <p className="mt-3 text-xs font-medium text-red-600">{locationError}</p>}
+        <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white shadow-sm"><iframe title="Harta e lokacionit të biznesit" src={mapUrl} className="h-64 w-full" loading="lazy" /></div>
+        <p className="mt-2 text-xs text-slate-500">Harta përditësohet sapo vendosni koordinatat. Klikoni “Ruaj profilin” për ta publikuar lokacionin.</p>
+      </div>
+    </div>
+  );
+}
 
 const week: Array<Pick<DayHours, 'dayOfWeek' | 'label'>> = [
   { dayOfWeek: 1, label: 'E hënë' },
@@ -308,48 +356,7 @@ export function BusinessProfilePage() {
               defaultValue={business.municipality ?? ''}
             />
           </label>
-          <label className="sm:col-span-2">
-            <span className="mb-1.5 block text-sm font-medium">Adresa</span>
-            <input
-              name="address"
-              className="input"
-              defaultValue={business.address ?? ''}
-              placeholder="Rruga, numri, zona"
-            />
-          </label>
-          <label>
-            <span className="mb-1.5 block text-sm font-medium">
-              Gjerësia gjeografike <small className="text-slate-400">(opsionale)</small>
-            </span>
-            <input
-              name="latitude"
-              type="number"
-              step="any"
-              min="-90"
-              max="90"
-              className="input"
-              defaultValue={business.latitude ?? ''}
-              placeholder="42.6629"
-            />
-          </label>
-          <label>
-            <span className="mb-1.5 block text-sm font-medium">
-              Gjatësia gjeografike <small className="text-slate-400">(opsionale)</small>
-            </span>
-            <input
-              name="longitude"
-              type="number"
-              step="any"
-              min="-180"
-              max="180"
-              className="input"
-              defaultValue={business.longitude ?? ''}
-              placeholder="21.1655"
-            />
-          </label>
-          <p className="sm:col-span-2 -mt-2 text-xs text-slate-500">
-            Kopjojini koordinatat nga harta për një pin të saktë; pa to përdoret kërkimi me adresë.
-          </p>
+          <LocationPicker business={business} />
           <label>
             <span className="mb-1.5 block text-sm font-medium">Telefoni</span>
             <input
