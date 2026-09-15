@@ -10,11 +10,11 @@ type Me = { user: { firstName: string; memberships: Array<{ business: { id: stri
 
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-      <span className="grid size-8 place-items-center rounded-xl bg-forest text-white">
+    <Link to="/" className="group flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+      <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 via-teal-600 to-indigo-600 text-white shadow-[0_8px_20px_rgba(14,116,144,.28),inset_0_1px_0_rgba(255,255,255,.35)] transition group-hover:-translate-y-0.5">
         <CalendarDays size={17} />
       </span>
-      rezervo
+      <span className="display">rezervo</span>
     </Link>
   );
 }
@@ -73,7 +73,7 @@ export function SiteHeader() {
     </>
   );
   return (
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-sand/90 shadow-[0_1px_0_rgba(15,42,31,.04)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/70 bg-white/80 shadow-[0_8px_30px_rgba(15,23,42,.06)] backdrop-blur-2xl">
       <div className="page-shell flex h-16 items-center justify-between">
         <Logo />
         <nav className="hidden items-center gap-6 lg:flex">
@@ -81,7 +81,7 @@ export function SiteHeader() {
             <NavLink
               key={link.to}
               to={link.to}
-              className="text-sm font-medium text-slate-600 hover:text-ink"
+              className={({ isActive }) => `rounded-full px-3 py-2 text-sm font-semibold transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-ink'}`}
             >
               {link.label}
             </NavLink>
@@ -91,7 +91,7 @@ export function SiteHeader() {
           <button
             aria-label={t('language')}
             onClick={() => setLocale(locale === 'sq' ? 'en' : 'sq')}
-            className="grid size-10 place-items-center rounded-xl hover:bg-white"
+            className="grid size-10 place-items-center rounded-xl text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
           >
             <Languages size={18} />
           </button>

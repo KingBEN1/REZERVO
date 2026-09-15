@@ -5,8 +5,9 @@ export default {
   darkMode: ['class'],
   theme: {
     extend: {
-      colors: { ink: '#14231f', forest: '#14532d', moss: '#3f6212', sand: '#f7f8f4', line: '#e3e9e4' },
-      boxShadow: { card: '0 8px 30px rgba(26, 54, 37, .08)' },
+      colors: { ink: '#0b1220', forest: '#0f766e', moss: '#4f46e5', sand: '#f4f7fb', line: '#dbe4ef' },
+      fontFamily: { sans: ['Manrope', 'ui-sans-serif', 'system-ui'], display: ['Sora', 'Manrope', 'sans-serif'] },
+      boxShadow: { card: '0 18px 50px rgba(15, 23, 42, .09), 0 2px 8px rgba(15, 23, 42, .05)' },
       borderRadius: { '4xl': '2rem' },
     },
   },

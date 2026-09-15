@@ -76,7 +76,7 @@ function Step({
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`grid size-6 place-items-center rounded-full text-xs font-bold ${done ? 'bg-forest text-white' : active ? 'bg-green-100 text-forest ring-2 ring-forest' : 'bg-slate-100 text-slate-400'}`}
+        className={`grid size-7 place-items-center rounded-xl text-xs font-bold shadow-sm ${done ? 'bg-gradient-to-br from-teal-500 to-indigo-600 text-white' : active ? 'bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500' : 'bg-slate-100 text-slate-400'}`}
       >
         {done ? '✓' : number}
       </span>
@@ -339,7 +339,7 @@ function BookingFlow() {
     );
   if (submitted)
     return (
-      <main className="grid min-h-screen place-items-center bg-[#e6f3e7] p-4">
+      <main className="tech-grid grid min-h-screen place-items-center bg-[#07111f] p-4">
         <section className="surface w-full max-w-lg p-7 text-center sm:p-10">
           <span className="mx-auto grid size-16 place-items-center rounded-full bg-green-100 text-forest">
             <CheckCircle2 size={34} />
@@ -400,7 +400,7 @@ function BookingFlow() {
       </main>
     );
   return (
-    <main className="min-h-screen bg-sand">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,.08),transparent_28rem),#f4f7fb]">
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <Link
@@ -413,14 +413,14 @@ function BookingFlow() {
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
-        <div className="surface overflow-hidden">
-          <div className="h-28 bg-green-100 sm:h-40">
+        <div className="surface lift-3d overflow-hidden">
+          <div className="tech-grid h-28 bg-gradient-to-br from-[#0b1d32] via-indigo-950 to-teal-900 sm:h-40">
             {business.coverImage && (
               <img src={business.coverImage} alt="" className="h-full w-full object-cover" />
             )}
           </div>
           <div className="relative px-5 pb-5 pt-0 sm:px-8">
-            <div className="-mt-7 grid size-14 place-items-center rounded-2xl border-4 border-white bg-forest text-xl font-bold text-white shadow-sm">
+            <div className="-mt-7 grid size-14 place-items-center rounded-2xl border-4 border-white bg-gradient-to-br from-teal-500 to-indigo-600 text-xl font-bold text-white shadow-lg">
               {business.name.slice(0, 1)}
             </div>
             <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
@@ -485,7 +485,7 @@ function BookingFlow() {
                         setStaffId(undefined);
                         setSlot(undefined);
                       }}
-                      className="flex w-full items-center justify-between rounded-2xl border border-line p-4 text-left transition hover:border-forest hover:bg-green-50"
+                      className="group flex w-full items-center justify-between rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/40 hover:shadow-md"
                     >
                       <span>
                         <b className="block">{item.name}</b>
@@ -525,9 +525,9 @@ function BookingFlow() {
                         setStaffId(item.id);
                         setSlot(undefined);
                       }}
-                      className="flex items-center gap-3 rounded-2xl border border-line p-4 text-left transition hover:border-forest hover:bg-green-50"
+                      className="group flex items-center gap-3 rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/40 hover:shadow-md"
                     >
-                      <span className="grid size-11 place-items-center rounded-full bg-green-100 font-bold text-forest">
+                      <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-100 to-indigo-100 font-bold text-indigo-700">
                         {item.name.slice(0, 1)}
                       </span>
                       <span>
@@ -665,7 +665,7 @@ function BookingFlow() {
                       <button
                         key={item.startAt}
                         onClick={() => setSlot(item)}
-                        className="rounded-xl border border-line py-2.5 text-sm font-semibold hover:border-forest hover:bg-green-50"
+                        className="rounded-xl border border-line bg-white py-2.5 text-sm font-semibold shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
                       >
                         {new Intl.DateTimeFormat('sq-XK', {
                           hour: '2-digit',
@@ -895,7 +895,7 @@ function BookingFlow() {
               </div>
             )}
           </section>
-          <aside className="surface h-fit p-5">
+          <aside className="surface h-fit p-5 lg:sticky lg:top-6">
             <h2 className="font-bold">Përmbledhja</h2>
             {service ? (
               <div className="mt-4 space-y-3 text-sm">

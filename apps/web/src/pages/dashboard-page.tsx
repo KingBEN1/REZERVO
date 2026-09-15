@@ -115,8 +115,8 @@ export function DashboardLayout() {
   localStorage.setItem('rezervo-business-id', membership.business.id);
   const sidebar = (
     <>
-      <div className="flex items-center justify-between px-3 py-4">
-        <Link to="/" className="text-lg font-bold">
+      <div className="flex items-center justify-between px-4 py-5">
+        <Link to="/" className="display text-lg font-extrabold text-white">
           rezervo
         </Link>
         <button
@@ -127,9 +127,9 @@ export function DashboardLayout() {
           <X />
         </button>
       </div>
-      <div className="mx-3 rounded-xl bg-green-50 p-3">
-        <p className="truncate text-sm font-bold text-forest">{membership.business.name}</p>
-        <p className="mt-0.5 text-xs text-green-700">{membership.role.replace('_', ' ')}</p>
+      <div className="mx-3 rounded-2xl border border-white/10 bg-white/[.07] p-3.5 shadow-inner backdrop-blur">
+        <p className="truncate text-sm font-bold text-white">{membership.business.name}</p>
+        <p className="mt-0.5 text-xs text-cyan-300">{membership.role.replace('_', ' ')}</p>
       </div>
       <nav className="mt-5 space-y-1 px-3">
         {nav.map(({ to, icon: Icon, label, end }) => (
@@ -139,7 +139,7 @@ export function DashboardLayout() {
             to={to}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${isActive ? 'bg-forest text-white' : 'text-slate-600 hover:bg-sand hover:text-ink'}`
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`
             }
           >
             <Icon size={18} />
@@ -147,18 +147,18 @@ export function DashboardLayout() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto border-t border-line p-3">
+      <div className="mt-auto border-t border-white/10 p-3">
         <Link
           to={`/book/${membership.business.slug}`}
           target="_blank"
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-sand"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
         >
           <ExternalLink size={18} />
           Faqja e rezervimeve
         </Link>
         <button
           onClick={() => logout.mutate()}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-sand"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
         >
           <LogOut size={18} />
           Dil
@@ -168,12 +168,12 @@ export function DashboardLayout() {
   );
   return (
     <div className="min-h-screen bg-sand">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col overflow-y-auto border-r border-line bg-white lg:flex">
+      <aside className="tech-grid fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-y-auto border-r border-white/10 bg-[#081321] lg:flex">
         {sidebar}
       </aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-40 flex bg-ink/30 lg:hidden">
-          <aside className="flex w-72 flex-col overflow-y-auto bg-white shadow-xl">{sidebar}</aside>
+          <aside className="tech-grid flex w-72 flex-col overflow-y-auto bg-[#081321] shadow-2xl">{sidebar}</aside>
           <button
             className="flex-1"
             aria-label="Mbyll menunë"
@@ -181,15 +181,15 @@ export function DashboardLayout() {
           />
         </div>
       )}
-      <main className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-sand/90 px-4 backdrop-blur sm:px-7">
+      <main className="lg:pl-64">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/70 bg-white/80 px-4 shadow-sm backdrop-blur-2xl sm:px-7">
           <button onClick={() => setMobileOpen(true)} className="lg:hidden" aria-label="Hap menunë">
             <Menu />
           </button>
           <span className="hidden text-sm text-slate-500 lg:block">Europe/Pristina · EUR</span>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm font-medium sm:inline">{data.user.firstName}</span>
-            <span className="grid size-9 place-items-center rounded-full bg-forest text-sm font-bold text-white">
+            <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 text-sm font-bold text-white shadow-lg">
               {data.user.firstName.slice(0, 1)}
             </span>
           </div>
@@ -291,11 +291,11 @@ export function DashboardHome() {
       </div>
       {business?.status !== 'ACTIVE' && (
         <section className="surface mt-6 max-w-3xl overflow-hidden">
-          <div className="bg-green-50 p-5">
+          <div className="bg-gradient-to-r from-cyan-50 via-white to-indigo-50 p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-bold text-forest">Përgatit faqen tuaj për publikim</p>
-                <p className="mt-1 text-sm text-green-900">
+                <p className="mt-1 text-sm text-slate-600">
                   Përfundoni hapat më poshtë dhe më pas bëjeni faqen e rezervimeve të dukshme për
                   klientët.
                 </p>
@@ -348,7 +348,7 @@ export function DashboardHome() {
         <Stat label="Klientë gjithsej" value={String(data.customerCount)} icon={Users} />
         <Stat label="Të ardhura sot" value={money(data.revenue)} icon={BarChart3} />
       </div>
-      <section className="surface mt-6 p-5 sm:p-6">
+      <section className="surface lift-3d mt-6 p-5 sm:p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-bold">Rezervimet e ardhshme</h2>

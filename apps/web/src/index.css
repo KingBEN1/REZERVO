@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,17 +6,25 @@
 @layer base {
   * { @apply border-line; }
   html { @apply overflow-x-hidden bg-sand text-ink antialiased; }
-  body { @apply min-h-screen overflow-x-hidden bg-sand font-sans; }
+  body {
+    @apply min-h-screen overflow-x-hidden bg-sand font-sans;
+    background-image: radial-gradient(circle at 12% 5%, rgba(79,70,229,.07), transparent 25rem), radial-gradient(circle at 88% 15%, rgba(14,165,233,.08), transparent 28rem);
+    background-attachment: fixed;
+  }
   button, input, select { font: inherit; }
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { @apply outline-none ring-2 ring-forest ring-offset-2; }
 }
 
 @layer components {
   .page-shell { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
-  .eyebrow { @apply text-xs font-bold uppercase tracking-[.16em] text-moss; }
-  .display { font-family: 'Fraunces', Georgia, serif; }
-  .surface { @apply rounded-3xl border border-line/90 bg-white shadow-card; }
-  .input { @apply h-11 w-full rounded-xl border border-line bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-forest focus:ring-2 focus:ring-forest/15; }
+  .eyebrow { @apply text-xs font-extrabold uppercase tracking-[.18em] text-moss; }
+  .display { font-family: 'Sora', 'Manrope', sans-serif; letter-spacing: -.035em; }
+  .surface { @apply rounded-3xl border border-white/80 bg-white/90 shadow-card backdrop-blur-sm; }
+  .input { @apply h-11 w-full rounded-xl border border-line bg-white/90 px-3 text-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-forest focus:ring-4 focus:ring-forest/10; }
+  .glass-panel { @apply border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl; }
+  .lift-3d { transform: perspective(900px) translateZ(0); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+  .lift-3d:hover { transform: perspective(900px) translateY(-6px) translateZ(12px); box-shadow: 0 28px 70px rgba(15,23,42,.16), 0 8px 20px rgba(79,70,229,.10); }
+  .tech-grid { background-image: linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px); background-size: 36px 36px; }
 }
 
 @keyframes hero-reveal {
@@ -31,4 +39,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero-reveal { animation: none; }
+  .lift-3d, .lift-3d:hover { transform: none; transition: none; }
 }

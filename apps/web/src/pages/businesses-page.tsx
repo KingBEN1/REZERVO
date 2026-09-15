@@ -52,18 +52,20 @@ export function BusinessesPage() {
   return (
     <>
       <SiteHeader />
-      <main className="page-shell py-10 sm:py-14">
-        <div className="max-w-2xl">
-          <p className="eyebrow">Gjej dhe rezervo</p>
-          <h1 className="display mt-2 text-4xl font-bold">Bizneset pranë jush</h1>
-          <p className="mt-3 text-slate-600">
+      <main className="page-shell py-7 sm:py-10">
+        <div className="tech-grid relative overflow-hidden rounded-[2rem] bg-[#081321] px-6 py-10 text-white shadow-2xl sm:px-10 sm:py-14">
+          <div aria-hidden className="absolute -right-20 -top-24 size-72 rounded-full bg-indigo-500/25 blur-3xl" />
+          <div aria-hidden className="absolute -bottom-24 left-1/4 size-64 rounded-full bg-cyan-400/20 blur-3xl" />
+          <p className="eyebrow relative text-cyan-300">Gjej dhe rezervo</p>
+          <h1 className="display relative mt-2 text-4xl font-bold sm:text-5xl">Bizneset pranë jush</h1>
+          <p className="relative mt-3 max-w-2xl text-slate-300">
             Krahaso sipas qytetit, çmimit dhe vlerësimeve. Për hotele, kontrollo datat dhe dhomat e
             lira para rezervimit.
           </p>
         </div>
         <form
           onSubmit={submit}
-          className="surface mt-8 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]"
+          className="surface relative -mt-5 mx-3 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]"
         >
           <label className="relative">
             <Search className="absolute left-3 top-3 text-slate-400" size={18} />
@@ -223,7 +225,7 @@ export function BusinessesPage() {
               {query.data.businesses.map((business) => (
                 <article
                   key={business.id}
-                  className="group surface overflow-hidden transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group surface lift-3d overflow-hidden hover:border-indigo-200"
                 >
                   <Link to={`/book/${business.slug}`}>
                     <div className="h-40 bg-green-100">
