@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { I18nProvider } from './lib/i18n';
+import { GlobalLanguageSwitch, I18nProvider } from './lib/i18n';
 
 const HomePage = lazy(() =>
   import('./pages/home-page').then((module) => ({ default: module.HomePage })),
@@ -92,6 +92,7 @@ export function App() {
     <QueryClientProvider client={client}>
       <I18nProvider>
         <BrowserRouter>
+          <GlobalLanguageSwitch />
           <Suspense
             fallback={
               <div className="grid min-h-screen place-items-center bg-sand">
