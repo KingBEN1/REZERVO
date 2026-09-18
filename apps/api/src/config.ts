@@ -19,11 +19,14 @@ const envSchema = z.object({
   PAYPAL_CLIENT_SECRET: z.string().optional(),
   PAYPAL_ENVIRONMENT: z.enum(['sandbox', 'live']).default('sandbox'),
   STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
-  SMS_PROVIDER: z.enum(['none', 'console', 'twilio', 'smsmode']).default('none'),
+  SMS_PROVIDER: z.enum(['none', 'console', 'twilio', 'smsmode', 'vonage']).default('none'),
   SMSMODE_API_KEY: z.string().optional(),
   SMS_ACCOUNT_SID: z.string().optional(),
   SMS_AUTH_TOKEN: z.string().optional(),
   SMS_FROM: z.string().optional(),
+  VONAGE_API_KEY: z.string().optional(),
+  VONAGE_API_SECRET: z.string().optional(),
+  VONAGE_FROM: z.string().default('Rezervo'),
   WHATSAPP_PROVIDER: z.string().default('none'),
 });
 

@@ -35,6 +35,45 @@ export async function sendTransactionalSms(to: string, text: string) {
     return;
   }
 
+  if (env.SMS_PROVIDER === 'vonage') {
+    if (!env.VONAGE_API_KEY || !env.VONAGE_API_SECRET) {
+      throw new AppError(503, 'SMS_NOT_CONFIGURED', 'Vonage API key ose API secret mungon në konfigurim.');
+    }
+    const recipient = to.replace(/\D/g, '');
+    if (!recipient) {
+      throw new AppError(422, 'INVALID_PHONE', 'Numri i telefonit nuk është i vlefshëm.');
+    }
+    const body = new URLSearchParams({
+      api_key: env.VONAGE_API_KEY,
+      api_secret: env.VONAGE_API_SECRET,
+      to: recipient,
+      from: env.VONAGE_FROM,
+      text,
+      type: 'unicode',
+    });
+    const response = await fetch('https://rest.nexmo.com/sms/json', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      },
+      body,
+    });
+    const result = (await response.json().catch(() => null)) as
+      | { messages?: Array<{ status?: string; ['error-text']?: string }> }
+      | null;
+    const message = result?.messages?.[0];
+    if (!response.ok || message?.status !== '0') {
+      console.error('Vonage delivery failed', response.status, message?.status, message?.['error-text']);
+      throw new AppError(
+        502,
+        'SMS_DELIVERY_FAILED',
+        'SMS nuk mund të dërgohet tani. Provoni emailin.',
+      );
+    }
+    return;
+  }
+
   if (
     env.SMS_PROVIDER === 'twilio' &&
     env.SMS_ACCOUNT_SID &&
