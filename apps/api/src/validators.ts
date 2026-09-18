@@ -48,6 +48,15 @@ export const verifyEmailSchema = z.object({
   params: z.object({}),
 });
 
+export const verifyRegistrationCodeSchema = z.object({
+  body: z.object({
+    email,
+    code: z.string().regex(/^\d{6}$/, 'Kodi duhet të ketë 6 shifra.'),
+  }),
+  query: z.object({}),
+  params: z.object({}),
+});
+
 export const customerProfileSchema = z.object({
   body: z.object({
     firstName: z.string().trim().min(2).max(80),

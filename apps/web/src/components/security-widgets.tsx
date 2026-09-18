@@ -26,15 +26,17 @@ function loadScript(id: string, src: string, ready: () => void) {
 export function GoogleSignInButton({ onCredential }: { onCredential: (credential: string) => void }) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
   const ref = useRef<HTMLDivElement>(null);
+  const callbackRef = useRef(onCredential);
+  callbackRef.current = onCredential;
   useEffect(() => {
     if (!clientId) return;
     const render = () => {
       if (!ref.current || !window.google) return;
-      window.google.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => onCredential(credential) });
+      window.google.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => callbackRef.current(credential) });
       window.google.accounts.id.renderButton(ref.current, { theme: 'outline', size: 'large', width: 400, text: 'continue_with' });
     };
     loadScript('google-identity', 'https://accounts.google.com/gsi/client', render);
-  }, [clientId, onCredential]);
+  }, [clientId]);
   if (!clientId) return null;
   return <div ref={ref} className="flex min-h-11 w-full justify-center overflow-hidden" />;
 }

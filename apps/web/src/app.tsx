@@ -2,10 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { GlobalLanguageSwitch, I18nProvider } from './lib/i18n';
+import { HomePage } from './pages/home-page';
 
-const HomePage = lazy(() =>
-  import('./pages/home-page').then((module) => ({ default: module.HomePage })),
-);
 const BusinessesPage = lazy(() =>
   import('./pages/businesses-page').then((module) => ({ default: module.BusinessesPage })),
 );
@@ -85,8 +83,28 @@ const AdminPage = lazy(() =>
 );
 
 const client = new QueryClient({
-  defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60_000,
+      gcTime: 30 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
 });
+
+function AppLoadingScreen() {
+  return (
+    <div className="app-loading-screen">
+      <div className="app-loading-mark">R</div>
+      <div>
+        <p className="display text-2xl font-bold text-white">rezervo</p>
+        <p className="mt-1 text-sm text-green-100">Duke përgatitur përvojën tuaj…</p>
+      </div>
+      <div className="app-loading-bar"><span /></div>
+    </div>
+  );
+}
 export function App() {
   return (
     <QueryClientProvider client={client}>
@@ -94,11 +112,7 @@ export function App() {
         <BrowserRouter>
           <GlobalLanguageSwitch />
           <Suspense
-            fallback={
-              <div className="grid min-h-screen place-items-center bg-sand">
-                <div className="size-8 animate-spin rounded-full border-2 border-forest border-t-transparent" />
-              </div>
-            }
+            fallback={<AppLoadingScreen />}
           >
             <Routes>
               <Route path="/" element={<HomePage />} />

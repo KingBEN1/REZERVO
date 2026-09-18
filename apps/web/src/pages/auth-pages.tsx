@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MailCheck, ShieldCheck } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -156,9 +156,18 @@ export function RegisterPage() {
   const businessIntent = params.get('intent') === 'business';
   const form = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
   const [turnstileToken, setTurnstileToken] = useState('');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const mutation = useMutation({
     mutationFn: (values: RegisterValues) =>
-      api('/auth/register', { method: 'POST', body: JSON.stringify({ ...values, turnstileToken }) }),
+      api<{ email: string; verificationRequired: boolean }>('/auth/register', { method: 'POST', body: JSON.stringify({ ...values, turnstileToken }) }),
+    onSuccess: (data) => setPendingEmail(data.email),
+  });
+  const verifyCode = useMutation({
+    mutationFn: () => api('/auth/verify-registration-code', {
+      method: 'POST',
+      body: JSON.stringify({ email: pendingEmail, code: verificationCode }),
+    }),
     onSuccess: () => navigate(businessIntent ? '/onboarding' : '/account'),
   });
   const google = useMutation({
@@ -166,6 +175,37 @@ export function RegisterPage() {
     onSuccess: () => navigate(businessIntent ? '/onboarding' : '/account'),
   });
   const googleCredential = useCallback((credential: string) => google.mutate(credential), [google]);
+  if (pendingEmail) return (
+    <AuthShell>
+      <div className="mt-14">
+        <span className="grid size-14 place-items-center rounded-2xl bg-green-100 text-forest"><MailCheck size={28} /></span>
+        <p className="eyebrow mt-6">Kontrolloni emailin</p>
+        <h2 className="display mt-2 text-3xl font-bold">Shkruani kodin 6-shifror</h2>
+        <p className="mt-3 leading-6 text-slate-600">Kodi u dërgua te <strong className="text-ink">{pendingEmail}</strong> dhe vlen 10 minuta.</p>
+        <form className="mt-7 space-y-4" onSubmit={(event) => { event.preventDefault(); verifyCode.mutate(); }}>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium">Kodi i verifikimit</span>
+            <input
+              autoFocus
+              className="input h-14 text-center text-2xl font-bold tracking-[.35em]"
+              inputMode="numeric"
+              maxLength={6}
+              value={verificationCode}
+              onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ''))}
+              placeholder="000000"
+            />
+          </label>
+          {verifyCode.error && <p className="text-sm text-red-600">{verifyCode.error instanceof ApiError ? verifyCode.error.message : 'Kodi nuk mund të verifikohet.'}</p>}
+          <Button className="w-full" type="submit" disabled={verificationCode.length !== 6 || verifyCode.isPending}>
+            {verifyCode.isPending ? 'Duke verifikuar...' : <><ShieldCheck size={17} /> Verifiko dhe vazhdo</>}
+          </Button>
+        </form>
+        <button className="mt-5 w-full text-center text-sm font-semibold text-forest" type="button" onClick={() => { setPendingEmail(''); setVerificationCode(''); mutation.reset(); }}>
+          Ndrysho emailin ose dërgo kod të ri
+        </button>
+      </div>
+    </AuthShell>
+  );
   return (
     <AuthShell>
       <div className="mt-10">

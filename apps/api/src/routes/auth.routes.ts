@@ -1,5 +1,5 @@
 import argon2 from 'argon2';
-import { createHmac } from 'node:crypto';
+import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import { createRemoteJWKSet, SignJWT, jwtVerify } from 'jose';
 import { env, webOrigins } from '../config.js';
@@ -23,10 +23,37 @@ import {
   registerSchema,
   resetPasswordSchema,
   verifyEmailSchema,
+  verifyRegistrationCodeSchema,
 } from '../validators.js';
 import { verifyHuman } from '../services/turnstile.service.js';
 
 export const authRouter = Router();
+
+const registrationCodeTtlMs = 10 * 60_000;
+const hashRegistrationCode = (userId: string, code: string) =>
+  createHmac('sha256', env.JWT_SECRET).update(`${userId}:${code}`).digest('hex');
+
+async function sendRegistrationCode(user: { id: string; email: string; firstName: string }) {
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerificationCodeHash: hashRegistrationCode(user.id, code),
+      emailVerificationExpiresAt: new Date(Date.now() + registrationCodeTtlMs),
+      emailVerificationAttempts: 0,
+    },
+  });
+  try {
+    await sendTransactionalEmail({
+      to: user.email,
+      subject: 'Kodi për verifikimin e llogarisë Rezervo',
+      text: `Përshëndetje ${user.firstName}, kodi juaj i verifikimit është ${code}. Kodi skadon pas 10 minutash. Mos e ndani me askënd.`,
+    });
+  } catch (error) {
+    console.error('Registration verification email could not be sent', error);
+    throw new AppError(503, 'EMAIL_DELIVERY_FAILED', 'Kodi nuk mund të dërgohet tani. Provoni përsëri pas pak.');
+  }
+}
 
 const accountTokenKey = (passwordHash: string) =>
   new TextEncoder().encode(createHmac('sha256', env.JWT_SECRET).update(passwordHash).digest('hex'));
@@ -101,19 +128,24 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { firstName, lastName, email, password, turnstileToken } = req.body;
     await verifyHuman(turnstileToken, req.ip);
-    const exists = await prisma.user.findUnique({
+    const existing = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
-      select: { id: true },
+      select: { id: true, emailVerifiedAt: true, deletedAt: true },
     });
-    if (exists)
+    if (existing?.emailVerifiedAt || existing?.deletedAt)
       throw new AppError(409, 'EMAIL_IN_USE', 'Kjo adresë emaili është tashmë në përdorim.');
     const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
-    const user = await prisma.user.create({
-      data: { firstName, lastName, email: email.toLowerCase(), passwordHash },
-      select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
-    });
-    const token = await createSession(user.id, user.platformRole);
-    setSessionCookie(res, token);
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: { firstName, lastName, passwordHash },
+          select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
+        })
+      : await prisma.user.create({
+          data: { firstName, lastName, email: email.toLowerCase(), passwordHash },
+          select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
+        });
+    await sendRegistrationCode(user);
     await audit({
       action: 'USER_REGISTERED',
       entity: 'User',
@@ -121,8 +153,58 @@ authRouter.post(
       userId: user.id,
       ip: req.ip,
     });
-    await emailAccountLink({ ...user, passwordHash }, 'verify-email');
-    res.status(201).json({ success: true, data: { user } });
+    res.status(201).json({
+      success: true,
+      data: { email: user.email, verificationRequired: true },
+    });
+  }),
+);
+
+authRouter.post(
+  '/verify-registration-code',
+  authLimiter,
+  validate(verifyRegistrationCodeSchema),
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({ where: { email: req.body.email.toLowerCase() } });
+    if (
+      !user ||
+      user.deletedAt ||
+      user.emailVerifiedAt ||
+      !user.emailVerificationCodeHash ||
+      !user.emailVerificationExpiresAt ||
+      user.emailVerificationExpiresAt <= new Date()
+    )
+      throw new AppError(422, 'VERIFICATION_EXPIRED', 'Kodi ka skaduar. Regjistrohuni përsëri për kod të ri.');
+    if (user.emailVerificationAttempts >= 5)
+      throw new AppError(429, 'VERIFICATION_LOCKED', 'Janë bërë shumë prova. Kërkoni kod të ri.');
+    const expected = Buffer.from(user.emailVerificationCodeHash, 'hex');
+    const actual = Buffer.from(hashRegistrationCode(user.id, req.body.code), 'hex');
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerificationAttempts: { increment: 1 } },
+      });
+      throw new AppError(422, 'INVALID_VERIFICATION_CODE', 'Kodi nuk është i saktë.');
+    }
+    const verified = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerifiedAt: new Date(),
+        emailVerificationCodeHash: null,
+        emailVerificationExpiresAt: null,
+        emailVerificationAttempts: 0,
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
+    });
+    setSessionCookie(res, await createSession(verified.id, verified.platformRole));
+    await audit({
+      action: 'EMAIL_VERIFIED',
+      entity: 'User',
+      entityId: verified.id,
+      userId: verified.id,
+      ip: req.ip,
+    });
+    res.json({ success: true, data: { user: verified } });
   }),
 );
 
@@ -140,6 +222,8 @@ authRouter.post(
     ) {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Emaili ose fjalëkalimi nuk është i saktë.');
     }
+    if (!user.emailVerifiedAt)
+      throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Verifikoni emailin me kod para se të hyni. Nëse kodi ka skaduar, regjistrohuni përsëri me të njëjtin email.');
     const token = await createSession(user.id, user.platformRole);
     setSessionCookie(res, token);
     await audit({

@@ -37,7 +37,22 @@
 .hero-delay-2 { animation-delay: .16s; }
 .hero-delay-3 { animation-delay: .24s; }
 
+.app-loading-screen {
+  @apply fixed inset-0 z-[100] grid place-content-center justify-items-center gap-5 bg-forest px-6 text-center;
+  background-image: radial-gradient(circle at 50% 35%, rgba(52,211,153,.2), transparent 28rem), linear-gradient(145deg, #071f19, #0c3b2e);
+}
+.app-loading-mark {
+  @apply grid size-16 place-items-center rounded-2xl border border-white/20 bg-white/10 text-3xl font-extrabold text-white shadow-2xl backdrop-blur;
+  animation: loading-float 1.4s ease-in-out infinite alternate;
+}
+.app-loading-bar { @apply h-1 w-48 overflow-hidden rounded-full bg-white/15; }
+.app-loading-bar span { @apply block h-full w-1/2 rounded-full bg-emerald-300; animation: loading-slide 1.1s ease-in-out infinite; }
+
+@keyframes loading-float { to { transform: translateY(-5px) scale(1.03); } }
+@keyframes loading-slide { from { transform: translateX(-110%); } to { transform: translateX(210%); } }
+
 @media (prefers-reduced-motion: reduce) {
   .hero-reveal { animation: none; }
   .lift-3d, .lift-3d:hover { transform: none; transition: none; }
+  .app-loading-mark, .app-loading-bar span { animation: none; }
 }
