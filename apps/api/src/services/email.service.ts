@@ -17,6 +17,7 @@ export async function sendTransactionalEmail({ to, subject, text }: EmailInput) 
   }
   if (!env.EMAIL_API_KEY) throw new Error('EMAIL_API_KEY mungon për ofruesin Resend.');
   const response = await fetch('https://api.resend.com/emails', {
+    signal: AbortSignal.timeout(15_000),
     method: 'POST',
     headers: { Authorization: `Bearer ${env.EMAIL_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ from: env.EMAIL_FROM, to: [to], subject, text }),

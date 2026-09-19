@@ -1,5 +1,8 @@
 import { useEffect, useRef } from 'react';
 
+let initializedClientId: string | undefined;
+let googleCallback: ((credential: string) => void) | undefined;
+
 declare global {
   interface Window {
     google?: { accounts: { id: { initialize(options: { client_id: string; callback: (result: { credential: string }) => void }): void; renderButton(element: HTMLElement, options: Record<string, unknown>): void } } };
@@ -30,12 +33,18 @@ export function GoogleSignInButton({ onCredential }: { onCredential: (credential
   callbackRef.current = onCredential;
   useEffect(() => {
     if (!clientId) return;
+    let active = true;
     const render = () => {
-      if (!ref.current || !window.google) return;
-      window.google.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => callbackRef.current(credential) });
-      window.google.accounts.id.renderButton(ref.current, { theme: 'outline', size: 'large', width: 400, text: 'continue_with' });
+      if (!active || !ref.current || !window.google) return;
+      googleCallback = (credential) => { if (active) callbackRef.current(credential); };
+      if (initializedClientId !== clientId) {
+        window.google.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => googleCallback?.(credential) });
+        initializedClientId = clientId;
+      }
+      window.google.accounts.id.renderButton(ref.current, { theme: 'outline', size: 'large', width: Math.min(400, ref.current.clientWidth), text: 'continue_with' });
     };
     loadScript('google-identity', 'https://accounts.google.com/gsi/client', render);
+    return () => { active = false; };
   }, [clientId]);
   if (!clientId) return null;
   return <div ref={ref} className="flex min-h-11 w-full justify-center overflow-hidden" />;
@@ -47,12 +56,13 @@ export function TurnstileWidget({ onToken }: { onToken: (token: string) => void 
   useEffect(() => {
     if (!sitekey) return;
     let widgetId: string | undefined;
+    let active = true;
     const render = () => {
-      if (!ref.current || !window.turnstile || widgetId) return;
+      if (!active || !ref.current || !window.turnstile || widgetId) return;
       widgetId = window.turnstile.render(ref.current, { sitekey, theme: 'light', callback: onToken, 'expired-callback': () => onToken('') });
     };
     loadScript('cloudflare-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', render);
-    return () => { if (widgetId && window.turnstile) window.turnstile.remove(widgetId); };
+    return () => { active = false; if (widgetId && window.turnstile) window.turnstile.remove(widgetId); };
   }, [onToken, sitekey]);
   if (!sitekey) return null;
   return <div ref={ref} className="min-h-[65px] overflow-hidden" />;

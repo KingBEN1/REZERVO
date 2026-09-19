@@ -13,14 +13,14 @@ import { Button } from '../components/ui/button';
 import { useI18n } from '../lib/i18n';
 
 const categories = [
-  { sq: 'Hotele', en: 'Hotels' },
-  { sq: 'Taksi & transfer', en: 'Taxi & transfers' },
-  { sq: 'Bukuri', en: 'Beauty' },
-  { sq: 'Shëndetësi', en: 'Healthcare' },
-  { sq: 'Restorante', en: 'Restaurants' },
-  { sq: 'Fitness', en: 'Fitness' },
-  { sq: 'Evente', en: 'Events' },
-  { sq: 'Shërbime auto', en: 'Car services' },
+  { sq: 'Hotele', en: 'Hotels', slug: 'hotels' },
+  { sq: 'Taksi & transfer', en: 'Taxi & transfers', slug: 'taxi-transport' },
+  { sq: 'Bukuri', en: 'Beauty', slug: 'beauty-salons' },
+  { sq: 'Shëndetësi', en: 'Healthcare', slug: 'health-clinics' },
+  { sq: 'Restorante', en: 'Restaurants', slug: 'restaurants' },
+  { sq: 'Fitness', en: 'Fitness', slug: 'fitness' },
+  { sq: 'Evente', en: 'Events', slug: 'events-venues' },
+  { sq: 'Shërbime auto', en: 'Car services', slug: 'car-service' },
 ];
 
 export function HomePage() {
@@ -97,7 +97,7 @@ export function HomePage() {
             {categories.map((category) => (
               <Link
                 key={category.sq}
-                to={`/businesses?q=${encodeURIComponent(category.sq)}`}
+                to={`/businesses?category=${category.slug}`}
                 className="surface lift-3d group flex items-center justify-between p-5 hover:border-indigo-200"
               >
                 <span className="font-bold">{tr(category.sq, category.en)}</span>

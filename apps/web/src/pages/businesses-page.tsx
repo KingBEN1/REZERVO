@@ -1,5 +1,5 @@
 import { Heart, MapPin, Search, SlidersHorizontal, Star, UsersRound } from 'lucide-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { SiteHeader } from '../components/site-header';
@@ -24,6 +24,7 @@ type Category = { id: string; name: string; slug: string };
 type Me = { user: { id: string } };
 
 export function BusinessesPage() {
+  const client = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get('q') ?? '');
   const hotelSearch = params.get('category') === 'hotels';
@@ -39,6 +40,7 @@ export function BusinessesPage() {
   const favorite = useMutation({
     mutationFn: (businessId: string) =>
       api(`/customer/favorites/${businessId}`, { method: 'POST' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['customer-dashboard'] }),
   });
   const update = (key: string, value: string) => {
     const next = new URLSearchParams(params);

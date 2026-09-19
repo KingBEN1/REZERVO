@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { SiteHeader } from '../components/site-header';
 import { Button } from '../components/ui/button';
 import { EmptyState } from '../components/ui/empty-state';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
 
 type Business = {
@@ -118,7 +118,8 @@ export function CustomerAccountPage() {
         <span className="size-8 animate-spin rounded-full border-2 border-forest border-t-transparent" />
       </main>
     );
-  if (account.isError || !account.data) return <Navigate to="/login" replace />;
+  if (account.error instanceof ApiError && account.error.status === 401) return <Navigate to="/login" replace />;
+  if (!account.data) return <main className="page-shell py-16"><EmptyState title="Llogaria nuk u ngarkua" detail="Lidhja me serverin dështoi. Nuk është e nevojshme të hyni përsëri." action={<Button onClick={() => account.refetch()}>Provo përsëri</Button>} /></main>;
   const savedIds = new Set(account.data.favorites.map((item) => item.id));
   return (
     <>

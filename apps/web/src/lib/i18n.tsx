@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Languages } from 'lucide-react';
-import { translateUiText, type UiLocale } from './ui-translations';
+import { translateUiText } from './ui-translations';
 
 const messages = {
   sq: { home: 'Ballina', discover: 'Zbulo bizneset', login: 'Hyr', startFree: 'Fillo 30 ditë falas', dashboard: 'Paneli', bookings: 'Rezervimet', services: 'Shërbimet', staff: 'Stafi', customers: 'Klientët', settings: 'Parametrat', bookNow: 'Rezervo tani', available: 'E lirë', confirmed: 'Konfirmuar', cancelled: 'Anuluar', noBookings: 'Ende nuk ka rezervime.', myBookings: 'Rezervimet e mia', about: 'Rreth nesh', businesses: 'Për bizneset', logout: 'Dil', account: 'Llogaria ime', createAccount: 'Krijo llogari', language: 'Ndrysho gjuhën' },
@@ -11,9 +11,9 @@ type Key = keyof typeof messages.sq;
 const I18nContext = createContext<{ locale: Locale; setLocale: (locale: Locale) => void; t: (key: Key) => string; tr: (sq: string, en: string) => string }>({ locale: 'sq', setLocale: () => undefined, t: (key) => messages.sq[key], tr: (sq) => sq });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>((localStorage.getItem('rezervo-locale') as Locale) || 'sq');
-  const originalsRef = useRef(new WeakMap<Node, string>());
-  const attributeOriginalsRef = useRef(new WeakMap<Element, Map<string, string>>());
+  const [locale, setLocale] = useState<Locale>(() => localStorage.getItem('rezervo-locale') === 'en' ? 'en' : 'sq');
+  const originalsRef = useRef(new WeakMap<Node, { source: string; rendered: string }>());
+  const attributeOriginalsRef = useRef(new WeakMap<Element, Map<string, { source: string; rendered: string }>>());
   const update = (next: Locale) => { localStorage.setItem('rezervo-locale', next); document.documentElement.lang = next; setLocale(next); };
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -21,7 +21,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const attributeOriginals = attributeOriginalsRef.current;
     let observer: MutationObserver;
     const apply = (root: Node) => {
-      observer?.disconnect();
       const nodes: Node[] = [root];
       if (root instanceof Element || root instanceof Document) {
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -29,31 +28,45 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       }
       for (const node of nodes) {
         if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue?.trim()) continue;
+        if (node.parentElement?.closest('script, style, textarea, [translate="no"]')) continue;
         const known = originals.get(node);
-        const expected = known ? translateUiText(known, locale as UiLocale) : undefined;
-        if (!known || (locale === 'en' && node.nodeValue !== expected)) originals.set(node, node.nodeValue);
-        const source = originals.get(node)!;
-        node.nodeValue = translateUiText(source, locale as UiLocale);
+        const source = known && node.nodeValue === known.rendered ? known.source : node.nodeValue;
+        const rendered = translateUiText(source, locale);
+        originals.set(node, { source, rendered });
+        if (node.nodeValue !== rendered) node.nodeValue = rendered;
       }
       const elements = root instanceof Element
         ? [root, ...Array.from(root.querySelectorAll('*'))]
         : root instanceof Document ? Array.from(root.querySelectorAll('*')) : [];
       for (const element of elements) {
-        const stored = attributeOriginals.get(element) ?? new Map<string, string>();
+        if (element.closest('[translate="no"]')) continue;
+        const stored = attributeOriginals.get(element) ?? new Map<string, { source: string; rendered: string }>();
         for (const name of ['placeholder', 'title', 'aria-label']) {
           const current = element.getAttribute(name);
           if (!current) continue;
           const known = stored.get(name);
-          const expected = known ? translateUiText(known, locale as UiLocale) : undefined;
-          if (!known || (locale === 'en' && current !== expected)) stored.set(name, current);
-          element.setAttribute(name, translateUiText(stored.get(name)!, locale as UiLocale));
+          const source = known && current === known.rendered ? known.source : current;
+          const rendered = translateUiText(source, locale);
+          stored.set(name, { source, rendered });
+          if (current !== rendered) element.setAttribute(name, rendered);
         }
         if (stored.size) attributeOriginals.set(element, stored);
       }
-      observer?.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label'] });
     };
-    observer = new MutationObserver(() => apply(document.body));
+    // Process only changed subtrees, not the entire page on every keystroke.
+    observer = new MutationObserver((changes) => {
+      const roots = new Set<Node>();
+      for (const change of changes) {
+        if (change.type === 'childList') change.addedNodes.forEach((node) => roots.add(node));
+        else roots.add(change.target);
+      }
+      observer.disconnect();
+      for (const root of roots) if (root.isConnected) apply(root);
+      observe();
+    });
+    const observe = () => observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label'] });
     apply(document.body);
+    observe();
     return () => observer.disconnect();
   }, [locale]);
   return <I18nContext.Provider value={{ locale, setLocale: update, t: (key) => messages[locale][key], tr: (sq, english) => locale === 'sq' ? sq : english }}>{children}</I18nContext.Provider>;

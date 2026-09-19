@@ -10,6 +10,7 @@ async function accessToken() {
     throw new AppError(503, 'PAYMENTS_NOT_CONFIGURED', 'Pagesat online nuk janë konfiguruar ende.');
   const auth = Buffer.from(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`).toString('base64');
   const response = await fetch(`${baseUrl()}/v1/oauth2/token`, {
+    signal: AbortSignal.timeout(15_000),
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=client_credentials',
@@ -27,6 +28,7 @@ export function paypalPublicConfig() {
 export async function createPayPalOrder(input: { amount: string; currency: string; reference: string }) {
   const token = await accessToken();
   const response = await fetch(`${baseUrl()}/v2/checkout/orders`, {
+    signal: AbortSignal.timeout(15_000),
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'PayPal-Request-Id': input.reference },
     body: JSON.stringify({
@@ -41,6 +43,7 @@ export async function createPayPalOrder(input: { amount: string; currency: strin
 export async function capturePayPalOrder(orderId: string) {
   const token = await accessToken();
   const response = await fetch(`${baseUrl()}/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {
+    signal: AbortSignal.timeout(15_000),
     method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: '{}',
   });
   if (!response.ok) throw new AppError(502, 'PAYMENT_PROVIDER_ERROR', 'PayPal nuk mund ta konfirmojë pagesën tani.');

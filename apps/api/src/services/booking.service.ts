@@ -51,7 +51,7 @@ export async function createPublicBooking(input: {
             'BUSINESS_NOT_FOUND',
             'Biznesi nuk u gjet ose nuk pranon rezervime.',
           );
-        if (!business.settings?.allowGuestBooking && !input.customer.email) {
+        if (!business.settings?.allowGuestBooking && !input.customerUserId) {
           throw new AppError(401, 'ACCOUNT_REQUIRED', 'Ky biznes kërkon llogari për rezervim.');
         }
         const service = await tx.service.findFirst({
@@ -302,7 +302,7 @@ export async function createPublicBooking(input: {
       typeof error === 'object' &&
       error &&
       'code' in error &&
-      (error as { code?: string }).code === 'P2004'
+      ['P2004', 'P2034'].includes((error as { code?: string }).code ?? '')
     ) {
       throw new AppError(
         409,

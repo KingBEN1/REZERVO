@@ -1,12 +1,13 @@
 import { prisma } from '../db.js';
-import { env } from '../config.js';
+import { env, webOrigins } from '../config.js';
 import { sendTransactionalEmail } from './email.service.js';
 import { sendTransactionalSms } from './sms.service.js';
 import { runtimeTimezone } from '../lib/timezone.js';
 
-type BookingEvent = 'confirmed' | 'cancelled' | 'rescheduled';
+type BookingEvent = 'confirmed' | 'pending' | 'cancelled' | 'rescheduled';
 
 function eventCopy(event: BookingEvent) {
+  if (event === 'pending') return { subject: 'Kërkesa juaj për rezervim u pranua', action: 'është në pritje të miratimit' };
   if (event === 'cancelled') return { subject: 'Rezervimi juaj u anulua', action: 'është anuluar' };
   if (event === 'rescheduled')
     return { subject: 'Rezervimi juaj u ndryshua', action: 'është ndryshuar' };
@@ -38,8 +39,8 @@ export async function notifyBookingEvent(bookingId: string, event: BookingEvent)
       },
     });
     if (!booking) return;
-    const copy = eventCopy(event);
-    const manageUrl = `${env.WEB_ORIGIN}/manage/${booking.manageToken}`;
+    const copy = eventCopy(event === 'confirmed' && booking.status === 'PENDING' ? 'pending' : event);
+    const manageUrl = `${webOrigins[0]}/manage/${booking.manageToken}`;
     const payload = {
       event,
       bookingId: booking.id,

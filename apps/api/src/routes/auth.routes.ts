@@ -35,14 +35,18 @@ const hashRegistrationCode = (userId: string, code: string) =>
 
 async function sendRegistrationCode(user: { id: string; email: string; firstName: string }) {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  await prisma.user.update({
-    where: { id: user.id },
+  const issued = await prisma.user.updateMany({
+    where: { id: user.id, emailVerifiedAt: null, deletedAt: null, OR: [
+      { emailVerificationExpiresAt: null },
+      { emailVerificationExpiresAt: { lte: new Date(Date.now() + registrationCodeTtlMs - 60_000) } },
+    ] },
     data: {
       emailVerificationCodeHash: hashRegistrationCode(user.id, code),
       emailVerificationExpiresAt: new Date(Date.now() + registrationCodeTtlMs),
       emailVerificationAttempts: 0,
     },
   });
+  if (!issued.count) return;
   try {
     await sendTransactionalEmail({
       to: user.email,
@@ -50,6 +54,7 @@ async function sendRegistrationCode(user: { id: string; email: string; firstName
       text: `Përshëndetje ${user.firstName}, kodi juaj i verifikimit është ${code}. Kodi skadon pas 10 minutash. Mos e ndani me askënd.`,
     });
   } catch (error) {
+    await prisma.user.updateMany({ where: { id: user.id, emailVerificationCodeHash: hashRegistrationCode(user.id, code) }, data: { emailVerificationCodeHash: null, emailVerificationExpiresAt: null } });
     console.error('Registration verification email could not be sent', error);
     throw new AppError(503, 'EMAIL_DELIVERY_FAILED', 'Kodi nuk mund të dërgohet tani. Provoni përsëri pas pak.');
   }
@@ -130,19 +135,16 @@ authRouter.post(
     await verifyHuman(turnstileToken, req.ip);
     const existing = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
-      select: { id: true, emailVerifiedAt: true, deletedAt: true },
+      select: { id: true, email: true, firstName: true, passwordHash: true, emailVerifiedAt: true, deletedAt: true },
     });
     if (existing?.emailVerifiedAt || existing?.deletedAt)
       throw new AppError(409, 'EMAIL_IN_USE', 'Kjo adresë emaili është tashmë në përdorim.');
-    const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+    if (existing && (!existing.passwordHash || !(await argon2.verify(existing.passwordHash, password))))
+      throw new AppError(409, 'EMAIL_IN_USE', 'Kjo adresë është në përdorim. Hyni ose përdorni rikuperimin e fjalëkalimit.');
     const user = existing
-      ? await prisma.user.update({
-          where: { id: existing.id },
-          data: { firstName, lastName, passwordHash },
-          select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
-        })
+      ? existing
       : await prisma.user.create({
-          data: { firstName, lastName, email: email.toLowerCase(), passwordHash },
+          data: { firstName, lastName, email: email.toLowerCase(), passwordHash: await argon2.hash(password, { type: argon2.argon2id }) },
           select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
         });
     await sendRegistrationCode(user);
@@ -177,25 +179,27 @@ authRouter.post(
       throw new AppError(422, 'VERIFICATION_EXPIRED', 'Kodi ka skaduar. Regjistrohuni përsëri për kod të ri.');
     if (user.emailVerificationAttempts >= 5)
       throw new AppError(429, 'VERIFICATION_LOCKED', 'Janë bërë shumë prova. Kërkoni kod të ri.');
+    const challenge = { id: user.id, emailVerifiedAt: null, deletedAt: null,
+      emailVerificationCodeHash: user.emailVerificationCodeHash,
+      emailVerificationExpiresAt: { gt: new Date() }, emailVerificationAttempts: { lt: 5 } };
+    const attempt = await prisma.user.updateMany({ where: challenge, data: { emailVerificationAttempts: { increment: 1 } } });
+    if (!attempt.count) throw new AppError(429, 'VERIFICATION_LOCKED', 'Kodi nuk është më i vlefshëm. Kërkoni kod të ri.');
     const expected = Buffer.from(user.emailVerificationCodeHash, 'hex');
     const actual = Buffer.from(hashRegistrationCode(user.id, req.body.code), 'hex');
     if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { emailVerificationAttempts: { increment: 1 } },
-      });
       throw new AppError(422, 'INVALID_VERIFICATION_CODE', 'Kodi nuk është i saktë.');
     }
-    const verified = await prisma.user.update({
-      where: { id: user.id },
+    const consumed = await prisma.user.updateMany({
+      where: { ...challenge, emailVerificationAttempts: { lte: 5 } },
       data: {
         emailVerifiedAt: new Date(),
         emailVerificationCodeHash: null,
         emailVerificationExpiresAt: null,
         emailVerificationAttempts: 0,
       },
-      select: { id: true, email: true, firstName: true, lastName: true, platformRole: true },
     });
+    if (!consumed.count) throw new AppError(422, 'VERIFICATION_EXPIRED', 'Kodi është përdorur ose ka skaduar.');
+    const verified = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { id: true, email: true, firstName: true, lastName: true, platformRole: true } });
     setSessionCookie(res, await createSession(verified.id, verified.platformRole));
     await audit({
       action: 'EMAIL_VERIFIED',
@@ -222,8 +226,11 @@ authRouter.post(
     ) {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Emaili ose fjalëkalimi nuk është i saktë.');
     }
-    if (!user.emailVerifiedAt)
-      throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Verifikoni emailin me kod para se të hyni. Nëse kodi ka skaduar, regjistrohuni përsëri me të njëjtin email.');
+    if (!user.emailVerifiedAt) {
+      await sendRegistrationCode(user);
+      res.json({ success: true, data: { email: user.email, verificationRequired: true } });
+      return;
+    }
     const token = await createSession(user.id, user.platformRole);
     setSessionCookie(res, token);
     await audit({
@@ -277,7 +284,7 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const user = await readAccountToken(req.body.token, 'password-reset');
     const passwordHash = await argon2.hash(req.body.password, { type: argon2.argon2id });
-    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    await prisma.user.update({ where: { id: user.id }, data: { passwordHash, emailVerifiedAt: new Date(), emailVerificationCodeHash: null, emailVerificationExpiresAt: null, emailVerificationAttempts: 0 } });
     const refreshed = await prisma.user.findUniqueOrThrow({
       where: { id: user.id },
       select: { id: true, platformRole: true },

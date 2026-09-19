@@ -16,6 +16,7 @@ export async function sendTransactionalSms(to: string, text: string) {
       throw new AppError(422, 'INVALID_PHONE', 'Numri i telefonit nuk është i vlefshëm.');
     }
     const response = await fetch('https://rest.smsmode.com/sms/v1/messages', {
+      signal: AbortSignal.timeout(15_000),
       method: 'POST',
       headers: {
         'X-Api-Key': env.SMSMODE_API_KEY,
@@ -52,6 +53,7 @@ export async function sendTransactionalSms(to: string, text: string) {
       type: 'unicode',
     });
     const response = await fetch('https://rest.nexmo.com/sms/json', {
+      signal: AbortSignal.timeout(15_000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -85,6 +87,7 @@ export async function sendTransactionalSms(to: string, text: string) {
     const response = await fetch(
       `https://api.twilio.com/2010-04-01/Accounts/${env.SMS_ACCOUNT_SID}/Messages.json`,
       {
+        signal: AbortSignal.timeout(15_000),
         method: 'POST',
         headers: {
           Authorization: `Basic ${token}`,

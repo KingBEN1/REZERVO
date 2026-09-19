@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { asyncHandler } from '../lib/async.js';
 import { AppError } from '../lib/errors.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, createSession, setSessionCookie } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { customerProfileSchema } from '../validators.js';
 
@@ -18,6 +18,7 @@ customerRouter.patch(
       data: { firstName: req.body.firstName, lastName: req.body.lastName, phone: req.body.phone || null },
       select: { firstName: true, lastName: true, email: true, phone: true, emailVerifiedAt: true },
     });
+    setSessionCookie(res, await createSession(req.auth!.userId, req.auth!.platformRole));
     res.json({ success: true, data: { user } });
   }),
 );

@@ -48,6 +48,9 @@ const LegalPage = lazy(() =>
 const SimplePage = lazy(() =>
   import('./pages/platform-pages').then((module) => ({ default: module.SimplePage })),
 );
+const AboutPage = lazy(() =>
+  import('./pages/platform-pages').then((module) => ({ default: module.AboutPage })),
+);
 const DashboardLayout = lazy(() =>
   import('./pages/dashboard-page').then((module) => ({ default: module.DashboardLayout })),
 );
@@ -85,7 +88,7 @@ const AdminPage = lazy(() =>
 const client = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60_000,
+      staleTime: 30_000,
       gcTime: 30 * 60_000,
       retry: 1,
       refetchOnWindowFocus: false,
@@ -95,7 +98,7 @@ const client = new QueryClient({
 
 function AppLoadingScreen() {
   return (
-    <div className="app-loading-screen">
+    <div className="app-loading-screen" role="status" aria-live="polite" aria-label="Duke ngarkuar">
       <div className="app-loading-mark">R</div>
       <div>
         <p className="display text-2xl font-bold text-white">rezervo</p>
@@ -127,15 +130,7 @@ export function App() {
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
-              <Route
-                path="/about"
-                element={
-                  <SimplePage
-                    title="Rezervo, për bizneset e Kosovës"
-                    text="Ne po e bëjmë rezervimin më të lehtë për bizneset dhe klientët e tyre."
-                  />
-                }
-              />
+              <Route path="/about" element={<AboutPage />} />
               <Route
                 path="/contact"
                 element={

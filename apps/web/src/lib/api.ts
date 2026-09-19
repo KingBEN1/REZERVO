@@ -4,8 +4,32 @@ export class ApiError extends Error {
   constructor(
     public code: string,
     message: string,
+    public status?: number,
   ) {
     super(message);
+  }
+}
+
+// Bound network waits, including response-body reads. Never retry mutations automatically.
+async function request<T>(path: string, options: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const timer = setTimeout(abort, 60_000);
+  options.signal?.addEventListener('abort', abort, { once: true });
+  if (options.signal?.aborted) abort();
+  try {
+    const response = await fetch(`${baseUrl}${path}`, { ...options, signal: controller.signal, credentials: 'include' });
+    if (response.status === 204) return undefined as T;
+    const result = await response.json().catch(() => null) as { success?: boolean; data?: T; error?: { code?: string; message?: string } } | null;
+    if (!response.ok || !result?.success) throw new ApiError(result?.error?.code ?? 'REQUEST_FAILED', result?.error?.message ?? 'Shërbimi nuk është i disponueshëm tani. Provoni përsëri pas pak.', response.status);
+    return result.data as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (controller.signal.aborted) throw new ApiError('REQUEST_TIMEOUT', 'Kërkesa zgjati shumë. Kontrolloni nëse veprimi u krye para se ta përsërisni.');
+    throw new ApiError('NETWORK_ERROR', 'Nuk mund të lidhemi me serverin. Kontrolloni internetin dhe provoni përsëri.');
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', abort);
   }
 }
 
@@ -17,23 +41,11 @@ export async function api<T>(
   const headers = new Headers(options.headers);
   if (options.body) headers.set('Content-Type', 'application/json');
   if (tenantId) headers.set('x-business-id', tenantId);
-  const response = await fetch(`${baseUrl}${path}`, {
+  return request<T>(path, {
     ...options,
     headers,
     credentials: 'include',
   });
-  if (response.status === 204) return undefined as T;
-  const result = (await response.json()) as {
-    success: boolean;
-    data?: T;
-    error?: { code: string; message: string };
-  };
-  if (!response.ok || !result.success)
-    throw new ApiError(
-      result.error?.code ?? 'REQUEST_FAILED',
-      result.error?.message ?? 'Diçka shkoi keq.',
-    );
-  return result.data as T;
 }
 
 export async function uploadBusinessImage(
@@ -44,21 +56,10 @@ export async function uploadBusinessImage(
     throw new ApiError('INVALID_IMAGE', 'Zgjidhni një foto JPG, PNG ose WebP.');
   if (file.size > 5 * 1024 * 1024)
     throw new ApiError('IMAGE_TOO_LARGE', 'Fotoja duhet të jetë maksimumi 5 MB.');
-  const response = await fetch(`${baseUrl}/business/images`, {
+  return request('/business/images', {
     method: 'POST',
     headers: { 'Content-Type': file.type, 'x-business-id': tenantId },
     body: file,
     credentials: 'include',
   });
-  const result = (await response.json()) as {
-    success: boolean;
-    data?: { image: { id: string; url: string; alt: string | null } };
-    error?: { code: string; message: string };
-  };
-  if (!response.ok || !result.success || !result.data)
-    throw new ApiError(
-      result.error?.code ?? 'UPLOAD_FAILED',
-      result.error?.message ?? 'Fotoja nuk u ngarkua.',
-    );
-  return result.data;
 }

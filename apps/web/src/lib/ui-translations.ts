@@ -86,7 +86,7 @@ const en: Record<string, string> = {
   'Dalja': 'Check-out',
   'Mysafirë': 'Guests',
   'Gjej, krahaso dhe': 'Find, compare and',
-  'rezervo': 'book',
+  'rezervo': 'Rezervo',
   'online.': 'online.',
   'Gjej një rezervim': 'Find a booking',
   'Krijo llogari klienti': 'Create customer account',

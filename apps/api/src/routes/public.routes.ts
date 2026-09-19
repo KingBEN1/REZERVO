@@ -225,6 +225,7 @@ publicRouter.get(
           : {}),
       },
       select: {
+        id: true,
         slug: true,
         name: true,
         city: true,
@@ -250,6 +251,7 @@ publicRouter.get(
                   : {}),
               },
               select: { id: true },
+              take: 1,
             },
           },
         },
@@ -294,7 +296,7 @@ publicRouter.get(
       where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
       include: {
         category: true,
-        services: { where: { active: true }, include: { staff: { include: { staff: true } } } },
+        services: { where: { active: true }, include: { staff: { where: { staff: { active: true } }, include: { staff: true } } } },
         staff: { where: { active: true } },
         workingHours: { where: { staffId: null }, orderBy: { dayOfWeek: 'asc' } },
         reviews: {

@@ -223,6 +223,8 @@ function BookingFlow() {
   const eligibleStaff = useMemo(() => service?.staff.map((item) => item.staff) ?? [], [service]);
   const availability = useQuery({
     queryKey: ['availability', slug, serviceId, staffId, date],
+    staleTime: 0,
+    refetchOnWindowFocus: true,
     enabled: Boolean(serviceId && staffId && date && !isHotel),
     queryFn: () =>
       api<{ slots: Slot[] }>(
@@ -230,6 +232,8 @@ function BookingFlow() {
       ),
   });
   const hotelAvailability = useQuery({
+    staleTime: 0,
+    refetchOnWindowFocus: true,
     queryKey: [
       'accommodation-availability',
       slug,
@@ -260,9 +264,8 @@ function BookingFlow() {
     onSuccess: (data) => {
       setVerification({ challengeId: data.challengeId, channel: verificationChannel, contact: (verificationChannel === 'EMAIL' ? details.email : details.phone).trim().toLowerCase(), verified: false });
       setVerificationCode('');
-      setTurnstileToken('');
-      setTurnstileAttempt((current) => current + 1);
     },
+    onSettled: () => { setTurnstileToken(''); setTurnstileAttempt((current) => current + 1); },
   });
   const confirmVerification = useMutation({
     mutationFn: () => api('/public/booking-verification/confirm', {

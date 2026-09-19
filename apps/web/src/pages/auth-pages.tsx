@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, CheckCircle2, MailCheck, ShieldCheck } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -77,17 +77,21 @@ function Field({
 }
 export function LoginPage() {
   const navigate = useNavigate();
+  const client = useQueryClient();
+  const signedIn = async () => { await client.cancelQueries(); client.clear(); navigate(businessIntent ? '/dashboard' : '/account'); };
   const [params] = useSearchParams();
   const businessIntent = params.get('intent') === 'business';
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const mutation = useMutation({
     mutationFn: (values: LoginValues) =>
-      api('/auth/login', { method: 'POST', body: JSON.stringify(values) }),
-    onSuccess: () => navigate(businessIntent ? '/dashboard' : '/account'),
+      api<{ verificationRequired?: boolean; email?: string }>('/auth/login', { method: 'POST', body: JSON.stringify(values) }),
+    onSuccess: (data) => data.verificationRequired
+      ? navigate(`/register?email=${encodeURIComponent(data.email!)}${businessIntent ? '&intent=business' : ''}`)
+      : signedIn(),
   });
   const google = useMutation({
     mutationFn: (credential: string) => api('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
-    onSuccess: () => navigate(businessIntent ? '/dashboard' : '/account'),
+    onSuccess: signedIn,
   });
   const googleCredential = useCallback((credential: string) => google.mutate(credential), [google]);
   return (
@@ -98,6 +102,8 @@ export function LoginPage() {
           {businessIntent ? 'Hyni në biznesin tuaj' : 'Hyni në llogarinë tuaj'}
         </h2>
         <div className="mt-7"><GoogleSignInButton onCredential={googleCredential} /></div>
+        {google.isPending && <p role="status" className="mt-3 text-sm">Duke hyrë me Google…</p>}
+        {google.error && <p role="alert" className="mt-3 text-sm text-red-600">{google.error.message}</p>}
         {import.meta.env.VITE_GOOGLE_CLIENT_ID && <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-line" />ose me email<span className="h-px flex-1 bg-line" /></div>}
         <form
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
@@ -127,7 +133,7 @@ export function LoginPage() {
               {mutation.error instanceof ApiError ? mutation.error.message : 'Provoni përsëri.'}
             </p>
           )}
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          <Button type="submit" className="w-full" disabled={mutation.isPending || google.isPending}>
             {mutation.isPending ? (
               'Duke hyrë...'
             ) : (
@@ -152,27 +158,31 @@ export function LoginPage() {
 }
 export function RegisterPage() {
   const navigate = useNavigate();
+  const client = useQueryClient();
+  const signedIn = async () => { await client.cancelQueries(); client.clear(); navigate(businessIntent ? '/onboarding' : '/account'); };
   const [params] = useSearchParams();
   const businessIntent = params.get('intent') === 'business';
   const form = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
   const [turnstileToken, setTurnstileToken] = useState('');
-  const [pendingEmail, setPendingEmail] = useState('');
+  const [pendingEmail, setPendingEmail] = useState(params.get('email') ?? '');
+  const [turnstileAttempt, setTurnstileAttempt] = useState(0);
   const [verificationCode, setVerificationCode] = useState('');
   const mutation = useMutation({
     mutationFn: (values: RegisterValues) =>
       api<{ email: string; verificationRequired: boolean }>('/auth/register', { method: 'POST', body: JSON.stringify({ ...values, turnstileToken }) }),
     onSuccess: (data) => setPendingEmail(data.email),
+    onSettled: () => { setTurnstileToken(''); setTurnstileAttempt((value) => value + 1); },
   });
   const verifyCode = useMutation({
     mutationFn: () => api('/auth/verify-registration-code', {
       method: 'POST',
       body: JSON.stringify({ email: pendingEmail, code: verificationCode }),
     }),
-    onSuccess: () => navigate(businessIntent ? '/onboarding' : '/account'),
+    onSuccess: signedIn,
   });
   const google = useMutation({
     mutationFn: (credential: string) => api('/auth/google', { method: 'POST', body: JSON.stringify({ credential }) }),
-    onSuccess: () => navigate(businessIntent ? '/onboarding' : '/account'),
+    onSuccess: signedIn,
   });
   const googleCredential = useCallback((credential: string) => google.mutate(credential), [google]);
   if (pendingEmail) return (
@@ -189,6 +199,7 @@ export function RegisterPage() {
               autoFocus
               className="input h-14 text-center text-2xl font-bold tracking-[.35em]"
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={6}
               value={verificationCode}
               onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ''))}
@@ -203,6 +214,7 @@ export function RegisterPage() {
         <button className="mt-5 w-full text-center text-sm font-semibold text-forest" type="button" onClick={() => { setPendingEmail(''); setVerificationCode(''); mutation.reset(); }}>
           Ndrysho emailin ose dërgo kod të ri
         </button>
+        <p className="mt-3 text-center text-sm text-slate-500">Për kod të ri mund të hyni përsëri me emailin dhe fjalëkalimin tuaj. Prisni të paktën 60 sekonda ndërmjet dërgesave.</p>
       </div>
     </AuthShell>
   );
@@ -214,6 +226,8 @@ export function RegisterPage() {
           {businessIntent ? 'Krijoni llogarinë e biznesit' : 'Krijoni llogarinë tuaj'}
         </h2>
         <div className="mt-6"><GoogleSignInButton onCredential={googleCredential} /></div>
+        {google.isPending && <p role="status" className="mt-3 text-sm">Duke hyrë me Google…</p>}
+        {google.error && <p role="alert" className="mt-3 text-sm text-red-600">{google.error.message}</p>}
         {import.meta.env.VITE_GOOGLE_CLIENT_ID && <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><span className="h-px flex-1 bg-line" />ose regjistrohu me email<span className="h-px flex-1 bg-line" /></div>}
         <form
           onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
@@ -240,7 +254,7 @@ export function RegisterPage() {
               {...form.register('email')}
             />
           </div>
-          <div className="sm:col-span-2"><TurnstileWidget onToken={setTurnstileToken} /></div>
+          <div className="sm:col-span-2"><TurnstileWidget key={turnstileAttempt} onToken={setTurnstileToken} /></div>
           <div className="sm:col-span-2">
             <Field
               label="Fjalëkalimi"
@@ -255,7 +269,7 @@ export function RegisterPage() {
               {mutation.error instanceof ApiError ? mutation.error.message : 'Provoni përsëri.'}
             </p>
           )}
-          <Button type="submit" className="sm:col-span-2" disabled={mutation.isPending}>
+          <Button type="submit" className="sm:col-span-2" disabled={mutation.isPending || google.isPending || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !turnstileToken)}>
             {mutation.isPending ? (
               'Duke krijuar...'
             ) : (
@@ -334,6 +348,7 @@ export function ForgotPasswordPage() {
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
+  const client = useQueryClient();
   const [params] = useSearchParams();
   const token = params.get('token');
   const form = useForm<ResetPasswordValues>({ resolver: zodResolver(resetPasswordSchema) });
@@ -343,7 +358,7 @@ export function ResetPasswordPage() {
         method: 'POST',
         body: JSON.stringify({ token, password: values.password }),
       }),
-    onSuccess: () => navigate('/account'),
+    onSuccess: async () => { await client.cancelQueries(); client.clear(); navigate('/account'); },
   });
   return (
     <AuthShell>

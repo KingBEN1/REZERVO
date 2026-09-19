@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Building2, CheckCircle2, Circle, CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Logo } from '../components/site-header';
 import { Button } from '../components/ui/button';
@@ -54,15 +54,18 @@ function CategoryGlyph({ icon }: { icon: string | null }) {
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const client = useQueryClient();
   const user = useQuery({ queryKey: ['me'], queryFn: () => api<{ user: { email: string; emailVerifiedAt: string | null; memberships: Array<{ business: { id: string } }> } }>('/auth/me'), refetchOnWindowFocus: true });
   const resend = useMutation({ mutationFn: () => api('/auth/resend-verification', { method: 'POST' }) });
   const categories = useQuery({ queryKey: ['business-categories'], queryFn: () => api<{ categories: Category[] }>('/public/categories') });
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '', slug: '', categoryId: '', city: '', phone: '', address: '', description: '' } });
-  const mutation = useMutation({ mutationFn: (values: Values) => api<{ business: { id: string } }>('/business', { method: 'POST', body: JSON.stringify(values) }), onSuccess: ({ business }) => { localStorage.setItem('rezervo-business-id', business.id); navigate('/dashboard'); } });
+  const mutation = useMutation({ mutationFn: (values: Values) => api<{ business: { id: string } }>('/business', { method: 'POST', body: JSON.stringify(values) }), onSuccess: async ({ business }) => { localStorage.setItem('rezervo-business-id', business.id); await client.invalidateQueries({ queryKey: ['me'] }); navigate('/dashboard'); } });
   const selectedCategoryId = form.watch('categoryId');
 
   if (user.isLoading) return <div className="grid min-h-screen place-items-center"><div className="size-8 animate-spin rounded-full border-2 border-forest border-t-transparent" /></div>;
-  if (user.data?.user.memberships[0]) { localStorage.setItem('rezervo-business-id', user.data.user.memberships[0].business.id); navigate('/dashboard'); return null; }
+  if (user.error instanceof ApiError && user.error.status === 401) return <Navigate to="/login?intent=business" replace />;
+  if (!user.data) return <main className="page-shell py-16"><p>Llogaria nuk u ngarkua.</p><Button onClick={() => user.refetch()}>Provo përsëri</Button></main>;
+  if (user.data.user.memberships[0]) { localStorage.setItem('rezervo-business-id', user.data.user.memberships[0].business.id); return <Navigate to="/dashboard" replace />; }
 
   if (user.data && !user.data.user.emailVerifiedAt) return (
     <main className="min-h-screen bg-sand px-4 py-12">

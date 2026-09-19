@@ -19,10 +19,10 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { EmptyState } from '../components/ui/empty-state';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
 import { useI18n } from '../lib/i18n';
 
@@ -90,14 +90,16 @@ export function useTenant() {
 }
 export function DashboardLayout() {
   const { locale, setLocale } = useI18n();
-  const { data, membership, isLoading } = useTenant();
+  const { data, membership, isLoading, error, refetch } = useTenant();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const logout = useMutation({
     mutationFn: () => api('/auth/logout', { method: 'POST' }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.cancelQueries();
       queryClient.clear();
+      localStorage.removeItem('rezervo-business-id');
       navigate('/login');
     },
   });
@@ -108,12 +110,11 @@ export function DashboardLayout() {
       </div>
     );
   if (!data) {
-    navigate('/login?intent=business');
-    return null;
+    if (error instanceof ApiError && error.status === 401) return <Navigate to="/login?intent=business" replace />;
+    return <main className="page-shell py-16"><EmptyState title="Paneli nuk u ngarkua" detail="Kontrolloni lidhjen dhe provoni përsëri." action={<Button onClick={() => refetch()}>Provo përsëri</Button>} /></main>;
   }
   if (!membership) {
-    navigate('/for-business');
-    return null;
+    return <Navigate to="/for-business" replace />;
   }
   localStorage.setItem('rezervo-business-id', membership.business.id);
   const sidebar = (

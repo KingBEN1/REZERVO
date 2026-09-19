@@ -96,9 +96,10 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
         { method: 'PATCH', body: JSON.stringify({ status }) },
         membership!.business.id,
       ),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['bookings'] }),
+    onSuccess: () => Promise.all(['bookings', 'calendar-bookings', 'dashboard', 'customers'].map((key) => client.invalidateQueries({ queryKey: [key] }))),
   });
   if (query.isLoading) return <div className="h-64 animate-pulse rounded-3xl bg-white" />;
+  if (query.isError) return <EmptyState title="Rezervimet nuk u ngarkuan" detail="Provoni përsëri." action={<Button onClick={() => query.refetch()}>Provo përsëri</Button>} />;
   const bookings = query.data?.bookings ?? [];
   if (calendar)
     return (
@@ -150,6 +151,7 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
           </Button>
         </Link>
       </div>
+      {mutation.error && <p role="alert" className="mt-4 text-sm text-red-600">{mutation.error.message}</p>}
       <section className="surface mt-7 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left text-sm">
@@ -184,9 +186,10 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
                   <td className="px-5 py-4">
                     {['PENDING', 'CONFIRMED'].includes(booking.status) && (
                       <select
+                        disabled={mutation.isPending}
                         aria-label="Ndrysho statusin"
                         className="rounded-lg border border-line bg-white px-2 py-1 text-xs"
-                        defaultValue=""
+                        value=""
                         onChange={(event) =>
                           event.target.value &&
                           mutation.mutate({ id: booking.id, status: event.target.value })

@@ -14,7 +14,7 @@ export function Logo() {
       <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 via-teal-600 to-indigo-600 text-white shadow-[0_8px_20px_rgba(14,116,144,.28),inset_0_1px_0_rgba(255,255,255,.35)] transition group-hover:-translate-y-0.5">
         <CalendarDays size={17} />
       </span>
-      <span className="display">rezervo</span>
+      <span className="display">Rezervo</span>
     </Link>
   );
 }
@@ -33,9 +33,10 @@ export function SiteHeader() {
   const hasBusiness = Boolean(me.data?.user.memberships.length);
   const logout = useMutation({
     mutationFn: () => api('/auth/logout', { method: 'POST' }),
-    onSuccess: () => {
-      queryClient.removeQueries({ queryKey: ['me'] });
-      queryClient.removeQueries({ queryKey: ['customer-dashboard'] });
+    onSuccess: async () => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      localStorage.removeItem('rezervo-business-id');
       navigate('/');
     },
   });
