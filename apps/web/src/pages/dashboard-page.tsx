@@ -21,6 +21,7 @@ import {
 import { useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import { CountryPhoneInput } from '../components/country-phone-input';
 import { EmptyState } from '../components/ui/empty-state';
 import { api, ApiError } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
@@ -153,7 +154,7 @@ export function DashboardLayout() {
       </nav>
       <div className="mt-auto border-t border-white/10 p-3">
         <Link
-          to={`/book/${membership.business.slug}`}
+          to={`/${membership.business.slug}`}
           target="_blank"
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
         >
@@ -488,11 +489,10 @@ function VerificationForm({
         </label>
         <label>
           <span className="mb-1 block text-sm font-medium">Telefon kontakti</span>
-          <input
-            required
-            className="input"
+          <CountryPhoneInput
             value={values.contactPhone}
-            onChange={(event) => setValues({ ...values, contactPhone: event.target.value })}
+            onChange={(contactPhone) => setValues({ ...values, contactPhone })}
+            required
           />
         </label>
         <label>

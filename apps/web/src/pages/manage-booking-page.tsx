@@ -161,7 +161,7 @@ export function ManageBookingPage() {
       <header className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6">
           <Link
-            to={`/book/${booking.business.slug}`}
+            to={`/${booking.business.slug}`}
             className="flex items-center gap-1 text-sm font-semibold text-slate-600"
           >
             <ChevronLeft size={18} /> Faqja e biznesit

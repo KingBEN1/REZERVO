@@ -229,7 +229,7 @@ export function BusinessesPage() {
                   key={business.id}
                   className="group surface lift-3d overflow-hidden hover:border-indigo-200"
                 >
-                  <Link to={`/book/${business.slug}`}>
+                  <Link to={`/${business.slug}`}>
                     <div className="h-40 bg-green-100">
                       {business.coverImage ? (
                         <img

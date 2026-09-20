@@ -22,12 +22,20 @@ import {
 
 export const businessRouter = Router();
 
+const reservedPublicSlugs = new Set([
+  'about', 'account', 'admin', 'book', 'businesses', 'contact', 'dashboard', 'for-business',
+  'forgot-password', 'login', 'manage', 'onboarding', 'pricing', 'privacy', 'register',
+  'reset-password', 'terms', 'verify-email',
+]);
+
 businessRouter.post(
   '/',
   requireAuth,
   validate(createBusinessSchema),
   asyncHandler(async (req, res) => {
     const data = req.body;
+    if (reservedPublicSlugs.has(data.slug))
+      throw new AppError(422, 'RESERVED_SLUG', 'Kjo adresë është e rezervuar nga platforma. Zgjidhni një emër tjetër.');
     const owner = await prisma.user.findUniqueOrThrow({
       where: { id: req.auth!.userId },
       select: { emailVerifiedAt: true },

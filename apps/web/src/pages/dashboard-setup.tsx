@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
+import { CountryPhoneInput } from '../components/country-phone-input';
 import { EmptyState } from '../components/ui/empty-state';
 import { api, ApiError, uploadBusinessImage } from '../lib/api';
 import { useTenant } from './dashboard-page';
@@ -359,11 +360,9 @@ export function BusinessProfilePage() {
           <LocationPicker business={business} />
           <label>
             <span className="mb-1.5 block text-sm font-medium">Telefoni</span>
-            <input
+            <CountryPhoneInput
               name="phone"
-              className="input"
               defaultValue={business.phone ?? ''}
-              placeholder="+383 44 123 456"
             />
           </label>
           <label>

@@ -145,7 +145,7 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
           <p className="eyebrow">Rezervimet</p>
           <h1 className="display mt-1 text-3xl font-bold">Të gjitha rezervimet</h1>
         </div>
-        <Link to={`/book/${membership?.business.slug}`} target="_blank">
+        <Link to={`/${membership?.business.slug}`} target="_blank">
           <Button size="sm">
             <Plus size={15} /> Hap faqen
           </Button>

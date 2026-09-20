@@ -205,6 +205,7 @@ export function App() {
                 <Route path="billing" element={<BillingPage />} />
               </Route>
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/:slug" element={<BookingPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

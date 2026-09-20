@@ -4,6 +4,7 @@ import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '../components/ui/button';
+import { CountryPhoneInput } from '../components/country-phone-input';
 import { TurnstileWidget } from '../components/security-widgets';
 import { api, ApiError } from '../lib/api';
 import { dateTime, localIsoDate, money } from '../lib/utils';
@@ -396,7 +397,7 @@ function BookingFlow() {
               <Button variant="secondary" className="w-full">Shiko te rezervimet e mia</Button>
             </Link>
           )}
-          <Link to={`/book/${slug}`} className="mt-3 inline-block">
+          <Link to={`/${slug}`} className="mt-3 inline-block">
             <Button variant="secondary">Kthehu te faqja e biznesit</Button>
           </Link>
         </section>
@@ -774,13 +775,11 @@ function BookingFlow() {
                   </label>
                   <label>
                     <span className="mb-1.5 block text-sm font-medium">Telefoni</span>
-                    <input
-                      className="input"
-                      inputMode="tel"
+                    <CountryPhoneInput
                       value={details.phone}
-                      onChange={(event) => {
-                        setDetails({ ...details, phone: event.target.value });
-                        if (verification?.channel === 'SMS' && verification.contact !== event.target.value.trim().toLowerCase()) setVerification(undefined);
+                      onChange={(phone) => {
+                        setDetails({ ...details, phone });
+                        if (verification?.channel === 'SMS' && verification.contact !== phone.trim().toLowerCase()) setVerification(undefined);
                       }}
                     />
                   </label>

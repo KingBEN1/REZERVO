@@ -3,6 +3,7 @@ import { CalendarDays, ChevronRight, Heart, Mail, MapPin, Phone, ShieldCheck, Sp
 import { Link, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { SiteHeader } from '../components/site-header';
+import { CountryPhoneInput } from '../components/country-phone-input';
 import { Button } from '../components/ui/button';
 import { EmptyState } from '../components/ui/empty-state';
 import { api, ApiError } from '../lib/api';
@@ -48,7 +49,7 @@ function BusinessCard({
 }) {
   return (
     <article className="surface overflow-hidden">
-      <Link to={`/book/${business.slug}`} className="group block">
+      <Link to={`/${business.slug}`} className="group block">
         <div className="h-28 bg-green-100">
           {business.coverImage && (
             <img
@@ -146,7 +147,7 @@ export function CustomerAccountPage() {
             <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-full bg-forest font-bold text-white">{account.data.user.firstName.slice(0, 1)}{account.data.user.lastName.slice(0, 1)}</span><div><h2 className="font-bold">Profili im</h2><p className="text-sm text-slate-600">Të dhënat që përdoren në rezervimet tuaja.</p></div></div>
             <Button variant="secondary" onClick={() => { setProfile({ firstName: account.data!.user.firstName, lastName: account.data!.user.lastName, phone: account.data!.user.phone ?? '' }); setEditingProfile(!editingProfile); }}>{editingProfile ? 'Mbyll' : 'Ndrysho profilin'}</Button>
           </div>
-          {editingProfile ? <div className="grid gap-3 p-5 sm:grid-cols-3"><input className="input" placeholder="Emri" value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} /><input className="input" placeholder="Mbiemri" value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} /><input className="input" placeholder="+383 44 123 456" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} /><div className="sm:col-span-3"><Button disabled={saveProfile.isPending || profile.firstName.trim().length < 2 || profile.lastName.trim().length < 2} onClick={() => saveProfile.mutate()}>{saveProfile.isPending ? 'Duke ruajtur…' : 'Ruaj ndryshimet'}</Button>{saveProfile.error && <p className="mt-2 text-sm text-red-600">Nuk mund t’i ruajmë ndryshimet tani.</p>}</div></div> : <div className="grid gap-4 p-5 text-sm sm:grid-cols-3"><p className="flex items-center gap-2"><Mail className="text-forest" size={17} />{account.data.user.email}</p><p className="flex items-center gap-2"><Phone className="text-forest" size={17} />{account.data.user.phone || 'Shto numrin e telefonit'}</p><p className="flex items-center gap-2"><ShieldCheck className="text-forest" size={17} />{account.data.user.emailVerifiedAt ? 'Email i verifikuar' : 'Emaili pret verifikim'}</p></div>}
+          {editingProfile ? <div className="grid gap-3 p-5 sm:grid-cols-3"><input className="input" placeholder="Emri" value={profile.firstName} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} /><input className="input" placeholder="Mbiemri" value={profile.lastName} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} /><CountryPhoneInput value={profile.phone} onChange={(phone) => setProfile({ ...profile, phone })} /><div className="sm:col-span-3"><Button disabled={saveProfile.isPending || profile.firstName.trim().length < 2 || profile.lastName.trim().length < 2} onClick={() => saveProfile.mutate()}>{saveProfile.isPending ? 'Duke ruajtur…' : 'Ruaj ndryshimet'}</Button>{saveProfile.error && <p className="mt-2 text-sm text-red-600">Nuk mund t’i ruajmë ndryshimet tani.</p>}</div></div> : <div className="grid gap-4 p-5 text-sm sm:grid-cols-3"><p className="flex items-center gap-2"><Mail className="text-forest" size={17} />{account.data.user.email}</p><p className="flex items-center gap-2"><Phone className="text-forest" size={17} />{account.data.user.phone || 'Shto numrin e telefonit'}</p><p className="flex items-center gap-2"><ShieldCheck className="text-forest" size={17} />{account.data.user.emailVerifiedAt ? 'Email i verifikuar' : 'Emaili pret verifikim'}</p></div>}
         </section>
         <section className="mt-8">
           <div className="flex items-center justify-between">
