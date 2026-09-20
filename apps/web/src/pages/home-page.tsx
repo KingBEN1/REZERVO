@@ -132,7 +132,7 @@ export function HomePage() {
                   )}
                 </p>
               </div>
-              <Link to="/for-business">
+              <Link to="/promote">
                 <Button variant="secondary">
                   {tr('Promovo biznesin', 'Promote your business')} <Sparkles size={16} />
                 </Button>

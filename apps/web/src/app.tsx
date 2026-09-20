@@ -3,6 +3,7 @@ import { Component, lazy as reactLazy, Suspense, type ComponentType, type ReactN
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { GlobalLanguageSwitch, I18nProvider } from './lib/i18n';
 import { HomePage } from './pages/home-page';
+import { SupportChatbot } from './components/support-chatbot';
 
 /**
  * Vercel replaces hashed JavaScript files on every deployment. A visitor who
@@ -101,6 +102,9 @@ const SimplePage = lazy(() =>
 const AboutPage = lazy(() =>
   import('./pages/platform-pages').then((module) => ({ default: module.AboutPage })),
 );
+const PromotePage = lazy(() =>
+  import('./pages/promote-page').then((module) => ({ default: module.PromotePage })),
+);
 const DashboardLayout = lazy(() =>
   import('./pages/dashboard-page').then((module) => ({ default: module.DashboardLayout })),
 );
@@ -177,6 +181,7 @@ export function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/promote" element={<PromotePage />} />
               <Route path="/terms" element={<LegalPage type="terms" />} />
               <Route path="/privacy" element={<LegalPage type="privacy" />} />
               <Route path="/about" element={<AboutPage />} />
@@ -208,6 +213,7 @@ export function App() {
               <Route path="/:slug" element={<BookingPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              <SupportChatbot />
             </Suspense>
           </AppErrorBoundary>
         </BrowserRouter>
