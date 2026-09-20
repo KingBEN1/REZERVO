@@ -422,17 +422,25 @@ export function ServicesPage() {
         price: isHotel ? 'Price per night (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
         description: 'Offer description', select: 'Who or which resource provides this?', close: 'Close without saving',
         save: editingId ? 'Save changes' : 'Create and publish offer', edit: 'Edit', assigned: 'Provider / resource:', minutes: 'minutes',
+        offerHelp: 'This is the option a customer books.', resourceHelp: 'Choose the person or resource that delivers it.',
+        durationHelp: isHotel ? 'For stays, the price is calculated per night.' : 'Set the typical duration for this booking.',
+        priceHelp: isHotel ? 'Set the price per night.' : 'Set the price for this booking; use 0 only when it is free.',
+        descriptionPlaceholder: 'Add the details customers need before booking.', selectHelp: 'Select at least one person or resource.', titleLabel: 'Title customers see',
       }
     : {
-        eyebrow: 'Katalogu juaj', title: `Çfarë ${ui.servicePlural.toLowerCase()} mund të rezervojnë klientët?`, add: `Krijo ${ui.serviceSingular}`,
+        eyebrow: 'Katalogu juaj', title: ui.servicePlural, add: `Shto ${ui.serviceSingular}`,
         intro: `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
         offer: ui.serviceSingular, resource: ui.resourceSingular, newTitle: editingId ? `Ndrysho ${ui.serviceSingular}` : `Shto ${ui.serviceSingular}`,
         newHelp: `Plotësoni vetëm informacionin që klienti duhet të shohë para se të rezervojë këtë ${ui.serviceSingular}.`, name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTaxi ? 'Emri i rrugës ose transferit' : `Emri i ${ui.serviceSingular}`,
         namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : `p.sh. ${ui.serviceExample}`,
         duration: isHotel ? 'Blloku bazë i rezervimit' : isTaxi ? 'Kohëzgjatja e parashikuar e udhëtimit' : 'Kohëzgjatja e rezervimit',
         price: isHotel ? 'Çmimi për një natë (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
-        description: 'Përshkrimi i ofertës', select: 'Kush ose cili burim e ofron këtë?', close: 'Mbyll pa ruajtur',
-        save: editingId ? 'Ruaj ndryshimet' : 'Krijo dhe publiko ofertën', edit: 'Ndrysho', assigned: 'Ofruesi / burimi:', minutes: 'minuta',
+        description: `Përshkrimi për klientin`, select: `Cili ${ui.resourceSingular} e realizon?`, close: 'Mbyll pa ruajtur',
+        save: editingId ? 'Ruaj ndryshimet' : `Ruaj ${ui.serviceSingular}in`, edit: 'Ndrysho', assigned: `${ui.resourcePlural}:`, minutes: 'minuta',
+        offerHelp: `Kjo është zgjedhja që klienti rezervon, p.sh. “${ui.serviceExample}”.`, resourceHelp: `Zgjidhni ${ui.resourceSingular}in që e realizon, p.sh. “${ui.resourceExample}”.`,
+        durationHelp: isHotel ? 'Për qëndrime, çmimi llogaritet për natë.' : isTaxi ? 'Vendosni kohën e parashikuar të udhëtimit.' : `Vendosni sa zgjat zakonisht ${ui.serviceSingular}i.`,
+        priceHelp: isHotel ? 'Vendosni çmimin për një natë.' : isTaxi ? 'Vendosni çmimin e transferit ose niseni nga 0 për marrëveshje.' : `Vendosni çmimin për këtë ${ui.serviceSingular}; 0 përdoret vetëm kur është falas.`,
+        descriptionPlaceholder: `p.sh. Detaje për ${ui.serviceExample.toLowerCase()}.`, selectHelp: `Zgjidhni të paktën një ${ui.resourceSingular}.`, titleLabel: 'Titulli që shohin klientët',
       };
   const editService = (service: Service) => {
     setValues({
@@ -461,11 +469,11 @@ export function ServicesPage() {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-sm text-slate-600">
           <b className="flex items-center gap-2 text-ink"><Sparkles size={16} className="text-cyan-700" /> {copy.offer}</b>
-          <p className="mt-1">Ajo që blen klienti: p.sh. “Dhomë standarde”, “Prerje flokësh” ose “Transfer aeroporti”.</p>
+          <p className="mt-1">{copy.offerHelp}</p>
         </div>
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-slate-600">
           <b className="flex items-center gap-2 text-ink"><UserPlus size={16} className="text-indigo-700" /> {copy.resource}</b>
-          <p className="mt-1">Kush ose çfarë rezervohet: p.sh. Arditi, Dhoma 101, Taksi 01 ose Tavolina 4.</p>
+          <p className="mt-1">{copy.resourceHelp}</p>
         </div>
       </div>
       {open && (
@@ -482,9 +490,9 @@ export function ServicesPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label>
-              <span className="mb-1.5 block text-sm font-semibold">{copy.name}</span>
+              <span className="mb-1.5 block text-sm font-semibold">{copy.titleLabel}</span>
               <input required className="input" placeholder={copy.namePlaceholder} value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} />
-              <small className="mt-1.5 block text-slate-500">Shfaqet si zgjedhja kryesore për klientin.</small>
+              <small className="mt-1.5 block text-slate-500">{copy.offerHelp}</small>
             </label>
             <label>
               <span className="mb-1.5 block text-sm font-semibold">{copy.duration}</span>
@@ -501,7 +509,7 @@ export function ServicesPage() {
                   setValues({ ...values, durationMin: Number(event.target.value) })
                 }
               />
-              <small className="mt-1.5 block text-slate-500">Në minuta. Për hotelin çmimi llogaritet për natë.</small>
+              <small className="mt-1.5 block text-slate-500">{copy.durationHelp}</small>
             </label>
             <label>
               <span className="mb-1.5 block text-sm font-semibold">{copy.price}</span>
@@ -516,12 +524,12 @@ export function ServicesPage() {
                 placeholder="p.sh. 45"
                 onChange={(event) => setValues({ ...values, price: Number(event.target.value) })}
               />
-              <small className="mt-1.5 block text-slate-500">Për hotel: çmimi për natë. Vendos 0 vetëm kur është falas.</small>
+              <small className="mt-1.5 block text-slate-500">{copy.priceHelp}</small>
             </label>
             <label>
               <span className="mb-1.5 block text-sm font-semibold">{copy.description}</span>
-              <textarea className="input min-h-24 py-3" placeholder="p.sh. Dhomë për 2 persona, Wi-Fi dhe mëngjes i përfshirë." value={values.description} onChange={(event) => setValues({ ...values, description: event.target.value })} />
-              <small className="mt-1.5 block text-slate-500">Tregoni shkurt çfarë përfshihet.</small>
+              <textarea className="input min-h-24 py-3" placeholder={copy.descriptionPlaceholder} value={values.description} onChange={(event) => setValues({ ...values, description: event.target.value })} />
+              <small className="mt-1.5 block text-slate-500">Tregoni shkurt çfarë merr klienti.</small>
             </label>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -558,7 +566,7 @@ export function ServicesPage() {
           </div>
           <fieldset className="mt-4">
             <legend className="text-sm font-semibold">{copy.select}</legend>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><Info size={14} /> Zgjidhni të paktën një person, dhomë, automjet ose burim.</p>
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><Info size={14} /> {copy.selectHelp}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {(staff.data?.staff ?? []).map((person) => (
                 <label
