@@ -26,10 +26,11 @@ import { EmptyState } from '../components/ui/empty-state';
 import { api, ApiError } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
 import { useI18n } from '../lib/i18n';
+import { categoryUi } from '../lib/business-category-ui';
 
 type Membership = {
   role: string;
-  business: { id: string; name: string; slug: string; status: string };
+  business: { id: string; name: string; slug: string; status: string; category?: { slug: string } | null };
 };
 type Me = { user: { firstName: string; platformRole: string | null; memberships: Membership[] } };
 type DashboardData = {
@@ -56,6 +57,7 @@ type SetupData = {
     description: string | null;
     phone: string | null;
     address: string | null;
+    category: { slug: string } | null;
     settings: unknown;
     verification: {
       status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
@@ -118,6 +120,12 @@ export function DashboardLayout() {
     return <Navigate to="/for-business" replace />;
   }
   localStorage.setItem('rezervo-business-id', membership.business.id);
+  const businessUi = categoryUi(membership.business.category?.slug);
+  const dynamicNav = nav.map((item) => item.to === '/dashboard/services'
+    ? { ...item, label: businessUi.servicePlural, labelEn: item.labelEn }
+    : item.to === '/dashboard/staff'
+      ? { ...item, label: businessUi.resourcePlural, labelEn: item.labelEn }
+      : item);
   const sidebar = (
     <>
       <div className="flex items-center justify-between px-4 py-5">
@@ -137,7 +145,7 @@ export function DashboardLayout() {
         <p className="mt-0.5 text-xs text-cyan-300">{membership.role.replace('_', ' ')}</p>
       </div>
       <nav className="mt-5 space-y-1 px-3">
-        {nav.map(({ to, icon: Icon, label, labelEn, end }) => (
+        {dynamicNav.map(({ to, icon: Icon, label, labelEn, end }) => (
           <NavLink
             end={end}
             key={to}
@@ -248,6 +256,7 @@ export function DashboardHome() {
     );
   const data = query.data;
   const business = setup.data?.business;
+  const businessUi = categoryUi(business?.category?.slug);
   const hasHours = Boolean(hours.data?.hours.some((item) => item.isOpen));
   const setupItems = business
     ? [
@@ -257,12 +266,12 @@ export function DashboardHome() {
           to: '/dashboard/profile',
         },
         {
-          label: 'Shto ofertën e parë',
+          label: `Shto ${businessUi.serviceSingular}in e parë`,
           done: business._count.services > 0,
           to: '/dashboard/services',
         },
         {
-          label: 'Shto ekipin ose burimin',
+          label: `Shto ${businessUi.resourceSingular}in e parë`,
           done: business._count.staff > 0,
           to: '/dashboard/staff',
         },
@@ -281,16 +290,17 @@ export function DashboardHome() {
         <div>
           <p className="eyebrow">Përmbledhje</p>
           <h1 className="display mt-1 text-3xl font-bold">Paneli juaj</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-500">{businessUi.onboarding}</p>
         </div>
         <div className="flex gap-2">
           <Link to="/dashboard/staff">
             <Button variant="secondary" size="sm">
-              <Plus size={15} /> Ekip / burim
+              <Plus size={15} /> {businessUi.resourceSingular}
             </Button>
           </Link>
           <Link to="/dashboard/services">
             <Button size="sm">
-              <Plus size={15} /> Ofertë
+              <Plus size={15} /> {businessUi.serviceSingular}
             </Button>
           </Link>
         </div>

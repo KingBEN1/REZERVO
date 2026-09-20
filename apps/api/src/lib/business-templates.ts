@@ -12,6 +12,12 @@ type StarterTemplate = {
 };
 
 const templates: Record<string, StarterTemplate> = {
+  barbers: { resourceName: 'Berberi 1', resourceRole: 'Berber', capacity: 1, serviceName: 'Prerje flokësh', description: 'Model fillestar — përshtateni me shërbimet e berberisë.', durationMin: 30, price: 0, priceType: 'CUSTOM' },
+  'beauty-salons': { resourceName: 'Stilistja 1', resourceRole: 'Stilist', capacity: 1, serviceName: 'Trajtim bukurie', description: 'Model fillestar — përshtateni me trajtimet e sallonit.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  'spa-wellness': { resourceName: 'Terapisti 1', resourceRole: 'Terapist', capacity: 1, serviceName: 'Masazh relaksues', description: 'Model fillestar — përshtateni me trajtimet e wellness-it.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  'health-clinics': { resourceName: 'Dr. 1', resourceRole: 'Mjek', capacity: 1, serviceName: 'Kontrollë mjekësore', description: 'Model fillestar — përshtateni me shërbimet e klinikës.', durationMin: 30, price: 0, priceType: 'CUSTOM' },
+  dentists: { resourceName: 'Dr. 1', resourceRole: 'Dentist', capacity: 1, serviceName: 'Kontrollë dentare', description: 'Model fillestar — përshtateni me shërbimet dentare.', durationMin: 30, price: 0, priceType: 'CUSTOM' },
+  physiotherapy: { resourceName: 'Fizioterapisti 1', resourceRole: 'Fizioterapist', capacity: 1, serviceName: 'Seancë fizioterapie', description: 'Model fillestar — përshtateni me seancat e rehabilitimit.', durationMin: 45, price: 0, priceType: 'CUSTOM' },
   hotels: {
     resourceName: 'Dhoma standarde 1',
     resourceRole: 'Dhomë',
@@ -92,6 +98,15 @@ const templates: Record<string, StarterTemplate> = {
     price: 0,
     priceType: 'CUSTOM',
   },
+  photography: { resourceName: 'Fotografi 1', resourceRole: 'Fotograf', capacity: 1, serviceName: 'Fotosesion', description: 'Model fillestar — përshtateni me paketat e fotografisë ose videos.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  rentals: { resourceName: 'Artikulli 1', resourceRole: 'Pajisje ose automjet', capacity: 1, serviceName: 'Qira ditore', description: 'Model fillestar — përshtateni me artikullin që jepni me qira.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  'tourism-activities': { resourceName: 'Guida 1', resourceRole: 'Guidë', capacity: 12, serviceName: 'Tur i organizuar', description: 'Model fillestar — përshtateni me turin ose aktivitetin.', durationMin: 180, price: 0, priceType: 'CUSTOM' },
+  coworking: { resourceName: 'Tavolina 1', resourceRole: 'Tavolinë pune', capacity: 1, serviceName: 'Hapësirë pune ditore', description: 'Model fillestar — përshtateni me hapësirat dhe paketat tuaja.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  'electronics-repair': { resourceName: 'Tekniku 1', resourceRole: 'Teknik', capacity: 1, serviceName: 'Riparim pajisjeje', description: 'Model fillestar — përshtateni me llojet e riparimit.', durationMin: 45, price: 0, priceType: 'CUSTOM' },
+  'child-care': { resourceName: 'Edukatori 1', resourceRole: 'Edukator', capacity: 8, serviceName: 'Aktivitet për fëmijë', description: 'Model fillestar — përshtateni me aktivitetet dhe grupmoshat.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  'pet-care': { resourceName: 'Kujdestari 1', resourceRole: 'Kujdestar kafshësh', capacity: 1, serviceName: 'Kujdes për kafshë', description: 'Model fillestar — përshtateni me shërbimet për kafshë.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
+  'legal-notary': { resourceName: 'Avokati 1', resourceRole: 'Avokat ose noter', capacity: 1, serviceName: 'Konsultë ligjore', description: 'Model fillestar — përshtateni me llojin e konsultës.', durationMin: 30, price: 0, priceType: 'CUSTOM' },
+  'professional-services': { resourceName: 'Konsulenti 1', resourceRole: 'Konsulent', capacity: 1, serviceName: 'Konsultë profesionale', description: 'Model fillestar — përshtateni me shërbimin tuaj.', durationMin: 45, price: 0, priceType: 'CUSTOM' },
 };
 
 const defaultTemplate: StarterTemplate = {

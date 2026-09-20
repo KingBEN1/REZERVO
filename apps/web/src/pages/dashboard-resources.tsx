@@ -8,6 +8,7 @@ import { api, ApiError } from '../lib/api';
 import { dateTime, money } from '../lib/utils';
 import { useTenant } from './dashboard-page';
 import { useI18n } from '../lib/i18n';
+import { categoryUi } from '../lib/business-category-ui';
 
 type Staff = {
   id: string;
@@ -249,6 +250,8 @@ function Status({ status }: { status: string }) {
 }
 export function StaffPage() {
   const { membership } = useTenant();
+  const current = useBusinessQuery<{ business: { category: { slug: string } | null } }>('business-current', '/business/current');
+  const ui = categoryUi(current.data?.business.category?.slug);
   const query = useBusinessQuery<{ staff: Staff[] }>('staff', '/business/staff');
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -271,15 +274,14 @@ export function StaffPage() {
     <>
       <div className="flex items-end justify-between">
         <div>
-          <p className="eyebrow">Ekipi dhe kapaciteti</p>
-          <h1 className="display mt-1 text-3xl font-bold">Ekipi / burimet</h1>
+          <p className="eyebrow">Kapaciteti i biznesit</p>
+          <h1 className="display mt-1 text-3xl font-bold">{ui.resourcePlural}</h1>
           <p className="mt-2 max-w-xl text-sm text-slate-500">
-            Shtoni persona ose burime që mund të rezervohen: specialistë, dhoma, automjete,
-            tavolina, pajisje apo hapësira.
+            Shtoni çdo {ui.resourceSingular} që klienti mund ta rezervojë.
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(!open)}>
-          <UserPlus size={15} /> Shto ekip / burim
+          <UserPlus size={15} /> Shto {ui.resourceSingular}
         </Button>
       </div>
       {open && (
@@ -293,13 +295,13 @@ export function StaffPage() {
           <input
             required
             className="input"
-            placeholder="p.sh. Dr. Arben, Dhoma 101, Taxi 04"
+            placeholder={`p.sh. ${ui.resourceExample}`}
             value={values.name}
             onChange={(event) => setValues({ ...values, name: event.target.value })}
           />
           <input
             className="input"
-            placeholder="Roli ose lloji i burimit"
+            placeholder={`Roli ose lloji i ${ui.resourceSingular}`}
             value={values.position}
             onChange={(event) => setValues({ ...values, position: event.target.value })}
           />
@@ -343,7 +345,7 @@ export function StaffPage() {
               {person.name.slice(0, 1)}
             </span>
             <h2 className="mt-4 font-bold">{person.name}</h2>
-            <p className="text-sm text-slate-500">{person.position ?? 'Ofrues / burim'}</p>
+            <p className="text-sm text-slate-500">{person.position ?? ui.resourceSingular}</p>
             <p className="mt-1 text-xs text-slate-500">Kapaciteti: {person.capacity}</p>
             <p className="mt-4 border-t border-line pt-3 text-xs text-slate-500">
               {person.services?.length
@@ -356,9 +358,9 @@ export function StaffPage() {
       {!staff.length && !query.isLoading && (
         <div className="mt-7">
           <EmptyState
-            title="Nuk keni shtuar ekip ose burim"
-            detail="Shtoni personin, dhomën, automjetin ose burimin e parë që klientët do ta rezervojnë."
-            action={<Button onClick={() => setOpen(true)}>Shto ekip / burim</Button>}
+            title={`Nuk keni shtuar ${ui.resourcePlural.toLowerCase()}`}
+            detail={`Shtoni ${ui.resourceSingular}in e parë që klientët do ta rezervojnë.`}
+            action={<Button onClick={() => setOpen(true)}>Shto {ui.resourceSingular}</Button>}
           />
         </div>
       )}
@@ -406,6 +408,7 @@ export function ServicesPage() {
     },
   });
   const category = current.data?.business.category?.slug ?? '';
+  const ui = categoryUi(category);
   const isHotel = category === 'hotels';
   const isTaxi = category === 'taxi-transport';
   const copy = locale === 'en'
@@ -421,11 +424,11 @@ export function ServicesPage() {
         save: editingId ? 'Save changes' : 'Create and publish offer', edit: 'Edit', assigned: 'Provider / resource:', minutes: 'minutes',
       }
     : {
-        eyebrow: 'Katalogu juaj', title: 'Çfarë mund të rezervojnë klientët?', add: 'Krijo ofertë',
-        intro: 'Krijoni një ofertë për çdo shërbim, qëndrim, transfer, tavolinë ose aktivitet, pastaj lidheni me personin apo burimin që e realizon.',
-        offer: 'Oferta', resource: 'Ofruesi / burimi', newTitle: editingId ? 'Ndrysho ofertën' : 'Ofertë e re',
-        newHelp: 'Plotësoni vetëm informacionin që klienti duhet të shohë para rezervimit.', name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTaxi ? 'Emri i rrugës ose transferit' : 'Emri i ofertës',
-        namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : 'p.sh. Prerje flokësh ose konsultë',
+        eyebrow: 'Katalogu juaj', title: `Çfarë ${ui.servicePlural.toLowerCase()} mund të rezervojnë klientët?`, add: `Krijo ${ui.serviceSingular}`,
+        intro: `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
+        offer: ui.serviceSingular, resource: ui.resourceSingular, newTitle: editingId ? `Ndrysho ${ui.serviceSingular}` : `Shto ${ui.serviceSingular}`,
+        newHelp: `Plotësoni vetëm informacionin që klienti duhet të shohë para se të rezervojë këtë ${ui.serviceSingular}.`, name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTaxi ? 'Emri i rrugës ose transferit' : `Emri i ${ui.serviceSingular}`,
+        namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : `p.sh. ${ui.serviceExample}`,
         duration: isHotel ? 'Blloku bazë i rezervimit' : isTaxi ? 'Kohëzgjatja e parashikuar e udhëtimit' : 'Kohëzgjatja e rezervimit',
         price: isHotel ? 'Çmimi për një natë (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
         description: 'Përshkrimi i ofertës', select: 'Kush ose cili burim e ofron këtë?', close: 'Mbyll pa ruajtur',

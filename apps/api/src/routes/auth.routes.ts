@@ -352,7 +352,7 @@ authRouter.get(
         platformRole: true,
         emailVerifiedAt: true,
         memberships: {
-          include: { business: { select: { id: true, name: true, slug: true, status: true } } },
+          include: { business: { select: { id: true, name: true, slug: true, status: true, category: { select: { slug: true } } } } },
         },
       },
     });

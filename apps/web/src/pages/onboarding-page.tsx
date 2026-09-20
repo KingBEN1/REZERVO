@@ -8,28 +8,370 @@ import { CountryPhoneInput } from '../components/country-phone-input';
 import { Logo } from '../components/site-header';
 import { Button } from '../components/ui/button';
 import { api, ApiError } from '../lib/api';
+import { categoryUi } from '../lib/business-category-ui';
 
-const schema = z.object({ name: z.string().trim().min(2, 'Shkruani emrin e biznesit.'), slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Përdorni shkronja të vogla, numra dhe viza.').min(3), categoryId: z.string().min(1, 'Zgjidhni llojin e biznesit.'), city: z.string().min(2, 'Zgjidhni qytetin.'), phone: z.string().min(6, 'Shkruani numrin e telefonit.'), address: z.string().max(180).optional(), description: z.string().max(1200).optional() });
+const schema = z.object({
+  name: z.string().trim().min(2, 'Shkruani emrin e biznesit.'),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Përdorni shkronja të vogla, numra dhe viza.')
+    .min(3),
+  categoryId: z.string().min(1, 'Zgjidhni llojin e biznesit.'),
+  city: z.string().min(2, 'Zgjidhni qytetin.'),
+  phone: z.string().min(6, 'Shkruani numrin e telefonit.'),
+  address: z.string().max(180).optional(),
+  description: z.string().max(1200).optional(),
+});
 type Values = z.infer<typeof schema>;
 type Category = { id: string; name: string; slug: string; icon: string | null };
-type User = { email: string; emailVerifiedAt: string | null; memberships: Array<{ business: { id: string } }> };
-const cities = ['Prishtinë', 'Ferizaj', 'Prizren', 'Gjilan', 'Pejë', 'Gjakovë', 'Mitrovicë', 'Podujevë', 'Vushtrri', 'Suharekë', 'Rahovec', 'Kamenicë', 'Deçan', 'Klinë', 'Lipjan', 'Malishevë', 'Skenderaj', 'Kaçanik', 'Dragash'];
-const glyphs: Record<string, string> = { Scissors: '✂', Sparkles: '✦', HeartPulse: '♥', Stethoscope: '✚', Smile: '☺', Activity: '◌', Dumbbell: '◈', Hotel: '⌂', Utensils: '♨', CarTaxiFront: '▰', Car: '▱', Camera: '◉', PartyPopper: '✺', GraduationCap: '◆', BriefcaseBusiness: '▣', House: '⌂', PawPrint: '♧', Scale: '⚖', KeyRound: '⌑', Compass: '◉', MonitorCog: '▤', Wrench: '⌕', Baby: '◍', MoreHorizontal: '•••' };
-const makeSlug = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+type User = {
+  email: string;
+  emailVerifiedAt: string | null;
+  memberships: Array<{ business: { id: string } }>;
+};
+const cities = [
+  'Prishtinë',
+  'Ferizaj',
+  'Prizren',
+  'Gjilan',
+  'Pejë',
+  'Gjakovë',
+  'Mitrovicë',
+  'Podujevë',
+  'Vushtrri',
+  'Suharekë',
+  'Rahovec',
+  'Kamenicë',
+  'Deçan',
+  'Klinë',
+  'Lipjan',
+  'Malishevë',
+  'Skenderaj',
+  'Kaçanik',
+  'Dragash',
+];
+const glyphs: Record<string, string> = {
+  Scissors: '✂',
+  Sparkles: '✦',
+  HeartPulse: '♥',
+  Stethoscope: '✚',
+  Smile: '☺',
+  Activity: '◌',
+  Dumbbell: '◈',
+  Hotel: '⌂',
+  Utensils: '♨',
+  CarTaxiFront: '▰',
+  Car: '▱',
+  Camera: '◉',
+  PartyPopper: '✺',
+  GraduationCap: '◆',
+  BriefcaseBusiness: '▣',
+  House: '⌂',
+  PawPrint: '♧',
+  Scale: '⚖',
+  KeyRound: '⌑',
+  Compass: '◉',
+  MonitorCog: '▤',
+  Wrench: '⌕',
+  Baby: '◍',
+  MoreHorizontal: '•••',
+};
+const makeSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 export function OnboardingPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
-  const user = useQuery({ queryKey: ['me'], queryFn: () => api<{ user: User }>('/auth/me'), refetchOnWindowFocus: true, retry: false });
-  const resend = useMutation({ mutationFn: () => api('/auth/resend-verification', { method: 'POST' }) });
-  const categories = useQuery({ queryKey: ['business-categories'], queryFn: () => api<{ categories: Category[] }>('/public/categories') });
-  const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { name: '', slug: '', categoryId: '', city: '', phone: '', address: '', description: '' } });
-  const create = useMutation({ mutationFn: (values: Values) => api<{ business: { id: string } }>('/business', { method: 'POST', body: JSON.stringify(values) }), onSuccess: async ({ business }) => { localStorage.setItem('rezervo-business-id', business.id); await client.invalidateQueries({ queryKey: ['me'] }); navigate('/dashboard'); } });
+  const user = useQuery({
+    queryKey: ['me'],
+    queryFn: () => api<{ user: User }>('/auth/me'),
+    refetchOnWindowFocus: true,
+    retry: false,
+  });
+  const resend = useMutation({
+    mutationFn: () => api('/auth/resend-verification', { method: 'POST' }),
+  });
+  const categories = useQuery({
+    queryKey: ['business-categories'],
+    queryFn: () => api<{ categories: Category[] }>('/public/categories'),
+  });
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      slug: '',
+      categoryId: '',
+      city: '',
+      phone: '',
+      address: '',
+      description: '',
+    },
+  });
+  const create = useMutation({
+    mutationFn: (values: Values) =>
+      api<{ business: { id: string } }>('/business', {
+        method: 'POST',
+        body: JSON.stringify(values),
+      }),
+    onSuccess: async ({ business }) => {
+      localStorage.setItem('rezervo-business-id', business.id);
+      await client.invalidateQueries({ queryKey: ['me'] });
+      navigate('/dashboard');
+    },
+  });
   const selectedCategory = form.watch('categoryId');
-  if (user.isLoading) return <div className="grid min-h-screen place-items-center"><div className="size-8 animate-spin rounded-full border-2 border-forest border-t-transparent" /></div>;
-  if (user.error instanceof ApiError && user.error.status === 401) return <Navigate to="/login?intent=business" replace />;
-  if (!user.data) return <main className="page-shell py-16"><p>Llogaria nuk u ngarkua.</p><Button onClick={() => user.refetch()}>Provo përsëri</Button></main>;
-  if (user.data.user.memberships[0]) { localStorage.setItem('rezervo-business-id', user.data.user.memberships[0].business.id); return <Navigate to="/dashboard" replace />; }
-  if (!user.data.user.emailVerifiedAt) return <main className="min-h-screen bg-sand px-4 py-12"><section className="surface mx-auto max-w-lg p-7"><Logo /><ShieldCheck className="mt-8 text-forest" size={32} /><h1 className="mt-4 text-2xl font-bold">Verifiko emailin e llogarisë</h1><p className="mt-3 text-slate-600">Para krijimit të biznesit, verifikoni emailin <strong>{user.data.user.email}</strong>.</p><Button className="mt-6 w-full" disabled={resend.isPending || resend.isSuccess} onClick={() => resend.mutate()}>{resend.isPending ? 'Po dërgohet…' : resend.isSuccess ? 'Lidhja u dërgua' : 'Dërgo lidhjen e verifikimit'}</Button>{resend.error && <p className="mt-3 text-sm text-red-600">Nuk mundëm ta dërgojmë emailin. Provo përsëri.</p>}<Button variant="secondary" className="mt-3 w-full" onClick={() => void user.refetch()}>E verifikova — vazhdo</Button></section></main>;
-  return <main className="min-h-screen bg-sand"><header className="border-b border-line bg-white"><div className="page-shell flex h-16 items-center justify-between"><Logo /><span className="text-sm text-slate-500">Krijoni biznesin tuaj</span></div></header><div className="page-shell grid gap-8 py-10 lg:grid-cols-[260px_1fr] lg:py-16"><aside className="surface h-fit p-5"><p className="eyebrow">Konfigurimi</p><div className="mt-5 space-y-4">{['Të dhënat e biznesit', 'Shto shërbimet ose ofertat', 'Shto ekipin ose burimet', 'Vendos orarin', 'Publiko faqen'].map((item, index) => <div key={item} className={`flex items-center gap-3 text-sm ${index === 0 ? 'font-bold text-forest' : 'text-slate-400'}`}>{index === 0 ? <CheckCircle2 size={19} /> : <Circle size={19} />}{item}</div>)}</div><div className="mt-7 rounded-2xl bg-green-50 p-4"><CreditCard className="text-forest" size={20} /><p className="mt-3 text-sm font-bold text-forest">30 ditë falas</p><p className="mt-1 text-xs leading-5 text-green-800">Pa pagesë sot dhe pa kontratë afatgjatë.</p></div></aside><section className="surface max-w-3xl p-6 sm:p-9"><span className="grid size-12 place-items-center rounded-2xl bg-green-50 text-forest"><Building2 size={23} /></span><p className="eyebrow mt-6">Le të fillojmë</p><h1 className="display mt-2 text-3xl font-bold">Na tregoni për biznesin tuaj.</h1><p className="mt-3 text-slate-600">Krijoni faqen tuaj të rezervimeve dhe shtoni ofertat, ekipin dhe orarin tuaj.</p><form onSubmit={form.handleSubmit((values) => create.mutate(values))} className="mt-8 grid gap-5 sm:grid-cols-2"><label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Emri i biznesit</span><input className="input" placeholder="p.sh. Hotel Dardania" {...form.register('name', { onChange: (event) => { if (!form.getValues('slug')) form.setValue('slug', makeSlug(event.target.value)); } })} />{form.formState.errors.name && <small className="text-red-600">{form.formState.errors.name.message}</small>}</label><fieldset className="sm:col-span-2"><legend className="mb-1.5 block text-sm font-semibold">Çfarë lloj biznesi keni?</legend><div className="grid gap-2 sm:grid-cols-2">{categories.data?.categories.map((category) => <label key={category.id} className={`cursor-pointer rounded-2xl border p-3 ${selectedCategory === category.id ? 'border-forest bg-green-50' : 'border-line bg-white'}`}><input className="sr-only" type="radio" value={category.id} {...form.register('categoryId')} /><span className="flex gap-3"><b className="grid size-8 place-items-center rounded-lg bg-sand text-forest">{glyphs[category.icon ?? ''] ?? '•'}</b><span><b className="block text-sm">{category.name}</b><small className="text-slate-500">Rezervime të thjeshta për klientët tuaj.</small></span></span></label>)}</div>{categories.isLoading && <div className="h-20 animate-pulse rounded-2xl bg-sand" />}{categories.isError && <p className="text-sm text-red-600">Kategoritë nuk u ngarkuan. Provo përsëri.</p>}{form.formState.errors.categoryId && <small className="text-red-600">{form.formState.errors.categoryId.message}</small>}</fieldset><label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Adresa e faqes</span><div className="flex"><span className="inline-flex h-11 items-center rounded-l-xl border border-r-0 border-line bg-sand px-3 text-sm text-slate-500">rezervoks.com/</span><input className="input rounded-l-none" placeholder="hotel-xy" {...form.register('slug')} /></div><small className="mt-1 block text-slate-500">Shembull: rezervoks.com/hotel-xy</small>{form.formState.errors.slug && <small className="text-red-600">{form.formState.errors.slug.message}</small>}</label><label><span className="mb-1.5 block text-sm font-semibold">Qyteti</span><select className="input" {...form.register('city')}><option value="">Zgjidh qytetin</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>{form.formState.errors.city && <small className="text-red-600">{form.formState.errors.city.message}</small>}</label><label><span className="mb-1.5 block text-sm font-semibold">Telefoni</span><Controller control={form.control} name="phone" render={({ field }) => <CountryPhoneInput value={field.value} onChange={field.onChange} required />} />{form.formState.errors.phone && <small className="text-red-600">{form.formState.errors.phone.message}</small>}</label><label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Adresa <small className="font-normal text-slate-400">(opsionale)</small></span><input className="input" placeholder="Rruga dhe numri" {...form.register('address')} /></label><label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Çfarë mund të rezervojnë klientët? <small className="font-normal text-slate-400">(opsionale)</small></span><textarea className="input min-h-24 py-3" placeholder="p.sh. Dhoma hoteli, taksi, tavolina ose shërbime" {...form.register('description')} /></label>{create.error && <p className="text-sm text-red-600 sm:col-span-2">{create.error instanceof ApiError ? create.error.message : 'Nuk mundëm të krijojmë biznesin.'}</p>}<div className="flex flex-col-reverse gap-3 pt-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between"><Link to="/" className="text-sm font-semibold text-slate-600">Ruaj për më vonë</Link><Button type="submit" disabled={create.isPending || categories.isLoading}>{create.isPending ? 'Duke ruajtur...' : <>Krijo biznesin falas <ArrowRight size={16} /></>}</Button></div></form></section></div></main>;
+  const selectedCategoryUi = categoryUi(
+    categories.data?.categories.find((category) => category.id === selectedCategory)?.slug,
+  );
+  if (user.isLoading)
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-forest border-t-transparent" />
+      </div>
+    );
+  if (user.error instanceof ApiError && user.error.status === 401)
+    return <Navigate to="/login?intent=business" replace />;
+  if (!user.data)
+    return (
+      <main className="page-shell py-16">
+        <p>Llogaria nuk u ngarkua.</p>
+        <Button onClick={() => user.refetch()}>Provo përsëri</Button>
+      </main>
+    );
+  if (user.data.user.memberships[0]) {
+    localStorage.setItem('rezervo-business-id', user.data.user.memberships[0].business.id);
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (!user.data.user.emailVerifiedAt)
+    return (
+      <main className="min-h-screen bg-sand px-4 py-12">
+        <section className="surface mx-auto max-w-lg p-7">
+          <Logo />
+          <ShieldCheck className="mt-8 text-forest" size={32} />
+          <h1 className="mt-4 text-2xl font-bold">Verifiko emailin e llogarisë</h1>
+          <p className="mt-3 text-slate-600">
+            Para krijimit të biznesit, verifikoni emailin <strong>{user.data.user.email}</strong>.
+          </p>
+          <Button
+            className="mt-6 w-full"
+            disabled={resend.isPending || resend.isSuccess}
+            onClick={() => resend.mutate()}
+          >
+            {resend.isPending
+              ? 'Po dërgohet…'
+              : resend.isSuccess
+                ? 'Lidhja u dërgua'
+                : 'Dërgo lidhjen e verifikimit'}
+          </Button>
+          {resend.error && (
+            <p className="mt-3 text-sm text-red-600">
+              Nuk mundëm ta dërgojmë emailin. Provo përsëri.
+            </p>
+          )}
+          <Button variant="secondary" className="mt-3 w-full" onClick={() => void user.refetch()}>
+            E verifikova — vazhdo
+          </Button>
+        </section>
+      </main>
+    );
+  return (
+    <main className="min-h-screen bg-sand">
+      <header className="border-b border-line bg-white">
+        <div className="page-shell flex h-16 items-center justify-between">
+          <Logo />
+          <span className="text-sm text-slate-500">Krijoni biznesin tuaj</span>
+        </div>
+      </header>
+      <div className="page-shell grid gap-8 py-10 lg:grid-cols-[260px_1fr] lg:py-16">
+        <aside className="surface h-fit p-5">
+          <p className="eyebrow">Konfigurimi</p>
+          <div className="mt-5 space-y-4">
+            {[
+              'Të dhënat e biznesit',
+              'Shto shërbimet ose ofertat',
+              'Shto ekipin ose burimet',
+              'Vendos orarin',
+              'Publiko faqen',
+            ].map((item, index) => (
+              <div
+                key={item}
+                className={`flex items-center gap-3 text-sm ${index === 0 ? 'font-bold text-forest' : 'text-slate-400'}`}
+              >
+                {index === 0 ? <CheckCircle2 size={19} /> : <Circle size={19} />}
+                {item}
+              </div>
+            ))}
+          </div>
+          <div className="mt-7 rounded-2xl bg-green-50 p-4">
+            <CreditCard className="text-forest" size={20} />
+            <p className="mt-3 text-sm font-bold text-forest">30 ditë falas</p>
+            <p className="mt-1 text-xs leading-5 text-green-800">
+              Pa pagesë sot dhe pa kontratë afatgjatë.
+            </p>
+          </div>
+        </aside>
+        <section className="surface max-w-3xl p-6 sm:p-9">
+          <span className="grid size-12 place-items-center rounded-2xl bg-green-50 text-forest">
+            <Building2 size={23} />
+          </span>
+          <p className="eyebrow mt-6">Le të fillojmë</p>
+          <h1 className="display mt-2 text-3xl font-bold">Na tregoni për biznesin tuaj.</h1>
+          <p className="mt-3 text-slate-600">
+            {selectedCategory
+              ? selectedCategoryUi.onboarding
+              : 'Zgjidhni llojin e biznesit dhe paneli do të përgatitet me opsionet e duhura.'}
+          </p>
+          <form
+            onSubmit={form.handleSubmit((values) => create.mutate(values))}
+            className="mt-8 grid gap-5 sm:grid-cols-2"
+          >
+            <label className="sm:col-span-2">
+              <span className="mb-1.5 block text-sm font-semibold">Emri i biznesit</span>
+              <input
+                className="input"
+                placeholder="p.sh. Hotel Dardania"
+                {...form.register('name', {
+                  onChange: (event) => {
+                    if (!form.getValues('slug'))
+                      form.setValue('slug', makeSlug(event.target.value));
+                  },
+                })}
+              />
+              {form.formState.errors.name && (
+                <small className="text-red-600">{form.formState.errors.name.message}</small>
+              )}
+            </label>
+            <fieldset className="sm:col-span-2">
+              <legend className="mb-1.5 block text-sm font-semibold">
+                Çfarë lloj biznesi keni?
+              </legend>
+              <p className="mb-4 text-sm text-slate-500">
+                Zgjedhja përcakton emrat dhe opsionet që do të shihni në panel.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {categories.data?.categories.map((category) => (
+                  <label
+                    key={category.id}
+                    className={`group cursor-pointer rounded-2xl border p-4 transition ${selectedCategory === category.id ? 'border-forest bg-green-50 ring-2 ring-green-100' : 'border-line bg-white hover:-translate-y-0.5 hover:border-forest/40 hover:shadow-md'}`}
+                  >
+                    <input
+                      className="sr-only"
+                      type="radio"
+                      value={category.id}
+                      {...form.register('categoryId')}
+                    />
+                    <span className="flex gap-3">
+                      <b className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${selectedCategory === category.id ? 'bg-forest text-white' : 'bg-sand text-forest group-hover:bg-green-50'}`}>
+                        {glyphs[category.icon ?? ''] ?? '•'}
+                      </b>
+                      <span>
+                        <b className="block text-sm">{category.name}</b>
+                        <small className="mt-1 block leading-5 text-slate-500">{categoryUi(category.slug).onboarding}</small>
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {categories.isLoading && <div className="h-20 animate-pulse rounded-2xl bg-sand" />}
+              {categories.isError && (
+                <p className="text-sm text-red-600">Kategoritë nuk u ngarkuan. Provo përsëri.</p>
+              )}
+              {form.formState.errors.categoryId && (
+                <small className="text-red-600">{form.formState.errors.categoryId.message}</small>
+              )}
+            </fieldset>
+            <label className="sm:col-span-2">
+              <span className="mb-1.5 block text-sm font-semibold">Adresa e faqes</span>
+              <div className="flex">
+                <span className="inline-flex h-11 items-center rounded-l-xl border border-r-0 border-line bg-sand px-3 text-sm text-slate-500">
+                  rezervoks.com/
+                </span>
+                <input
+                  className="input rounded-l-none"
+                  placeholder="hotel-xy"
+                  {...form.register('slug')}
+                />
+              </div>
+              <small className="mt-1 block text-slate-500">Shembull: rezervoks.com/hotel-xy</small>
+              {form.formState.errors.slug && (
+                <small className="text-red-600">{form.formState.errors.slug.message}</small>
+              )}
+            </label>
+            <label>
+              <span className="mb-1.5 block text-sm font-semibold">Qyteti</span>
+              <select className="input" {...form.register('city')}>
+                <option value="">Zgjidh qytetin</option>
+                {cities.map((city) => (
+                  <option key={city}>{city}</option>
+                ))}
+              </select>
+              {form.formState.errors.city && (
+                <small className="text-red-600">{form.formState.errors.city.message}</small>
+              )}
+            </label>
+            <label>
+              <span className="mb-1.5 block text-sm font-semibold">Telefoni</span>
+              <Controller
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <CountryPhoneInput value={field.value} onChange={field.onChange} required />
+                )}
+              />
+              {form.formState.errors.phone && (
+                <small className="text-red-600">{form.formState.errors.phone.message}</small>
+              )}
+            </label>
+            <label className="sm:col-span-2">
+              <span className="mb-1.5 block text-sm font-semibold">
+                Adresa <small className="font-normal text-slate-400">(opsionale)</small>
+              </span>
+              <input
+                className="input"
+                placeholder="Rruga dhe numri"
+                {...form.register('address')}
+              />
+            </label>
+            <label className="sm:col-span-2">
+              <span className="mb-1.5 block text-sm font-semibold">
+                Çfarë {selectedCategory ? selectedCategoryUi.servicePlural.toLowerCase() : 'mund të rezervojnë klientët'}?{' '}
+                <small className="font-normal text-slate-400">(opsionale)</small>
+              </span>
+              <textarea
+                className="input min-h-24 py-3"
+                placeholder={selectedCategory ? `p.sh. ${selectedCategoryUi.serviceExample}` : 'p.sh. Dhoma hoteli, taksi ose shërbime'}
+                {...form.register('description')}
+              />
+            </label>
+            {create.error && (
+              <p className="text-sm text-red-600 sm:col-span-2">
+                {create.error instanceof ApiError
+                  ? create.error.message
+                  : 'Nuk mundëm të krijojmë biznesin.'}
+              </p>
+            )}
+            <div className="flex flex-col-reverse gap-3 pt-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+              <Link to="/" className="text-sm font-semibold text-slate-600">
+                Ruaj për më vonë
+              </Link>
+              <Button type="submit" disabled={create.isPending || categories.isLoading}>
+                {create.isPending ? (
+                  'Duke ruajtur...'
+                ) : (
+                  <>
+                    Krijo biznesin falas <ArrowRight size={16} />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+  );
 }
