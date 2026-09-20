@@ -15,6 +15,7 @@ import { authRouter } from './routes/auth.routes.js';
 import { businessRouter } from './routes/business.routes.js';
 import { customerRouter } from './routes/customer.routes.js';
 import { publicRouter } from './routes/public.routes.js';
+import { supportRouter } from './routes/support.routes.js';
 import openapi from '../openapi.json' with { type: 'json' };
 
 export function createApp() {
@@ -68,6 +69,7 @@ export function createApp() {
   app.use('/api/business', businessRouter);
   app.use('/api/customer', customerRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/support', supportRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

@@ -203,6 +203,16 @@ export const couponSchema = z.object({
   params: z.object({}),
 });
 
+export const supportTicketSchema = z.object({
+  body: z.object({
+    message: z.string().trim().min(5).max(2000),
+    subject: z.string().trim().min(3).max(140).optional(),
+    category: z.enum(['GENERAL', 'BOOKING', 'ACCOUNT', 'PAYMENT', 'TECHNICAL']).default('GENERAL'),
+  }),
+  query: z.object({}),
+  params: z.object({}),
+});
+
 export const workingHoursSchema = z.object({
   body: z.object({
     hours: z
@@ -334,22 +344,35 @@ export const publicBookingSchema = z.object({
 });
 
 export const bookingVerificationRequestSchema = z.object({
-  body: z.object({
-    channel: z.enum(['EMAIL', 'SMS']).default('EMAIL'),
-    contact: z.string().trim().min(6).max(254),
-    turnstileToken: z.string().max(2048).optional(),
-  }).superRefine((data, context) => {
-    if (data.channel === 'EMAIL' && !email.safeParse(data.contact).success)
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ['contact'], message: 'Shkruani një email të vlefshëm.' });
-    if (data.channel === 'SMS' && !/^\+?[0-9\s()-]{6,32}$/.test(data.contact))
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ['contact'], message: 'Shkruani një numër telefoni të vlefshëm.' });
-  }),
+  body: z
+    .object({
+      channel: z.enum(['EMAIL', 'SMS']).default('EMAIL'),
+      contact: z.string().trim().min(6).max(254),
+      turnstileToken: z.string().max(2048).optional(),
+    })
+    .superRefine((data, context) => {
+      if (data.channel === 'EMAIL' && !email.safeParse(data.contact).success)
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['contact'],
+          message: 'Shkruani një email të vlefshëm.',
+        });
+      if (data.channel === 'SMS' && !/^\+?[0-9\s()-]{6,32}$/.test(data.contact))
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['contact'],
+          message: 'Shkruani një numër telefoni të vlefshëm.',
+        });
+    }),
   query: z.object({}),
   params: z.object({}),
 });
 
 export const bookingVerificationConfirmSchema = z.object({
-  body: z.object({ challengeId: z.string().cuid(), code: z.string().regex(/^\d{6}$/, 'Kodi duhet të ketë 6 shifra.') }),
+  body: z.object({
+    challengeId: z.string().cuid(),
+    code: z.string().regex(/^\d{6}$/, 'Kodi duhet të ketë 6 shifra.'),
+  }),
   query: z.object({}),
   params: z.object({}),
 });
