@@ -78,9 +78,15 @@ function Field({
 export function LoginPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
-  const signedIn = async () => { await client.cancelQueries(); client.clear(); navigate(businessIntent ? '/dashboard' : '/account'); };
   const [params] = useSearchParams();
   const businessIntent = params.get('intent') === 'business';
+  const signedIn = async () => {
+    await client.cancelQueries();
+    client.clear();
+    // Google and the API live on different origins in production. A clean
+    // navigation after Set-Cookie avoids rendering /login from an old cache.
+    window.location.assign(businessIntent ? '/dashboard' : '/account');
+  };
   const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const mutation = useMutation({
     mutationFn: (values: LoginValues) =>
@@ -159,9 +165,13 @@ export function LoginPage() {
 export function RegisterPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
-  const signedIn = async () => { await client.cancelQueries(); client.clear(); navigate(businessIntent ? '/onboarding' : '/account'); };
   const [params] = useSearchParams();
   const businessIntent = params.get('intent') === 'business';
+  const signedIn = async () => {
+    await client.cancelQueries();
+    client.clear();
+    window.location.assign(businessIntent ? '/onboarding' : '/account');
+  };
   const form = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
   const [turnstileToken, setTurnstileToken] = useState('');
   const [pendingEmail, setPendingEmail] = useState(params.get('email') ?? '');
@@ -358,7 +368,7 @@ export function ResetPasswordPage() {
         method: 'POST',
         body: JSON.stringify({ token, password: values.password }),
       }),
-    onSuccess: async () => { await client.cancelQueries(); client.clear(); navigate('/account'); },
+    onSuccess: async () => { await client.cancelQueries(); client.clear(); window.location.assign('/account'); },
   });
   return (
     <AuthShell>
