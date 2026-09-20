@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ChevronLeft, Clock3, MapPin, Phone, Star } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronLeft, Clock3, MapPin, Moon, Phone, Star, Sun } from 'lucide-react';
 import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -232,6 +232,11 @@ function BookingFlow() {
         `/public/businesses/${slug}/availability?serviceId=${serviceId}&staffId=${staffId}&date=${date}`,
       ),
   });
+  const slotTime = (startAt: string) => new Intl.DateTimeFormat('sq-XK', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Belgrade',
+  }).format(new Date(startAt));
+  const morningSlots = (availability.data?.slots ?? []).filter((item) => Number(slotTime(item.startAt).slice(0, 2)) < 12);
+  const afternoonSlots = (availability.data?.slots ?? []).filter((item) => Number(slotTime(item.startAt).slice(0, 2)) >= 12);
   const hotelAvailability = useQuery({
     staleTime: 0,
     refetchOnWindowFocus: true,
@@ -641,21 +646,32 @@ function BookingFlow() {
                 >
                   ← Ndrysho ofruesin
                 </button>
-                <h2 className="mt-4 text-lg font-bold">Zgjidh kohën</h2>
-                <label className="mt-4 block max-w-xs">
-                  <span className="mb-1.5 block text-sm font-medium">Data</span>
-                  <input
-                    className="input"
-                    type="date"
-                    value={date}
-                    min={localIsoDate(0)}
-                    max={localIsoDate(business.settings?.maxBookingDays ?? 30)}
-                    onChange={(event) => {
-                      setDate(event.target.value);
-                      setSlot(undefined);
-                    }}
-                  />
-                </label>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="eyebrow">Hapi 3 nga 4</p>
+                    <h2 className="mt-1 text-xl font-bold">Zgjidh termin</h2>
+                    <p className="mt-1 text-sm text-slate-500">Zgjidh një datë, pastaj kohën që të përshtatet.</p>
+                  </div>
+                  <label className="relative block sm:w-52">
+                    <span className="sr-only">Data e rezervimit</span>
+                    <CalendarDays className="pointer-events-none absolute left-3 top-3 text-forest" size={18} />
+                    <input
+                      className="input pl-10 font-semibold"
+                      type="date"
+                      value={date}
+                      min={localIsoDate(0)}
+                      max={localIsoDate(business.settings?.maxBookingDays ?? 30)}
+                      onChange={(event) => { setDate(event.target.value); setSlot(undefined); }}
+                    />
+                  </label>
+                </div>
+                <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+                  {[0, 1, 2, 3, 4].map((offset) => {
+                    const option = localIsoDate(offset);
+                    const label = new Intl.DateTimeFormat('sq-XK', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(`${option}T12:00:00`));
+                    return <button key={option} type="button" onClick={() => { setDate(option); setSlot(undefined); }} className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-semibold transition ${date === option ? 'border-forest bg-forest text-white shadow-md' : 'border-line bg-white text-slate-600 hover:border-forest/50 hover:bg-green-50'}`}>{offset === 0 ? 'Sot' : offset === 1 ? 'Nesër' : label}</button>;
+                  })}
+                </div>
                 {availability.isLoading && (
                   <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
                     {Array.from({ length: 8 }, (_, index) => (
@@ -664,19 +680,17 @@ function BookingFlow() {
                   </div>
                 )}
                 {availability.data && (
-                  <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {availability.data.slots.map((item) => (
-                      <button
-                        key={item.startAt}
-                        onClick={() => setSlot(item)}
-                        className="rounded-xl border border-line bg-white py-2.5 text-sm font-semibold shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-                      >
-                        {new Intl.DateTimeFormat('sq-XK', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          timeZone: 'Europe/Belgrade',
-                        }).format(new Date(item.startAt))}
-                      </button>
+                  <div className="mt-6 space-y-5">
+                    {[
+                      { label: 'Paradite', icon: Sun, items: morningSlots },
+                      { label: 'Pasdite', icon: Moon, items: afternoonSlots },
+                    ].map(({ label, icon: Icon, items }) => items.length > 0 && (
+                      <section key={label}>
+                        <div className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700"><Icon size={16} className="text-amber-500" /> {label} <span className="font-normal text-slate-400">· {items.length} termine të lira</span></div>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                          {items.map((item) => <button key={item.startAt} onClick={() => setSlot(item)} className="group relative rounded-xl border border-line bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-forest hover:bg-green-50 hover:text-forest hover:shadow-md"><Clock3 className="mr-1 inline text-slate-400 group-hover:text-forest" size={14} />{slotTime(item.startAt)}</button>)}
+                        </div>
+                      </section>
                     ))}
                   </div>
                 )}
