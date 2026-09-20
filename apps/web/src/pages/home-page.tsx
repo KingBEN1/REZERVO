@@ -88,6 +88,22 @@ export function HomePage() {
             </div>
           </div>
         </section>
+        <section className="page-shell py-4 sm:py-8">
+          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-amber-100 via-white to-cyan-100 p-1 shadow-xl">
+            <div className="relative grid gap-6 rounded-[1.85rem] bg-white/75 p-6 backdrop-blur sm:grid-cols-[1fr_260px] sm:p-9">
+              <div>
+                <p className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-900">★ {tr('Biznes i promovuar', 'Featured business')}</p>
+                <h2 className="display mt-4 text-3xl font-bold text-ink">Blend Barber</h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">{tr('Prerje moderne, fade dhe rregullim mjekre në Prishtinë. Shiko oraret e lira dhe rezervo menjëherë.', 'Modern cuts, fades and beard grooming in Prishtina. See free times and book instantly.')}</p>
+                <Link to="/blend-barber" className="mt-5 inline-block"><Button>{tr('Rezervo te Blend Barber', 'Book Blend Barber')} <ArrowRight size={16} /></Button></Link>
+              </div>
+              <div className="relative min-h-40 overflow-hidden rounded-2xl bg-[url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=900&q=80')] bg-cover bg-center">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <p className="absolute bottom-4 left-4 text-sm font-bold text-white">Prishtinë · Berber</p>
+              </div>
+            </div>
+          </div>
+        </section>
         <section className="page-shell py-16 sm:py-24">
           <p className="eyebrow">{tr('Eksploro sipas nevojës', 'Explore by need')}</p>
           <h2 className="display mt-3 text-3xl font-bold sm:text-4xl">

@@ -193,7 +193,7 @@ publicRouter.get(
     const hasStayDates = Boolean(checkIn && checkOut && checkOut > checkIn);
     const businesses = await prisma.business.findMany({
       where: {
-        status: 'ACTIVE',
+        OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }],
         deletedAt: null,
         ...(city ? { city: { equals: city, mode: 'insensitive' } } : {}),
         ...(category ? { category: { slug: category } } : {}),
@@ -269,14 +269,16 @@ publicRouter.get(
             ? item.staff.filter((staff) => staff.capacity >= guests && staff.bookings.length === 0)
                 .length
             : undefined;
-        return { ...item, rating, availableUnits, staff: undefined };
+        return { ...item, featured: item.slug === 'blend-barber', rating, availableUnits, staff: undefined };
       })
       .filter((item) => (minRating ? (item.rating ?? 0) >= minRating : true))
       .filter(
         (item) => item.category?.slug !== 'hotels' || !hasStayDates || Boolean(item.availableUnits),
       );
     result.sort((left, right) =>
-      sort === 'price-low'
+      sort === 'recommended' && left.featured !== right.featured
+        ? (left.featured ? -1 : 1)
+        : sort === 'price-low'
         ? Number(left.services[0]?.price ?? 0) - Number(right.services[0]?.price ?? 0)
         : sort === 'rating'
           ? (right.rating ?? 0) - (left.rating ?? 0)
@@ -293,7 +295,7 @@ publicRouter.get(
   '/businesses/:slug',
   asyncHandler(async (req, res) => {
     const business = await prisma.business.findFirst({
-      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
+      where: { slug: String(req.params.slug), deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
       include: {
         category: true,
         services: { where: { active: true }, include: { staff: { where: { staff: { active: true } }, include: { staff: true } } } },
@@ -330,7 +332,7 @@ publicRouter.get(
   validate(availabilitySchema),
   asyncHandler(async (req, res) => {
     const business = await prisma.business.findFirst({
-      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
+      where: { slug: String(req.params.slug), deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
       select: { id: true },
     });
     if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');
@@ -361,7 +363,7 @@ publicRouter.get(
     if (checkOutDate <= checkInDate)
       throw new AppError(422, 'INVALID_DATES', 'Data e daljes duhet të jetë pas datës së hyrjes.');
     const business = await prisma.business.findFirst({
-      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
+      where: { slug: String(req.params.slug), deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
       select: { id: true },
     });
     if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');

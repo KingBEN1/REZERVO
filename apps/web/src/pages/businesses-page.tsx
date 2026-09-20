@@ -18,6 +18,7 @@ type Business = {
   category: { name: string; slug: string } | null;
   services: Array<{ price: string }>;
   rating: number | null;
+  featured?: boolean;
   availableUnits?: number;
 };
 type Category = { id: string; name: string; slug: string };
@@ -230,7 +231,8 @@ export function BusinessesPage() {
                   className="group surface lift-3d overflow-hidden hover:border-indigo-200"
                 >
                   <Link to={`/${business.slug}`}>
-                    <div className="h-40 bg-green-100">
+                    <div className="relative h-40 bg-green-100">
+                      {business.featured && <span className="absolute ml-3 mt-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-950 shadow-lg">★ Biznes i promovuar</span>}
                       {business.coverImage ? (
                         <img
                           src={business.coverImage}
