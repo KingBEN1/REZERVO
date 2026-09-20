@@ -1,8 +1,58 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { lazy, Suspense } from 'react';
+import { Component, lazy as reactLazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { GlobalLanguageSwitch, I18nProvider } from './lib/i18n';
 import { HomePage } from './pages/home-page';
+
+/**
+ * Vercel replaces hashed JavaScript files on every deployment. A visitor who
+ * already has the old shell can otherwise get a failed dynamic import and a
+ * blank page when opening a lazy route such as /manage/:token.
+ */
+function lazyWithDeployRecovery<T extends ComponentType<any>>(
+  loader: () => Promise<{ default: T }>,
+) {
+  return reactLazy(async () => {
+    const retryKey = `rezervo:chunk-reload:${window.location.pathname}`;
+    try {
+      const module = await loader();
+      sessionStorage.removeItem(retryKey);
+      return module;
+    } catch (error) {
+      if (!sessionStorage.getItem(retryKey)) {
+        sessionStorage.setItem(retryKey, '1');
+        window.location.reload();
+        return new Promise<{ default: T }>(() => undefined);
+      }
+      sessionStorage.removeItem(retryKey);
+      throw error;
+    }
+  });
+}
+
+const lazy = lazyWithDeployRecovery;
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: unknown) { console.error('Rezervo page failed to render', error); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <main className="grid min-h-screen place-items-center bg-sand p-5 text-center">
+        <section className="surface max-w-md p-7">
+          <p className="eyebrow">Faqja nuk u hap</p>
+          <h1 className="display mt-2 text-3xl font-bold">Diçka nuk u ngarkua si duhet.</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Provoni përsëri. Nëse sapo është publikuar një version i ri, faqja do të marrë versionin e fundit.</p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button className="rounded-xl bg-forest px-4 py-2.5 text-sm font-bold text-white" type="button" onClick={() => window.location.reload()}>Provo përsëri</button>
+            <a className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-bold text-slate-700" href="/">Ballina</a>
+          </div>
+        </section>
+      </main>
+    );
+  }
+}
 
 const BusinessesPage = lazy(() =>
   import('./pages/businesses-page').then((module) => ({ default: module.BusinessesPage })),
@@ -114,10 +164,9 @@ export function App() {
       <I18nProvider>
         <BrowserRouter>
           <GlobalLanguageSwitch />
-          <Suspense
-            fallback={<AppLoadingScreen />}
-          >
-            <Routes>
+          <AppErrorBoundary>
+            <Suspense fallback={<AppLoadingScreen />}>
+              <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/businesses" element={<BusinessesPage />} />
               <Route path="/book/:slug" element={<BookingPage />} />
@@ -157,8 +206,9 @@ export function App() {
               </Route>
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </AppErrorBoundary>
         </BrowserRouter>
       </I18nProvider>
     </QueryClientProvider>
