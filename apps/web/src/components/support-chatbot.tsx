@@ -48,7 +48,7 @@ export function SupportChatbot() {
   if (location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin'))
     return null;
   return (
-    <div className="fixed bottom-5 right-5 z-[60]">
+    <div className="fixed bottom-20 right-5 z-[60]">
       {open && (
         <section className="mb-3 w-[min(23rem,calc(100vw-2.5rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <header className="flex items-center justify-between bg-gradient-to-r from-forest to-teal-700 px-5 py-4 text-white">
