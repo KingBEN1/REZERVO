@@ -60,7 +60,7 @@ declare global { interface Window { paypal?: PayPalButtonApi } }
 const detailsSchema = z.object({
   name: z.string().trim().min(2, 'Shkruani emrin.'),
   email: z.string().trim().email('Shkruani një email të vlefshëm.'),
-  phone: z.string().trim().min(6, 'Shkruani numrin e telefonit.'),
+  phone: z.string().trim().max(32).refine((value) => !value || value.length >= 6, 'Shkruani numrin e telefonit.'),
 });
 
 function Step({
@@ -410,8 +410,8 @@ function BookingFlow() {
       </main>
     );
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(79,70,229,.08),transparent_28rem),#f4f7fb]">
-      <header className="border-b border-line bg-white">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,.13),transparent_30rem),radial-gradient(circle_at_90%_10%,rgba(99,102,241,.11),transparent_28rem),#f5f7fb]">
+      <header className="border-b border-white/70 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <Link
             to="/businesses"
@@ -419,11 +419,14 @@ function BookingFlow() {
           >
             <ChevronLeft size={18} /> Të gjitha bizneset
           </Link>
-          <span className="text-sm font-bold">rezervo</span>
+          <span className="inline-flex items-center gap-2 text-sm font-bold text-ink">
+            <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-teal-600 to-indigo-600 text-xs text-white">R</span>
+            rezervo
+          </span>
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
-        <div className="surface lift-3d overflow-hidden">
+        <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_22px_65px_rgba(15,23,42,.12)]">
           <div className="tech-grid h-28 bg-gradient-to-br from-[#0b1d32] via-indigo-950 to-teal-900 sm:h-40">
             {business.coverImage && (
               <img src={business.coverImage} alt="" className="h-full w-full object-cover" />
@@ -472,13 +475,19 @@ function BookingFlow() {
             </div>
           </div>
         </div>
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
-          <section className="surface p-5 sm:p-7">
-            <div className="mb-7 flex justify-between border-b border-line pb-5">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
+          <section className="rounded-[2rem] border border-white/80 bg-white/95 p-5 shadow-[0_18px_55px_rgba(15,23,42,.09)] sm:p-7">
+            <div className="mb-7 rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/70 p-4 sm:p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm font-bold text-ink">Rezervo në 4 hapa të thjeshtë</p>
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-forest shadow-sm">Hapi {step} / 4</span>
+              </div>
+              <div className="flex justify-between">
               <Step number={1} title="Oferta" active={step === 1} done={step > 1} />
               <Step number={2} title="Ofruesi" active={step === 2} done={step > 2} />
               <Step number={3} title="Koha" active={step === 3} done={step > 3} />
               <Step number={4} title="Të dhënat" active={step === 4} done={step > 4} />
+              </div>
             </div>
             {!serviceId && (
               <div>
@@ -486,7 +495,7 @@ function BookingFlow() {
                 <p className="mt-1 text-sm text-slate-500">
                   Zgjidhni ofertën, shërbimin ose burimin që ju nevojitet.
                 </p>
-                <div className="mt-5 space-y-3">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {business.services.map((item) => (
                     <button
                       key={item.id}
@@ -495,19 +504,23 @@ function BookingFlow() {
                         setStaffId(undefined);
                         setSlot(undefined);
                       }}
-                      className="group flex w-full items-center justify-between rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/40 hover:shadow-md"
+                      className="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/40 hover:shadow-md"
                     >
-                      <span>
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-teal-100 to-indigo-100 text-sm font-extrabold text-indigo-700">{item.name.slice(0, 1)}</span>
+                        <span>
                         <b className="block">{item.name}</b>
                         {item.description && (
                           <small className="mt-1 block text-slate-500">{item.description}</small>
                         )}
+                        </span>
                       </span>
                       <span className="text-right text-sm">
                         <b className="block">{money(item.price, business.currency)}</b>
                         <small className="text-slate-500">
                           {isHotel ? 'për natë' : `${item.durationMin} min`}
                         </small>
+                        <small className="mt-1 block font-bold text-forest opacity-0 transition group-hover:opacity-100">Zgjidh →</small>
                       </span>
                     </button>
                   ))}
@@ -535,11 +548,9 @@ function BookingFlow() {
                         setStaffId(item.id);
                         setSlot(undefined);
                       }}
-                      className="group flex items-center gap-3 rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-indigo-50/40 hover:shadow-md"
+                      className="group flex items-center gap-3 rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/40 hover:shadow-md"
                     >
-                      <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-100 to-indigo-100 font-bold text-indigo-700">
-                        {item.name.slice(0, 1)}
-                      </span>
+                      {item.photo ? <img src={item.photo} alt="" className="size-11 rounded-2xl object-cover" /> : <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-100 to-indigo-100 font-bold text-indigo-700">{item.name.slice(0, 1)}</span>}
                       <span>
                         <b className="block">{item.name}</b>
                         <small className="text-slate-500">
@@ -715,9 +726,9 @@ function BookingFlow() {
                 >
                   ← Ndrysho kohën
                 </button>
-                <h2 className="mt-4 text-lg font-bold">Të dhënat tuaja</h2>
+                <h2 className="mt-4 text-xl font-bold">Pothuajse gati</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Na duhen vetëm për konfirmimin e rezervimit.
+                Shkruani emailin për konfirmim. Telefoni është opsional.
               </p>
               {me.data && (
                 <p className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-900">
@@ -789,7 +800,7 @@ function BookingFlow() {
                     />
                   </label>
                   <label>
-                    <span className="mb-1.5 block text-sm font-medium">Telefoni</span>
+                    <span className="mb-1.5 block text-sm font-medium">Telefoni <small className="text-slate-400">(opsional)</small></span>
                     <CountryPhoneInput
                       value={details.phone}
                       onChange={(phone) => {
@@ -899,7 +910,7 @@ function BookingFlow() {
                     }
                     const currentContact = (verificationChannel === 'EMAIL' ? details.email : details.phone).trim().toLowerCase();
                     if (!verification?.verified || verification.channel !== verificationChannel || verification.contact !== currentContact) {
-                      alert('Verifikoni emailin ose telefonin me kodin 6-shifror para rezervimit.');
+                      alert('Verifikoni emailin me kodin 6-shifror para rezervimit.');
                       return;
                     }
                     booking.mutate();
@@ -918,8 +929,11 @@ function BookingFlow() {
               </div>
             )}
           </section>
-          <aside className="surface h-fit p-5 lg:sticky lg:top-6">
-            <h2 className="font-bold">Përmbledhja</h2>
+          <aside className="h-fit overflow-hidden rounded-[2rem] border border-indigo-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,.10)] lg:sticky lg:top-6">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold">Përmbledhja</h2>
+              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-forest"><CheckCircle2 size={13} /> E sigurt</span>
+            </div>
             {service ? (
               <div className="mt-4 space-y-3 text-sm">
                 <div className="border-b border-line pb-3">
@@ -948,9 +962,9 @@ function BookingFlow() {
                     </b>
                   </div>
                 )}
-                <div className="flex justify-between border-t border-line pt-3">
+                <div className="flex justify-between rounded-xl bg-gradient-to-r from-teal-50 to-indigo-50 px-3 py-3">
                   <span className="text-slate-500">Totali</span>
-                  <b>
+                  <b className="text-ink">
                     {money(
                       isHotel ? Number(service.price) * nights : service.price,
                       business.currency,
@@ -979,7 +993,7 @@ function BookingFlow() {
                 Zgjidhni ofertën për të parë përmbledhjen.
               </p>
             )}
-            <div className="mt-5 space-y-3 rounded-xl bg-sand p-3 text-xs leading-5 text-slate-600">
+            <div className="mt-5 space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
               <p className="flex gap-2">
                 <Clock3 className="shrink-0 text-forest" size={17} />
                 Rezervoni të paktën {business.settings?.minNoticeMinutes ?? 60} minuta përpara.
@@ -1000,6 +1014,7 @@ function BookingFlow() {
                   : 'Rezervimi konfirmohet menjëherë pasi ta dërgoni.'}
               </p>
             </div>
+            <p className="mt-4 text-center text-xs leading-5 text-slate-400">Pa telefonata. Konfirmimi ju dërgohet në email.</p>
           </aside>
         </div>
       </div>
