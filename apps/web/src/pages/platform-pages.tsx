@@ -11,8 +11,60 @@ import { money } from '../lib/utils';
 type Plan = { code: string; name: string; description: string | null; monthlyPrice: string; limits: Record<string, number>; features: string[] };
 export function PricingPage() { const query = useQuery({ queryKey: ['plans'], queryFn: () => api<{ plans: Plan[] }>('/public/plans') }); return <><SiteHeader /><main className="page-shell py-14 sm:py-20"><div className="mx-auto max-w-2xl text-center"><p className="eyebrow">Një plan i thjeshtë për çdo biznes</p><h1 className="display mt-3 text-4xl font-bold">30 ditët e para falas. Pastaj 30 € në muaj.</h1><p className="mt-4 text-slate-600">Për berberë, bukuri, hotele, restorante, taksi, klinika, automjete, evente dhe çdo biznes që pranon rezervime.</p></div><div className="mx-auto mt-8 flex max-w-2xl gap-3 rounded-2xl border border-green-200 bg-green-50 p-5 text-left"><CreditCard className="mt-0.5 shrink-0 text-forest" size={22} /><p className="text-sm leading-6 text-green-900"><b>Pa kartelë sot.</b> Regjistrojeni biznesin, përdoreni platformën plotësisht për 30 ditë dhe paguani 30 € vetëm kur përfundon muaji i parë falas.</p></div>{query.isLoading && <div className="mx-auto mt-12 h-[430px] max-w-md animate-pulse rounded-3xl bg-white" />}{query.data && <div className="mx-auto mt-12 grid max-w-md gap-4">{query.data.plans.map((plan) => <article className="surface flex flex-col border-forest p-7 ring-1 ring-forest" key={plan.code}><span className="mb-4 w-fit rounded-full bg-green-100 px-2 py-1 text-xs font-bold text-forest">Muaji i parë falas</span><h2 className="text-2xl font-bold">{plan.name}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{plan.description ?? 'Gjithçka që ju duhet për rezervime të organizuara.'}</p><p className="mt-6"><span className="text-4xl font-bold">{money(plan.monthlyPrice)}</span><span className="text-sm text-slate-500"> / muaj pas provës falas</span></p><p className="mt-2 text-sm font-semibold text-forest">Sot: 0 € · Ditët 1–30: falas</p><Link to="/register" className="mt-6"><Button className="w-full">Krijo biznesin falas</Button></Link><ul className="mt-6 space-y-3 border-t border-line pt-5 text-sm">{plan.features.map((feature) => <li className="flex gap-2" key={feature}><Check className="shrink-0 text-forest" size={17} />{feature}</li>)}</ul></article>)}</div>}{query.isError && <div className="mt-12"><EmptyState title="Planet nuk janë të disponueshme" detail="Provoni përsëri pas pak." action={<Button onClick={() => query.refetch()}>Provo përsëri</Button>} /></div>}</main></>;
 }
-const legalContent: Record<string, { title: string; intro: string; sections: Array<[string, string]> }> = { terms: { title: 'Kushtet e përdorimit', intro: 'Kjo është një strukturë fillestare e kushteve të produktit dhe duhet të rishikohet nga këshilltar juridik para publikimit.', sections: [['Përdorimi i shërbimit', 'Rezervo u ofron bizneseve mjete për administrimin e rezervimeve. Bizneset mbeten përgjegjëse për saktësinë e të dhënave, politikat e tyre dhe komunikimin me klientët.'], ['Llogaritë', 'Përdoruesit duhet të ruajnë sigurinë e kredencialeve të tyre dhe të përdorin shërbimin vetëm sipas rolit të autorizuar.'], ['Ndryshimet', 'Kushtet mund të përditësohen me njoftim të arsyeshëm për përdoruesit.']] }, privacy: { title: 'Politika e privatësisë', intro: 'Kjo strukturë sqaron kategoritë e të dhënave që produkti mund të përpunojë; ajo kërkon rishikim juridik para lansimit.', sections: [['Të dhënat që përpunojmë', 'Përfshijnë detajet e llogarisë, të dhënat e biznesit dhe informacionin e rezervimit që përdoret për ofrimin e shërbimit.'], ['Përdorimi i të dhënave', 'Të dhënat përdoren për rezervime, siguri, mbështetje dhe komunikime të nevojshme për shërbimin. Integrimet analitike ose marketingu nuk duhet të ngarkohen para pëlqimit të duhur.'], ['Kërkesat e privatësisë', 'Përdoruesit mund të kërkojnë qasje ose fshirje të të dhënave të tyre, duke ruajtur të dhënat që kërkohen për arsye financiare ose auditimi.']] } };
-export function LegalPage({ type }: { type: 'terms' | 'privacy' }) { const content = legalContent[type]!; return <><SiteHeader /><main className="page-shell max-w-3xl py-14 sm:py-20"><p className="eyebrow">Dokument produkti</p><h1 className="display mt-3 text-4xl font-bold">{content.title}</h1><p className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">{content.intro}</p>{content.sections.map(([heading, body]) => <section className="mt-9" key={heading}><h2 className="text-xl font-bold">{heading}</h2><p className="mt-3 leading-7 text-slate-600">{body}</p></section>)}</main></>;
+type LegalDocument = { title: string; intro: string; sections: Array<[string, string]> };
+
+const legalContent: Record<'terms' | 'privacy', LegalDocument> = {
+  terms: {
+    title: 'Kushtet e përdorimit',
+    intro: 'Të përditësuara më 23 shtator 2026. Këto kushte shpjegojnë rregullat për përdorimin e Rezervo nga klientët dhe bizneset.',
+    sections: [
+      ['1. Shërbimi ynë', 'Rezervo është një platformë që i ndihmon klientët të zbulojnë biznese dhe të bëjnë rezervime online. Ne u ofrojmë bizneseve mjete për menaxhimin e kalendarit, ofertave, ekipit dhe komunikimeve të rezervimit.'],
+      ['2. Marrëdhënia me biznesin', 'Kur bëni një rezervim, marrëdhënia për shërbimin krijohet mes jush dhe biznesit përkatës. Biznesi është përgjegjës për cilësinë e shërbimit, çmimet, disponueshmërinë, politikat e anulimit, rimbursimet dhe komunikimin për rezervimin e tij.'],
+      ['3. Llogaria dhe siguria', 'Jepni të dhëna të sakta, ruani fjalëkalimin dhe kodet e verifikimit dhe mos lejoni përdorimin e llogarisë nga persona të paautorizuar. Na njoftoni menjëherë nëse dyshoni se llogaria juaj është përdorur pa leje.'],
+      ['4. Rezervimet', 'Para konfirmimit, kontrolloni datën, orën, çmimin dhe rregullat e biznesit. Një rezervim mund të kërkojë verifikim me email, miratim nga biznesi ose parapagim, kur këto opsione janë aktivizuar nga biznesi.'],
+      ['5. Anulimet dhe ndryshimet', 'Anulimi ose ndryshimi i një termini i nënshtrohet rregullave të shfaqura nga biznesi në kohën e rezervimit. Rezervo mundëson mjetet për menaxhim, por nuk garanton që një biznes do të pranojë kërkesën jashtë politikës së vet.'],
+      ['6. Përdorimi i pranueshëm', 'Nuk lejohet përdorimi i platformës për mashtrim, rezervime të rreme, ngacmim, shpërndarje të përmbajtjes së paligjshme, cenim të sigurisë ose cenim të të drejtave të personave të tjerë. Mund të kufizojmë ose mbyllim qasjen që shkel këto kushte.'],
+      ['7. Disponueshmëria', 'Punojmë që platforma të jetë e sigurt dhe e disponueshme, por mund të ketë ndërprerje për mirëmbajtje, përditësime ose rrethana jashtë kontrollit tonë.'],
+      ['8. Ndryshimet në këto kushte', 'Mund t’i përditësojmë këto kushte kur ndryshon shërbimi ose kërkesat ligjore. Versioni i ri publikohet në këtë faqe me datën e përditësimit.'],
+    ],
+  },
+  privacy: {
+    title: 'Politika e privatësisë',
+    intro: 'Të përditësuara më 23 shtator 2026. Kjo politikë shpjegon çfarë të dhënash përdor Rezervo, pse i përdor dhe cilat janë të drejtat tuaja.',
+    sections: [
+      ['1. Të dhënat që përpunojmë', 'Mund të përpunojmë emrin, emailin, numrin e telefonit, të dhënat e llogarisë, detajet e rezervimit, mesazhet e mbështetjes dhe të dhënat që bizneset vendosin në profilin e tyre. Për pagesat, përdorim ofrues pagesash; nuk ruajmë numrin e plotë të kartelës në Rezervo.'],
+      ['2. Pse i përdorim të dhënat', 'Të dhënat përdoren për krijimin dhe mbrojtjen e llogarisë, verifikimin e kontaktit, përpunimin e rezervimeve, njoftimet e nevojshme, mbështetjen, parandalimin e mashtrimit dhe përmirësimin e shërbimit. Marketingu bëhet vetëm kur ekziston bazë e përshtatshme ligjore ose pëlqimi juaj.'],
+      ['3. Ndarja e të dhënave', 'Kur bëni një rezervim, të dhënat e nevojshme të kontaktit dhe rezervimit i ndahen biznesit që keni zgjedhur. Mund të përdorim ofrues teknikë për email, ruajtje të imazheve, hosting, siguri dhe pagesa, vetëm për ofrimin e platformës. Nuk i shesim të dhënat personale.'],
+      ['4. Ruajtja dhe siguria', 'Të dhënat ruhen vetëm për aq kohë sa nevojiten për llogarinë, rezervimin, detyrimet ligjore, zgjidhjen e mosmarrëveshjeve dhe sigurinë. Përdorim masa teknike dhe organizative për t’i mbrojtur, por asnjë shërbim online nuk mund të garantojë siguri absolute.'],
+      ['5. Cookies dhe teknologji të ngjashme', 'Përdorim cookie dhe teknologji të nevojshme për funksionimin, sigurinë dhe ruajtjen e sesionit. Teknologjitë jo thelbësore duhet të përdoren vetëm sipas zgjedhjes dhe pëlqimit tuaj, kur zbatohen.'],
+      ['6. Të drejtat tuaja', 'Mund të kërkoni qasje, korrigjim, fshirje, kufizim ose kundërshtim ndaj përpunimit të të dhënave tuaja, kur zbatohen. Mund të kërkoni edhe kopje të të dhënave. Për kërkesa përdorni faqen Kontakt ose Ndihmë; mund t’ju kërkojmë të verifikoni identitetin para përgjigjes.'],
+      ['7. Ndryshimet në politikë', 'Mund ta përditësojmë këtë politikë kur ndryshojnë shërbimet ose kërkesat ligjore. Data në krye tregon versionin e fundit.'],
+    ],
+  },
+};
+
+export function LegalPage({ type }: { type: 'terms' | 'privacy' }) {
+  const content = legalContent[type];
+  return (
+    <>
+      <SiteHeader />
+      <main className="page-shell max-w-3xl py-14 sm:py-20">
+        <p className="eyebrow">Rezervo · Informacion ligjor</p>
+        <h1 className="display mt-3 text-4xl font-bold">{content.title}</h1>
+        <p className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm leading-6 text-green-950">
+          {content.intro}
+        </p>
+        <div className="mt-9 space-y-8">
+          {content.sections.map(([heading, body]) => (
+            <section key={heading} className="border-b border-line pb-8 last:border-0">
+              <h2 className="text-xl font-bold">{heading}</h2>
+              <p className="mt-3 leading-7 text-slate-600">{body}</p>
+            </section>
+          ))}
+        </div>
+      </main>
+    </>
+  );
 }
 export function SimplePage({ title, text }: { title: string; text: string }) { return <><SiteHeader /><main className="page-shell grid min-h-[60vh] place-items-center py-16"><section className="max-w-xl text-center"><ShieldCheck className="mx-auto text-forest" size={36} /><h1 className="display mt-5 text-4xl font-bold">{title}</h1><p className="mt-4 leading-7 text-slate-600">{text}</p><Link className="mt-7 inline-block" to="/"><Button>Kthehu në ballinë</Button></Link></section></main></>; }
 
