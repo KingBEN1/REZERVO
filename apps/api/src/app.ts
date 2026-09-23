@@ -16,18 +16,25 @@ import { businessRouter } from './routes/business.routes.js';
 import { customerRouter } from './routes/customer.routes.js';
 import { publicRouter } from './routes/public.routes.js';
 import { supportRouter } from './routes/support.routes.js';
+import { internalRouter } from './routes/internal.routes.js';
 import openapi from '../openapi.json' with { type: 'json' };
 
 export function createApp() {
   // Vercel's TypeScript 5.9 resolver sees these dual ESM/CJS packages as module
   // namespaces even though Node ESM exposes their documented default functions.
   // Keep the runtime import intact and narrow it at the middleware boundary.
-  const helmetMiddleware = helmet as unknown as (options?: Record<string, unknown>) => RequestHandler;
-  const rateLimitMiddleware = rateLimit as unknown as (options?: Record<string, unknown>) => RequestHandler;
+  const helmetMiddleware = helmet as unknown as (
+    options?: Record<string, unknown>,
+  ) => RequestHandler;
+  const rateLimitMiddleware = rateLimit as unknown as (
+    options?: Record<string, unknown>,
+  ) => RequestHandler;
   const app = express();
   app.set('trust proxy', 1);
   app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie'] }));
-  app.use(helmetMiddleware({ contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false }));
+  app.use(
+    helmetMiddleware({ contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false }),
+  );
   app.use(
     cors({
       origin(origin, callback) {
@@ -41,7 +48,12 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   app.use(
-    rateLimitMiddleware({ windowMs: 60_000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false }),
+    rateLimitMiddleware({
+      windowMs: 60_000,
+      limit: 300,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
   );
   app.use(
     '/uploads',
@@ -58,9 +70,17 @@ export function createApp() {
   app.get('/health', async (_req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      res.json({ success: true, data: { status: 'ok', database: 'ok', timestamp: new Date().toISOString() } });
+      res.json({
+        success: true,
+        data: { status: 'ok', database: 'ok', timestamp: new Date().toISOString() },
+      });
     } catch {
-      res.status(503).json({ success: false, error: { code: 'DATABASE_UNAVAILABLE', message: 'Database is unavailable.' } });
+      res
+        .status(503)
+        .json({
+          success: false,
+          error: { code: 'DATABASE_UNAVAILABLE', message: 'Database is unavailable.' },
+        });
     }
   });
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi));
@@ -68,6 +88,7 @@ export function createApp() {
   app.use('/api/public', publicRouter);
   app.use('/api/business', businessRouter);
   app.use('/api/customer', customerRouter);
+  app.use('/api/internal', internalRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/support', supportRouter);
   app.use(notFound);
