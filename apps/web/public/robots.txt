@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Replace this URL with the public domain after deployment.
-Sitemap: https://rezervo.example/sitemap.xml
+Sitemap: https://www.rezervoks.com/sitemap.xml

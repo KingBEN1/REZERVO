@@ -24,7 +24,7 @@ const topics: Topic[] = [
   {
     title: 'Nuk më erdhi kodi',
     answer:
-      'Kontrollo Spam/Junk për email. Për SMS, kontrollo prefiksin ndërkombëtar dhe provo përsëri pas pak.',
+      'Kontrollo Spam/Junk për email. Verifikimi me SMS është përkohësisht jashtë funksionit, prandaj përdor emailin për kodin.',
   },
   {
     title: 'Dua të krijoj biznes',

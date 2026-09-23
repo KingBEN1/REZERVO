@@ -145,6 +145,7 @@ function BookingFlow() {
   });
   const [verification, setVerification] = useState<{ challengeId: string; channel: 'EMAIL' | 'SMS'; contact: string; verified: boolean }>();
   const [verificationChannel, setVerificationChannel] = useState<'EMAIL' | 'SMS'>('EMAIL');
+  const [smsUnavailableOpen, setSmsUnavailableOpen] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileAttempt, setTurnstileAttempt] = useState(0);
@@ -820,7 +821,13 @@ function BookingFlow() {
                     <div className="mt-3"><TurnstileWidget key={turnstileAttempt} onToken={setTurnstileToken} /></div>
                     <div className="mt-3 flex gap-2 text-sm">
                       <button type="button" onClick={() => { setVerificationChannel('EMAIL'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'EMAIL' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me email</button>
-                      <button type="button" onClick={() => { setVerificationChannel('SMS'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'SMS' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me SMS</button>
+                      <button
+                        type="button"
+                        onClick={() => setSmsUnavailableOpen(true)}
+                        className="rounded-lg bg-white px-3 py-2 font-semibold text-slate-600 ring-1 ring-line hover:bg-slate-50"
+                      >
+                        Me SMS
+                      </button>
                     </div>
                     {!verification?.verified ? (
                       <>
@@ -996,6 +1003,27 @@ function BookingFlow() {
           </aside>
         </div>
       </div>
+      {smsUnavailableOpen && (
+        <div
+          className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/45 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sms-unavailable-title"
+        >
+          <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <p className="eyebrow">Verifikimi me SMS</p>
+            <h2 id="sms-unavailable-title" className="mt-2 text-xl font-bold text-ink">
+              SMS është përkohësisht jashtë funksionit
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Ju lutem përdorni emailin për të marrë kodin 6-shifror dhe për të konfirmuar rezervimin.
+            </p>
+            <Button className="mt-6 w-full" type="button" onClick={() => setSmsUnavailableOpen(false)}>
+              Vazhdo me email
+            </Button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

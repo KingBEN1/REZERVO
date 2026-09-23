@@ -22,7 +22,7 @@ const sections = [
       ],
       [
         'Pse nuk më vjen kodi me SMS?',
-        'Sigurohuni që numri është në format ndërkombëtar, p.sh. +383 ose +355. Nëse SMS-i vonohet, përdorni verifikimin me email ose provoni përsëri pas pak minutash.',
+        'Verifikimi me SMS është përkohësisht jashtë funksionit. Përdorni emailin për të marrë kodin e konfirmimit.',
       ],
     ],
   },
