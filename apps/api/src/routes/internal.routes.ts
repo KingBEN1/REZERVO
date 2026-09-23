@@ -11,7 +11,9 @@ internalRouter.post(
   asyncHandler(async (req, res) => {
     if (!env.CRON_SECRET)
       throw new AppError(503, 'CRON_NOT_CONFIGURED', 'Rikujtuesit nuk janë konfiguruar ende.');
-    if (req.get('authorization') !== `Bearer ${env.CRON_SECRET}`)
+    const bearer = req.get('authorization')?.replace(/^Bearer\s+/i, '');
+    const secret = req.get('x-cron-secret') ?? bearer;
+    if (secret !== env.CRON_SECRET)
       throw new AppError(401, 'UNAUTHORIZED', 'Kërkesa e planifikuar nuk u autorizua.');
     const result = await sendDueBookingReminders();
     res.json({ success: true, data: result });
