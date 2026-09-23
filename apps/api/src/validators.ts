@@ -110,6 +110,12 @@ export const reviewBusinessVerificationSchema = z.object({
   params: z.object({ id: z.string().cuid() }),
 });
 
+export const setBusinessFeaturedSchema = z.object({
+  body: z.object({ featured: z.boolean() }),
+  query: z.object({}),
+  params: z.object({ id: z.string().cuid() }),
+});
+
 export const serviceSchema = z.object({
   body: z.object({
     name: z.string().trim().min(2).max(120),

@@ -5,7 +5,7 @@ import { audit } from '../lib/audit.js';
 import { AppError } from '../lib/errors.js';
 import { requireAuth, requirePlatformAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { reviewBusinessVerificationSchema } from '../validators.js';
+import { reviewBusinessVerificationSchema, setBusinessFeaturedSchema } from '../validators.js';
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth, requirePlatformAdmin);
@@ -64,6 +64,34 @@ adminRouter.get(
       take: 100,
     });
     res.json({ success: true, data: { businesses } });
+  }),
+);
+
+adminRouter.patch(
+  '/businesses/:id/featured',
+  validate(setBusinessFeaturedSchema),
+  asyncHandler(async (req, res) => {
+    const businessId = String(req.params.id);
+    const business = await prisma.business.findFirst({
+      where: { id: businessId, deletedAt: null },
+      select: { id: true, status: true },
+    });
+    if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');
+    if (req.body.featured && business.status !== 'ACTIVE')
+      throw new AppError(422, 'BUSINESS_NOT_ACTIVE', 'Vetëm bizneset aktive mund të promovohen.');
+    const updated = await prisma.business.update({
+      where: { id: business.id },
+      data: { featured: req.body.featured },
+    });
+    await audit({
+      action: req.body.featured ? 'BUSINESS_FEATURED_ENABLED' : 'BUSINESS_FEATURED_DISABLED',
+      entity: 'Business',
+      entityId: updated.id,
+      businessId: updated.id,
+      userId: req.auth!.userId,
+      ip: req.ip,
+    });
+    res.json({ success: true, data: { business: updated } });
   }),
 );
 

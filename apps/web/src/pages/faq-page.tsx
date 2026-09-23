@@ -64,7 +64,7 @@ const sections = [
       ],
       [
         'Si funksionon promovimi?',
-        'Faqja “Promovo biznesin” shpjegon vendosjet premium. Pagesa reale dhe aktivizimi automatik do të hapen vetëm pasi oferta dhe kushtet të jenë publikuar qartë.',
+        'Faqja “Promovo biznesin” shpjegon vendosjet premium. Për promovim, kontaktoni ekipin dhe pajtohuni drejtpërdrejt për ofertën dhe kohëzgjatjen. Aktivizimi bëhet nga ekipi i Rezervo.',
       ],
     ],
   },

@@ -3,7 +3,104 @@ import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/site-header';
 import { Button } from '../components/ui/button';
 
+const benefits = [
+  'Shfaqje në main page',
+  'Renditje e parë te “Sugjeruar”',
+  'Kartë e theksuar me etiketë promovimi',
+  'Statistika të shikimeve dhe klikimeve',
+];
+
 export function PromotePage() {
-  const benefits = ['Shfaqje në main page', 'Renditje e parë te “Sugjeruar”', 'Kartë e theksuar me etiketë promovimi', 'Statistika të shikimeve dhe klikimeve'];
-  return <><SiteHeader /><main><section className="tech-grid relative overflow-hidden bg-slate-950 py-16 text-white sm:py-24"><div className="absolute -right-16 top-0 size-96 rounded-full bg-amber-400/15 blur-3xl" /><div className="page-shell relative grid gap-10 lg:grid-cols-[1.1fr_.9fr] lg:items-center"><div><p className="eyebrow text-amber-300">Promovim për biznese</p><h1 className="display mt-4 text-4xl font-bold leading-tight sm:text-6xl">Bëje biznesin tënd zgjedhjen e parë.</h1><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Promovimi e vendos biznesin tënd para klientëve që po kërkojnë shërbimin tënd në Rezervo.</p><Link to="/for-business" className="mt-8 inline-block"><Button size="lg">Krijo biznesin falas <Sparkles size={17} /></Button></Link></div><div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur"><div className="relative min-h-64 overflow-hidden rounded-[1.4rem] bg-[url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=85')] bg-cover bg-center"><div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent" /><span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-950"><Star size={13} fill="currentColor" /> Biznes i promovuar</span><span className="absolute bottom-4 left-4 grid size-11 place-items-center rounded-full bg-white text-forest shadow-lg"><Play size={18} fill="currentColor" /></span></div><p className="mt-4 text-sm font-bold">Shembull i vendosjes premium në main page</p></div></div></section><section className="page-shell py-16 sm:py-24"><div className="mx-auto max-w-2xl text-center"><p className="eyebrow">Çfarë fiton</p><h2 className="display mt-3 text-3xl font-bold sm:text-4xl">Më shumë shikime. Më shumë rezervime.</h2></div><div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">{benefits.map((benefit, index) => <article key={benefit} className="surface p-5"><span className="grid size-10 place-items-center rounded-xl bg-amber-100 text-amber-800">{index === 0 ? <Star size={18} /> : index === 1 ? <Search size={18} /> : index === 2 ? <Play size={18} /> : <BarChart3 size={18} />}</span><p className="mt-5 font-bold">{benefit}</p></article>)}</div><section className="mx-auto mt-12 max-w-3xl rounded-3xl border border-green-200 bg-green-50 p-6 sm:p-8"><h2 className="text-xl font-bold">Si funksionon?</h2><ol className="mt-5 grid gap-4 sm:grid-cols-3"><li><b className="text-forest">1. Zgjidh paketën</b><p className="mt-1 text-sm text-slate-600">Vendos kohëzgjatjen dhe vendin e shfaqjes.</p></li><li><b className="text-forest">2. Konfirmo pagesën</b><p className="mt-1 text-sm text-slate-600">Promovimi aktivizohet vetëm pas pagesës së konfirmuar.</p></li><li><b className="text-forest">3. Shfaqu i pari</b><p className="mt-1 text-sm text-slate-600">Biznesi yt shfaqet në vendin premium.</p></li></ol><p className="mt-6 flex gap-2 text-sm text-green-900"><Check size={17} className="shrink-0" /> Çmimet dhe pagesa online do të aktivizohen para hapjes së ofertës për të gjitha bizneset.</p></section></section></main></>;
+  return (
+    <>
+      <SiteHeader />
+      <main>
+        <section className="tech-grid relative overflow-hidden bg-slate-950 py-16 text-white sm:py-24">
+          <div className="absolute -right-16 top-0 size-96 rounded-full bg-amber-400/15 blur-3xl" />
+          <div className="page-shell relative grid gap-10 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
+            <div>
+              <p className="eyebrow text-amber-300">Promovim për biznese</p>
+              <h1 className="display mt-4 text-4xl font-bold leading-tight sm:text-6xl">
+                Bëje biznesin tënd zgjedhjen e parë.
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                Promovimi e vendos biznesin tënd para klientëve që po kërkojnë shërbimin tënd në
+                Rezervo.
+              </p>
+              <Link to="/for-business" className="mt-8 inline-block">
+                <Button size="lg">
+                  Krijo biznesin falas <Sparkles size={17} />
+                </Button>
+              </Link>
+            </div>
+            <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
+              <div className="relative min-h-64 overflow-hidden rounded-[1.4rem] bg-[url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1200&q=85')] bg-cover bg-center">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent" />
+                <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-950 shadow-lg">
+                  <Star size={13} fill="currentColor" /> Biznes i promovuar
+                </span>
+                <span className="absolute bottom-4 left-4 grid size-11 place-items-center rounded-full bg-white text-forest shadow-lg">
+                  <Play size={18} fill="currentColor" />
+                </span>
+              </div>
+              <p className="mt-4 text-sm font-bold">Shembull i vendosjes premium në main page</p>
+            </div>
+          </div>
+        </section>
+        <section className="page-shell py-16 sm:py-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="eyebrow">Çfarë fiton</p>
+            <h2 className="display mt-3 text-3xl font-bold sm:text-4xl">
+              Më shumë shikime. Më shumë rezervime.
+            </h2>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {benefits.map((benefit, index) => (
+              <article key={benefit} className="surface p-5">
+                <span className="grid size-10 place-items-center rounded-xl bg-amber-100 text-amber-800">
+                  {index === 0 ? (
+                    <Star size={18} />
+                  ) : index === 1 ? (
+                    <Search size={18} />
+                  ) : index === 2 ? (
+                    <Play size={18} />
+                  ) : (
+                    <BarChart3 size={18} />
+                  )}
+                </span>
+                <p className="mt-5 font-bold">{benefit}</p>
+              </article>
+            ))}
+          </div>
+          <section className="mx-auto mt-12 max-w-3xl rounded-3xl border border-green-200 bg-green-50 p-6 sm:p-8">
+            <h2 className="text-xl font-bold">Si funksionon?</h2>
+            <ol className="mt-5 grid gap-4 sm:grid-cols-3">
+              <li>
+                <b className="text-forest">1. Na kontakto</b>
+                <p className="mt-1 text-sm text-slate-600">
+                  Bisedoni me ekipin për vendosjen dhe kohëzgjatjen.
+                </p>
+              </li>
+              <li>
+                <b className="text-forest">2. Pajtohemi për ofertën</b>
+                <p className="mt-1 text-sm text-slate-600">
+                  Detajet e promovimit caktohen drejtpërdrejt me pronarin e biznesit.
+                </p>
+              </li>
+              <li>
+                <b className="text-forest">3. Shfaqu i pari</b>
+                <p className="mt-1 text-sm text-slate-600">
+                  Biznesi aktivizohet në vendin premium nga ekipi i Rezervo.
+                </p>
+              </li>
+            </ol>
+            <p className="mt-6 flex gap-2 text-sm text-green-900">
+              <Check size={17} className="shrink-0" /> Nuk ka pagesë online në platformë për
+              promovimet. Marrëveshja bëhet drejtpërdrejt.
+            </p>
+          </section>
+        </section>
+      </main>
+    </>
+  );
 }

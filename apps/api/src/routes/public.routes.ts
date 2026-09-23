@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { asyncHandler } from '../lib/async.js';
 import { AppError } from '../lib/errors.js';
-import { bookingLimiter, bookingVerificationLimiter, publicApiLimiter } from '../middleware/rateLimit.js';
+import {
+  bookingLimiter,
+  bookingVerificationLimiter,
+  publicApiLimiter,
+} from '../middleware/rateLimit.js';
 import { optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -18,8 +22,15 @@ import {
 } from '../validators.js';
 import { createPublicBooking } from '../services/booking.service.js';
 import { getPublicAvailability } from '../services/availability.service.js';
-import { confirmBookingEmailVerification, requestBookingVerification } from '../services/booking-verification.service.js';
-import { capturePayPalOrder, createPayPalOrder, paypalPublicConfig } from '../services/paypal.service.js';
+import {
+  confirmBookingEmailVerification,
+  requestBookingVerification,
+} from '../services/booking-verification.service.js';
+import {
+  capturePayPalOrder,
+  createPayPalOrder,
+  paypalPublicConfig,
+} from '../services/paypal.service.js';
 import { notifyBookingEvent } from '../services/notification.service.js';
 import { verifyHuman } from '../services/turnstile.service.js';
 import {
@@ -41,13 +52,21 @@ publicRouter.post(
   bookingLimiter,
   asyncHandler(async (req, res) => {
     const manageToken = String(req.body.manageToken ?? '');
-    const booking = await prisma.booking.findUnique({ where: { manageToken }, include: { payment: true } });
+    const booking = await prisma.booking.findUnique({
+      where: { manageToken },
+      include: { payment: true },
+    });
     if (!booking?.payment || booking.payment.status !== 'PENDING')
       throw new AppError(422, 'PAYMENT_NOT_AVAILABLE', 'Kjo pagesë nuk është e disponueshme.');
     const order = await createPayPalOrder({
-      amount: booking.payment.amount.toFixed(2), currency: booking.payment.currency, reference: booking.reference,
+      amount: booking.payment.amount.toFixed(2),
+      currency: booking.payment.currency,
+      reference: booking.reference,
     });
-    await prisma.payment.update({ where: { id: booking.payment.id }, data: { providerPaymentId: order.id } });
+    await prisma.payment.update({
+      where: { id: booking.payment.id },
+      data: { providerPaymentId: order.id },
+    });
     res.status(201).json({ success: true, data: { orderId: order.id } });
   }),
 );
@@ -59,12 +78,18 @@ publicRouter.post(
     const manageToken = String(req.body.manageToken ?? '');
     const orderId = String(req.body.orderId ?? '');
     const booking = await prisma.booking.findUnique({
-      where: { manageToken }, include: { payment: true, business: { include: { settings: true } } },
+      where: { manageToken },
+      include: { payment: true, business: { include: { settings: true } } },
     });
-    if (!booking?.payment || booking.payment.status !== 'PENDING' || booking.payment.providerPaymentId !== orderId)
+    if (
+      !booking?.payment ||
+      booking.payment.status !== 'PENDING' ||
+      booking.payment.providerPaymentId !== orderId
+    )
       throw new AppError(422, 'PAYMENT_NOT_AVAILABLE', 'Pagesa nuk përputhet me rezervimin.');
     const captured = await capturePayPalOrder(orderId);
-    if (captured.status !== 'COMPLETED') throw new AppError(422, 'PAYMENT_NOT_COMPLETED', 'Pagesa nuk u përfundua.');
+    if (captured.status !== 'COMPLETED')
+      throw new AppError(422, 'PAYMENT_NOT_COMPLETED', 'Pagesa nuk u përfundua.');
     await prisma.$transaction([
       prisma.payment.update({ where: { id: booking.payment.id }, data: { status: 'PAID' } }),
       prisma.booking.update({
@@ -193,7 +218,7 @@ publicRouter.get(
     const hasStayDates = Boolean(checkIn && checkOut && checkOut > checkIn);
     const businesses = await prisma.business.findMany({
       where: {
-        OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }],
+        status: 'ACTIVE',
         deletedAt: null,
         ...(city ? { city: { equals: city, mode: 'insensitive' } } : {}),
         ...(category ? { category: { slug: category } } : {}),
@@ -231,6 +256,7 @@ publicRouter.get(
         city: true,
         logo: true,
         coverImage: true,
+        featured: true,
         category: { select: { name: true, slug: true } },
         services: {
           where: { active: true },
@@ -269,7 +295,7 @@ publicRouter.get(
             ? item.staff.filter((staff) => staff.capacity >= guests && staff.bookings.length === 0)
                 .length
             : undefined;
-        return { ...item, featured: item.slug === 'blend-barber', rating, availableUnits, staff: undefined };
+        return { ...item, rating, availableUnits, staff: undefined };
       })
       .filter((item) => (minRating ? (item.rating ?? 0) >= minRating : true))
       .filter(
@@ -277,12 +303,14 @@ publicRouter.get(
       );
     result.sort((left, right) =>
       sort === 'recommended' && left.featured !== right.featured
-        ? (left.featured ? -1 : 1)
+        ? left.featured
+          ? -1
+          : 1
         : sort === 'price-low'
-        ? Number(left.services[0]?.price ?? 0) - Number(right.services[0]?.price ?? 0)
-        : sort === 'rating'
-          ? (right.rating ?? 0) - (left.rating ?? 0)
-          : (right.rating ?? 0) - (left.rating ?? 0),
+          ? Number(left.services[0]?.price ?? 0) - Number(right.services[0]?.price ?? 0)
+          : sort === 'rating'
+            ? (right.rating ?? 0) - (left.rating ?? 0)
+            : (right.rating ?? 0) - (left.rating ?? 0),
     );
     res.json({
       success: true,
@@ -295,10 +323,13 @@ publicRouter.get(
   '/businesses/:slug',
   asyncHandler(async (req, res) => {
     const business = await prisma.business.findFirst({
-      where: { slug: String(req.params.slug), deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
+      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
       include: {
         category: true,
-        services: { where: { active: true }, include: { staff: { where: { staff: { active: true } }, include: { staff: true } } } },
+        services: {
+          where: { active: true },
+          include: { staff: { where: { staff: { active: true } }, include: { staff: true } } },
+        },
         staff: { where: { active: true } },
         workingHours: { where: { staffId: null }, orderBy: { dayOfWeek: 'asc' } },
         reviews: {
@@ -332,7 +363,7 @@ publicRouter.get(
   validate(availabilitySchema),
   asyncHandler(async (req, res) => {
     const business = await prisma.business.findFirst({
-      where: { slug: String(req.params.slug), deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
+      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
       select: { id: true },
     });
     if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');
@@ -363,7 +394,7 @@ publicRouter.get(
     if (checkOutDate <= checkInDate)
       throw new AppError(422, 'INVALID_DATES', 'Data e daljes duhet të jetë pas datës së hyrjes.');
     const business = await prisma.business.findFirst({
-      where: { slug: String(req.params.slug), deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
+      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
       select: { id: true },
     });
     if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');

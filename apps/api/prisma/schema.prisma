@@ -129,6 +129,7 @@ model Business {
   timezone        String            @default("Europe/Pristina")
   currency        String            @default("EUR")
   status          BusinessStatus    @default(PENDING)
+  featured        Boolean           @default(false)
   deletedAt       DateTime?         @db.Timestamptz(6)
   createdAt       DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime          @updatedAt @db.Timestamptz(6)
@@ -154,6 +155,7 @@ model Business {
   favorites       Favorite[]
   verification    BusinessVerification?
   @@index([status, city])
+  @@index([featured])
   @@index([categoryId, city])
   @@index([createdAt])
 }

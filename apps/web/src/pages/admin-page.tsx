@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CreditCard,
   MessageSquare,
+  Star,
   Users,
 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
@@ -29,6 +30,7 @@ type Business = {
   name: string;
   city: string;
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
+  featured: boolean;
   createdAt: string;
   category: { name: string } | null;
   _count: { bookings: number; staff: number };
@@ -76,6 +78,14 @@ export function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['admin-businesses'] });
     },
+  });
+  const setFeatured = useMutation({
+    mutationFn: ({ id, featured }: { id: string; featured: boolean }) =>
+      api(`/admin/businesses/${id}/featured`, {
+        method: 'PATCH',
+        body: JSON.stringify({ featured }),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-businesses'] }),
   });
   if (me.isLoading)
     return (
@@ -137,10 +147,12 @@ export function AdminPage() {
             <div>
               <h2 className="font-bold">Bizneset e regjistruara</h2>
               <p className="mt-0.5 text-sm text-slate-500">
-                Aktivizoni ose pezulloni llogaritë sipas kontrollit tuaj.
+                Aktivizoni, pezulloni ose promovoni bizneset sipas kontrollit tuaj.
               </p>
             </div>
-            {changeStatus.error && <p className="text-sm text-red-700">Statusi nuk u ndryshua.</p>}
+            {(changeStatus.error || setFeatured.error) && (
+              <p className="text-sm text-red-700">Ndryshimi nuk u ruajt.</p>
+            )}
           </div>
           {businesses.isLoading ? (
             <div className="h-48 animate-pulse bg-white" />
@@ -154,6 +166,7 @@ export function AdminPage() {
                     <th className="px-5 py-3">Aktiviteti</th>
                     <th className="px-5 py-3">Abonimi</th>
                     <th className="px-5 py-3">Verifikimi</th>
+                    <th className="px-5 py-3">Promovimi</th>
                     <th className="px-5 py-3">Statusi</th>
                   </tr>
                 </thead>
@@ -170,6 +183,27 @@ export function AdminPage() {
                       </td>
                       <td className="px-5 py-4 text-slate-600">
                         {business.subscription?.plan.name ?? 'Pa plan'}
+                      </td>
+                      <td className="px-5 py-4">
+                        <Button
+                          size="sm"
+                          variant={business.featured ? 'secondary' : 'ghost'}
+                          disabled={setFeatured.isPending || business.status !== 'ACTIVE'}
+                          title={
+                            business.status !== 'ACTIVE'
+                              ? 'Aktivizoni biznesin para promovimit.'
+                              : undefined
+                          }
+                          onClick={() =>
+                            setFeatured.mutate({ id: business.id, featured: !business.featured })
+                          }
+                        >
+                          <Star
+                            size={14}
+                            className={business.featured ? 'fill-amber-400 text-amber-500' : ''}
+                          />
+                          {business.featured ? 'I promovuar' : 'Promovo'}
+                        </Button>
                       </td>
                       <td className="px-5 py-4">
                         {business.verification?.status === 'SUBMITTED' ? (

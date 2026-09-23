@@ -42,7 +42,7 @@ export async function createPublicBooking(input: {
     const booking = await prisma.$transaction(
       async (tx) => {
         const business = await tx.business.findFirst({
-          where: { slug: input.slug, deletedAt: null, OR: [{ status: 'ACTIVE' }, { slug: 'blend-barber' }] },
+          where: { slug: input.slug, status: 'ACTIVE', deletedAt: null },
           include: { settings: true },
         });
         if (!business)
@@ -195,8 +195,14 @@ export async function createPublicBooking(input: {
             })
           : null;
         const email = account?.email ?? input.customer.email?.toLowerCase();
-        if (!email) throw new AppError(422, 'VERIFICATION_REQUIRED', 'Shkruani dhe verifikoni emailin tuaj.');
-        await consumeBookingVerification(tx, input.bookingVerificationId, email, input.customer.phone);
+        if (!email)
+          throw new AppError(422, 'VERIFICATION_REQUIRED', 'Shkruani dhe verifikoni emailin tuaj.');
+        await consumeBookingVerification(
+          tx,
+          input.bookingVerificationId,
+          email,
+          input.customer.phone,
+        );
         const activeBookings = await tx.booking.count({
           where: {
             businessId: business.id,
@@ -212,18 +218,20 @@ export async function createPublicBooking(input: {
           },
         });
         if (activeBookings >= 3)
-          throw new AppError(429, 'ACTIVE_BOOKING_LIMIT', 'Keni arritur kufirin prej 3 rezervimeve aktive te ky biznes. Menaxhoni rezervimet ekzistuese para se të krijoni një tjetër.');
-        const existingCustomer = account || email
-          ? await tx.customer.findFirst({
-              where: {
-                businessId: business.id,
-                OR: [
-                  ...(account ? [{ userId: account.id }] : []),
-                  ...(email ? [{ email }] : []),
-                ],
-              },
-            })
-          : null;
+          throw new AppError(
+            429,
+            'ACTIVE_BOOKING_LIMIT',
+            'Keni arritur kufirin prej 3 rezervimeve aktive te ky biznes. Menaxhoni rezervimet ekzistuese para se të krijoni një tjetër.',
+          );
+        const existingCustomer =
+          account || email
+            ? await tx.customer.findFirst({
+                where: {
+                  businessId: business.id,
+                  OR: [...(account ? [{ userId: account.id }] : []), ...(email ? [{ email }] : [])],
+                },
+              })
+            : null;
         const customer = existingCustomer
           ? await tx.customer.update({
               where: { id: existingCustomer.id },
@@ -255,7 +263,10 @@ export async function createPublicBooking(input: {
             endAt,
             bufferStartAt,
             bufferEndAt,
-            status: business.settings?.requireApproval || business.settings?.requirePrepayment ? 'PENDING' : 'CONFIRMED',
+            status:
+              business.settings?.requireApproval || business.settings?.requirePrepayment
+                ? 'PENDING'
+                : 'CONFIRMED',
             kind: bookingKind,
             checkInDate,
             checkOutDate,
