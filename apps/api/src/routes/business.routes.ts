@@ -5,7 +5,7 @@ import { asyncHandler } from '../lib/async.js';
 import { audit } from '../lib/audit.js';
 import { AppError } from '../lib/errors.js';
 import { starterTemplateForCategory } from '../lib/business-templates.js';
-import { removeLocalImage, storeBusinessImage } from '../lib/storage.js';
+import { removeStoredImage, storeBusinessImage } from '../lib/storage.js';
 import { requireAuth, requireTenant } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -23,9 +23,24 @@ import {
 export const businessRouter = Router();
 
 const reservedPublicSlugs = new Set([
-  'about', 'account', 'admin', 'book', 'businesses', 'contact', 'dashboard', 'for-business',
-  'forgot-password', 'login', 'manage', 'onboarding', 'pricing', 'privacy', 'register',
-  'reset-password', 'terms', 'verify-email',
+  'about',
+  'account',
+  'admin',
+  'book',
+  'businesses',
+  'contact',
+  'dashboard',
+  'for-business',
+  'forgot-password',
+  'login',
+  'manage',
+  'onboarding',
+  'pricing',
+  'privacy',
+  'register',
+  'reset-password',
+  'terms',
+  'verify-email',
 ]);
 
 businessRouter.post(
@@ -35,7 +50,11 @@ businessRouter.post(
   asyncHandler(async (req, res) => {
     const data = req.body;
     if (reservedPublicSlugs.has(data.slug))
-      throw new AppError(422, 'RESERVED_SLUG', 'Kjo adresë është e rezervuar nga platforma. Zgjidhni një emër tjetër.');
+      throw new AppError(
+        422,
+        'RESERVED_SLUG',
+        'Kjo adresë është e rezervuar nga platforma. Zgjidhni një emër tjetër.',
+      );
     const owner = await prisma.user.findUniqueOrThrow({
       where: { id: req.auth!.userId },
       select: { emailVerifiedAt: true },
@@ -146,8 +165,12 @@ businessRouter.patch(
       });
     });
     await audit({
-      action: 'SERVICE_UPDATED', entity: 'Service', entityId: service.id,
-      businessId: req.tenant!.businessId, userId: req.auth!.userId, ip: req.ip,
+      action: 'SERVICE_UPDATED',
+      entity: 'Service',
+      entityId: service.id,
+      businessId: req.tenant!.businessId,
+      userId: req.auth!.userId,
+      ip: req.ip,
     });
     res.json({ success: true, data: { service } });
   }),
@@ -315,7 +338,7 @@ businessRouter.delete(
         });
       }
     });
-    await removeLocalImage(image.url);
+    await removeStoredImage(image.url);
     await audit({
       action: 'BUSINESS_IMAGE_DELETED',
       entity: 'BusinessImage',

@@ -35,8 +35,12 @@ const lazy = lazyWithDeployRecovery;
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
-  static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(error: unknown) { console.error('Rezervo page failed to render', error); }
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error('Rezervo page failed to render', error);
+  }
   render() {
     if (!this.state.failed) return this.props.children;
     return (
@@ -44,10 +48,24 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { failed: bool
         <section className="surface max-w-md p-7">
           <p className="eyebrow">Faqja nuk u hap</p>
           <h1 className="display mt-2 text-3xl font-bold">Diçka nuk u ngarkua si duhet.</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">Provoni përsëri. Nëse sapo është publikuar një version i ri, faqja do të marrë versionin e fundit.</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Provoni përsëri. Nëse sapo është publikuar një version i ri, faqja do të marrë versionin
+            e fundit.
+          </p>
           <div className="mt-6 flex justify-center gap-3">
-            <button className="rounded-xl bg-forest px-4 py-2.5 text-sm font-bold text-white" type="button" onClick={() => window.location.reload()}>Provo përsëri</button>
-            <a className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-bold text-slate-700" href="/">Ballina</a>
+            <button
+              className="rounded-xl bg-forest px-4 py-2.5 text-sm font-bold text-white"
+              type="button"
+              onClick={() => window.location.reload()}
+            >
+              Provo përsëri
+            </button>
+            <a
+              className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
+              href="/"
+            >
+              Ballina
+            </a>
           </div>
         </section>
       </main>
@@ -105,6 +123,9 @@ const AboutPage = lazy(() =>
 const PromotePage = lazy(() =>
   import('./pages/promote-page').then((module) => ({ default: module.PromotePage })),
 );
+const FaqPage = lazy(() =>
+  import('./pages/faq-page').then((module) => ({ default: module.FaqPage })),
+);
 const DashboardLayout = lazy(() =>
   import('./pages/dashboard-page').then((module) => ({ default: module.DashboardLayout })),
 );
@@ -158,7 +179,9 @@ function AppLoadingScreen() {
         <p className="display text-2xl font-bold text-white">rezervo</p>
         <p className="mt-1 text-sm text-green-100">Duke përgatitur përvojën tuaj…</p>
       </div>
-      <div className="app-loading-bar"><span /></div>
+      <div className="app-loading-bar">
+        <span />
+      </div>
     </div>
   );
 }
@@ -171,47 +194,48 @@ export function App() {
           <AppErrorBoundary>
             <Suspense fallback={<AppLoadingScreen />}>
               <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/businesses" element={<BusinessesPage />} />
-              <Route path="/book/:slug" element={<BookingPage />} />
-              <Route path="/manage/:token" element={<ManageBookingPage />} />
-              <Route path="/account" element={<CustomerAccountPage />} />
-              <Route path="/for-business" element={<BusinessStartPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/promote" element={<PromotePage />} />
-              <Route path="/terms" element={<LegalPage type="terms" />} />
-              <Route path="/privacy" element={<LegalPage type="privacy" />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route
-                path="/contact"
-                element={
-                  <SimplePage
-                    title="Kontakt"
-                    text="Për ndihmë me Rezervo, përdorni kanalin e mbështetjes së biznesit tuaj pasi të hyni në llogari."
-                  />
-                }
-              />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/verify-email" element={<VerifyEmailPage />} />
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<DashboardHome />} />
-                <Route path="calendar" element={<BookingsPage calendar />} />
-                <Route path="bookings" element={<BookingsPage />} />
-                <Route path="customers" element={<CustomersPage />} />
-                <Route path="services" element={<ServicesPage />} />
-                <Route path="promotions" element={<PromotionsPage />} />
-                <Route path="staff" element={<StaffPage />} />
-                <Route path="hours" element={<HoursPage />} />
-                <Route path="profile" element={<BusinessProfilePage />} />
-                <Route path="billing" element={<BillingPage />} />
-              </Route>
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/:slug" element={<BookingPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="/businesses" element={<BusinessesPage />} />
+                <Route path="/book/:slug" element={<BookingPage />} />
+                <Route path="/manage/:token" element={<ManageBookingPage />} />
+                <Route path="/account" element={<CustomerAccountPage />} />
+                <Route path="/for-business" element={<BusinessStartPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/promote" element={<PromotePage />} />
+                <Route path="/help" element={<FaqPage />} />
+                <Route path="/terms" element={<LegalPage type="terms" />} />
+                <Route path="/privacy" element={<LegalPage type="privacy" />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route
+                  path="/contact"
+                  element={
+                    <SimplePage
+                      title="Kontakt"
+                      text="Për ndihmë me Rezervo, përdorni kanalin e mbështetjes së biznesit tuaj pasi të hyni në llogari."
+                    />
+                  }
+                />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<DashboardHome />} />
+                  <Route path="calendar" element={<BookingsPage calendar />} />
+                  <Route path="bookings" element={<BookingsPage />} />
+                  <Route path="customers" element={<CustomersPage />} />
+                  <Route path="services" element={<ServicesPage />} />
+                  <Route path="promotions" element={<PromotionsPage />} />
+                  <Route path="staff" element={<StaffPage />} />
+                  <Route path="hours" element={<HoursPage />} />
+                  <Route path="profile" element={<BusinessProfilePage />} />
+                  <Route path="billing" element={<BillingPage />} />
+                </Route>
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/:slug" element={<BookingPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <SupportChatbot />
             </Suspense>

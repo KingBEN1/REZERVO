@@ -44,6 +44,7 @@ export function SiteHeader() {
     { to: '/businesses', label: t('discover') },
     { to: '/account', label: t('myBookings') },
     { to: '/about', label: t('about') },
+    { to: '/help', label: locale === 'sq' ? 'Ndihmë' : 'Help' },
   ];
   const userActions = me.data ? (
     <>
@@ -82,7 +83,9 @@ export function SiteHeader() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={({ isActive }) => `rounded-full px-3 py-2 text-sm font-semibold transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-ink'}`}
+              className={({ isActive }) =>
+                `rounded-full px-3 py-2 text-sm font-semibold transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-ink'}`
+              }
             >
               {link.label}
             </NavLink>

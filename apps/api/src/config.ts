@@ -18,7 +18,10 @@ const envSchema = z.object({
   PAYPAL_CLIENT_ID: z.string().optional(),
   PAYPAL_CLIENT_SECRET: z.string().optional(),
   PAYPAL_ENVIRONMENT: z.enum(['sandbox', 'live']).default('sandbox'),
-  STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
+  STORAGE_PROVIDER: z.enum(['local', 's3', 'cloudinary']).default('local'),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
   SMS_PROVIDER: z.enum(['none', 'console', 'twilio', 'smsmode', 'vonage']).default('none'),
   SMSMODE_API_KEY: z.string().optional(),
   SMS_ACCOUNT_SID: z.string().optional(),
@@ -40,6 +43,15 @@ export const env = parsed.data;
 export const webOrigins = env.WEB_ORIGIN.split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+
+if (
+  env.STORAGE_PROVIDER === 'cloudinary' &&
+  (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET)
+) {
+  throw new Error(
+    'CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY dhe CLOUDINARY_API_SECRET kërkohen kur STORAGE_PROVIDER=cloudinary.',
+  );
+}
 
 if (env.NODE_ENV === 'production') {
   const unsafeSecret = /replace-with|dev-secret|ndryshoje-ne-prodhim/i;

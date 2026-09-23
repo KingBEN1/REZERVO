@@ -24,6 +24,11 @@ type Business = {
 type Category = { id: string; name: string; slug: string };
 type Me = { user: { id: string } };
 
+function startingPrice(services: Business['services']) {
+  const price = Number(services[0]?.price ?? 0);
+  return Number.isFinite(price) && price > 0 ? `Nga ${money(price)}` : 'Pyet për çmim';
+}
+
 export function BusinessesPage() {
   const client = useQueryClient();
   const [params, setParams] = useSearchParams();
@@ -57,10 +62,18 @@ export function BusinessesPage() {
       <SiteHeader />
       <main className="page-shell py-7 sm:py-10">
         <div className="tech-grid relative overflow-hidden rounded-[2rem] bg-[#081321] px-6 py-10 text-white shadow-2xl sm:px-10 sm:py-14">
-          <div aria-hidden className="absolute -right-20 -top-24 size-72 rounded-full bg-indigo-500/25 blur-3xl" />
-          <div aria-hidden className="absolute -bottom-24 left-1/4 size-64 rounded-full bg-cyan-400/20 blur-3xl" />
+          <div
+            aria-hidden
+            className="absolute -right-20 -top-24 size-72 rounded-full bg-indigo-500/25 blur-3xl"
+          />
+          <div
+            aria-hidden
+            className="absolute -bottom-24 left-1/4 size-64 rounded-full bg-cyan-400/20 blur-3xl"
+          />
           <p className="eyebrow relative text-cyan-300">Gjej dhe rezervo</p>
-          <h1 className="display relative mt-2 text-4xl font-bold sm:text-5xl">Bizneset pranë jush</h1>
+          <h1 className="display relative mt-2 text-4xl font-bold sm:text-5xl">
+            Bizneset pranë jush
+          </h1>
           <p className="relative mt-3 max-w-2xl text-slate-300">
             Krahaso sipas qytetit, çmimit dhe vlerësimeve. Për hotele, kontrollo datat dhe dhomat e
             lira para rezervimit.
@@ -232,7 +245,11 @@ export function BusinessesPage() {
                 >
                   <Link to={`/${business.slug}`}>
                     <div className="relative h-40 bg-green-100">
-                      {business.featured && <span className="absolute ml-3 mt-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-950 shadow-lg">★ Biznes i promovuar</span>}
+                      {business.featured && (
+                        <span className="absolute ml-3 mt-3 rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-950 shadow-lg">
+                          ★ Biznes i promovuar
+                        </span>
+                      )}
                       {business.coverImage ? (
                         <img
                           src={business.coverImage}
@@ -271,9 +288,7 @@ export function BusinessesPage() {
                         </p>
                       )}
                       <div className="mt-5 flex items-center justify-between border-t border-line pt-4 text-sm">
-                        <span className="text-slate-500">
-                          Nga {business.services[0] ? money(business.services[0].price) : '—'}
-                        </span>
+                        <span className="text-slate-500">{startingPrice(business.services)}</span>
                         <span className="font-semibold text-forest">Rezervo →</span>
                       </div>
                     </div>

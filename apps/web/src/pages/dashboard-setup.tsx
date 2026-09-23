@@ -78,7 +78,8 @@ function LocationPicker({ business }: { business: CurrentBusiness['business'] })
   const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || `${latitude},${longitude}` || business.city)}`;
   const useCurrentLocation = () => {
     setLocationError('');
-    if (!navigator.geolocation) return setLocationError('Shfletuesi nuk e mbështet lokacionin automatik.');
+    if (!navigator.geolocation)
+      return setLocationError('Shfletuesi nuk e mbështet lokacionin automatik.');
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setLatitude(coords.latitude.toFixed(7));
@@ -92,20 +93,93 @@ function LocationPicker({ business }: { business: CurrentBusiness['business'] })
     <div className="sm:col-span-2">
       <div className="rounded-2xl border border-line bg-slate-50/70 p-4 sm:p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div><b className="flex items-center gap-2"><MapPin size={17} className="text-indigo-600" /> Lokacioni i biznesit</b><p className="mt-1 text-xs text-slate-500">Shkruani adresën ose përdorni lokacionin aktual për ta vendosur pinin saktë.</p></div>
+          <div>
+            <b className="flex items-center gap-2">
+              <MapPin size={17} className="text-indigo-600" /> Lokacioni i biznesit
+            </b>
+            <p className="mt-1 text-xs text-slate-500">
+              Shkruani adresën ose përdorni lokacionin aktual për ta vendosur pinin saktë.
+            </p>
+          </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="secondary" title="Merr koordinatat nga pajisja juaj" onClick={useCurrentLocation}><LocateFixed size={15} /> Përdor lokacionin tim</Button>
-            <a href={searchUrl} target="_blank" rel="noreferrer" title="Kërko adresën në Google Maps"><Button type="button" size="sm" variant="secondary"><ExternalLink size={15} /> Kërko në hartë</Button></a>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              title="Merr koordinatat nga pajisja juaj"
+              onClick={useCurrentLocation}
+            >
+              <LocateFixed size={15} /> Përdor lokacionin tim
+            </Button>
+            <a
+              href={searchUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="Kërko adresën në Google Maps"
+            >
+              <Button type="button" size="sm" variant="secondary">
+                <ExternalLink size={15} /> Kërko në hartë
+              </Button>
+            </a>
           </div>
         </div>
-        <label className="mt-4 block"><span className="mb-1.5 block text-sm font-medium">Adresa që shohin klientët</span><input name="address" className="input" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="p.sh. Rr. Garibaldi 12, Prishtinë" /></label>
+        <label className="mt-4 block">
+          <span className="mb-1.5 block text-sm font-medium">Adresa që shohin klientët</span>
+          <input
+            name="address"
+            className="input"
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+            placeholder="p.sh. Rr. Garibaldi 12, Prishtinë"
+          />
+        </label>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label><span className="mb-1.5 block text-xs font-medium text-slate-600">Gjerësia (latitude)</span><input name="latitude" type="number" step="any" min="-90" max="90" className="input" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="42.6629000" /></label>
-          <label><span className="mb-1.5 block text-xs font-medium text-slate-600">Gjatësia (longitude)</span><input name="longitude" type="number" step="any" min="-180" max="180" className="input" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="21.1655000" /></label>
+          <label>
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">
+              Gjerësia (latitude)
+            </span>
+            <input
+              name="latitude"
+              type="number"
+              step="any"
+              min="-90"
+              max="90"
+              className="input"
+              value={latitude}
+              onChange={(event) => setLatitude(event.target.value)}
+              placeholder="42.6629000"
+            />
+          </label>
+          <label>
+            <span className="mb-1.5 block text-xs font-medium text-slate-600">
+              Gjatësia (longitude)
+            </span>
+            <input
+              name="longitude"
+              type="number"
+              step="any"
+              min="-180"
+              max="180"
+              className="input"
+              value={longitude}
+              onChange={(event) => setLongitude(event.target.value)}
+              placeholder="21.1655000"
+            />
+          </label>
         </div>
         {locationError && <p className="mt-3 text-xs font-medium text-red-600">{locationError}</p>}
-        <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white shadow-sm"><iframe title="Harta e lokacionit të biznesit" src={mapUrl} className="h-64 w-full" loading="lazy" /></div>
-        <p className="mt-2 text-xs text-slate-500">Harta përditësohet sapo vendosni koordinatat. Klikoni “Ruaj profilin” për ta publikuar lokacionin.</p>
+        <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+          <iframe
+            title="Harta e lokacionit të biznesit"
+            src={mapUrl}
+            className="h-64 w-full"
+            loading="lazy"
+          />
+        </div>
+        <p className="mt-2 text-xs text-slate-500">
+          Harta përditësohet sapo vendosni koordinatat. Klikoni “Ruaj profilin” për ta publikuar
+          lokacionin.
+        </p>
       </div>
     </div>
   );
@@ -172,7 +246,8 @@ function PhotoUploader({
         <div>
           <h2 className="font-bold">Fotot e biznesit</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Ngarkoni JPG, PNG ose WebP deri në 5 MB. Këto ruhen lokalisht gjatë zhvillimit.
+            Ngarkoni JPG, PNG ose WebP deri në 5 MB. Fotot ruhen në cloud kur storage-i i prodhimit
+            është aktiv.
           </p>
         </div>
       </div>
@@ -360,10 +435,7 @@ export function BusinessProfilePage() {
           <LocationPicker business={business} />
           <label>
             <span className="mb-1.5 block text-sm font-medium">Telefoni</span>
-            <CountryPhoneInput
-              name="phone"
-              defaultValue={business.phone ?? ''}
-            />
+            <CountryPhoneInput name="phone" defaultValue={business.phone ?? ''} />
           </label>
           <label>
             <span className="mb-1.5 block text-sm font-medium">Email</span>
@@ -507,17 +579,30 @@ export function BusinessProfilePage() {
             </span>
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
-            <input name="requirePrepayment" type="checkbox" className="mt-1 size-4 accent-[#155e75]"
-              defaultChecked={currentSettings.requirePrepayment} />
+            <input
+              name="requirePrepayment"
+              type="checkbox"
+              className="mt-1 size-4 accent-[#155e75]"
+              defaultChecked={currentSettings.requirePrepayment}
+            />
             <span>
               <b className="block text-sm">Kërko pagesë para konfirmimit</b>
-              <small className="text-slate-500">Klienti nuk konfirmohet derisa pagesa PayPal të kryhet me sukses.</small>
+              <small className="text-slate-500">
+                Klienti nuk konfirmohet derisa pagesa PayPal të kryhet me sukses.
+              </small>
             </span>
           </label>
           <label>
             <span className="mb-1.5 block text-sm font-medium">Depozita që paguhet tani (%)</span>
-            <input required name="depositPercent" type="number" min="1" max="100" className="input"
-              defaultValue={currentSettings.depositPercent} />
+            <input
+              required
+              name="depositPercent"
+              type="number"
+              min="1"
+              max="100"
+              className="input"
+              defaultValue={currentSettings.depositPercent}
+            />
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
             <input
