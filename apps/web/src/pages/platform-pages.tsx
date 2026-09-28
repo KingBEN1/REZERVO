@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Building2, CalendarCheck, Check, CreditCard, HeartHandshake, MapPin, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
+import { ArrowRight, Building2, CalendarCheck, Check, CreditCard, HeartHandshake, MapPin, MessageCircle, ShieldCheck, Sparkles, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/site-header';
 import { Button } from '../components/ui/button';
@@ -67,6 +67,29 @@ export function LegalPage({ type }: { type: 'terms' | 'privacy' }) {
   );
 }
 export function SimplePage({ title, text }: { title: string; text: string }) { return <><SiteHeader /><main className="page-shell grid min-h-[60vh] place-items-center py-16"><section className="max-w-xl text-center"><ShieldCheck className="mx-auto text-forest" size={36} /><h1 className="display mt-5 text-4xl font-bold">{title}</h1><p className="mt-4 leading-7 text-slate-600">{text}</p><Link className="mt-7 inline-block" to="/"><Button>Kthehu në ballinë</Button></Link></section></main></>; }
+
+export function ContactPage() {
+  return (
+    <>
+      <SiteHeader />
+      <main className="overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,.13),transparent_30rem),#f8fafc]">
+        <section className="page-shell py-14 sm:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="eyebrow">Mbështetja Rezervo</p>
+            <h1 className="display mt-3 text-4xl font-bold sm:text-5xl">Si mund t’ju ndihmojmë?</h1>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">Përgjigjet e shpejta i gjeni te Ndihma. Për pyetje konkrete, hapni bisedën me ekipin tonë nga butoni “Ndihmë” poshtë djathtas.</p>
+          </div>
+          <div className="mx-auto mt-10 grid max-w-4xl gap-5 md:grid-cols-3">
+            <article className="surface p-6"><span className="grid size-11 place-items-center rounded-2xl bg-green-100 text-forest"><MessageCircle size={21} /></span><h2 className="mt-5 text-lg font-bold">Ndihmë e shpejtë</h2><p className="mt-2 text-sm leading-6 text-slate-600">Hapni chat-in në këndin e poshtëm djathtas për pyetje mbi llogarinë ose rezervimin.</p><p className="mt-5 text-sm font-semibold text-forest">Butoni “Ndihmë” është gjithmonë në dispozicion.</p></article>
+            <article className="surface p-6"><span className="grid size-11 place-items-center rounded-2xl bg-cyan-100 text-cyan-800"><CalendarCheck size={21} /></span><h2 className="mt-5 text-lg font-bold">Rezervime</h2><p className="mt-2 text-sm leading-6 text-slate-600">Për ndryshim ose anulim, përdorni lidhjen “Menaxho rezervimin” që merrni pas konfirmimit.</p><Link to="/help" className="mt-5 inline-block text-sm font-semibold text-forest">Hap Ndihmën →</Link></article>
+            <article className="surface p-6"><span className="grid size-11 place-items-center rounded-2xl bg-indigo-100 text-indigo-700"><Building2 size={21} /></span><h2 className="mt-5 text-lg font-bold">Për biznese</h2><p className="mt-2 text-sm leading-6 text-slate-600">Doni të publikoni biznesin ose të rregulloni panelin? Filloni nga faqja e bizneseve.</p><Link to="/for-business" className="mt-5 inline-block text-sm font-semibold text-forest">Për bizneset →</Link></article>
+          </div>
+          <div className="mx-auto mt-8 max-w-4xl rounded-3xl border border-indigo-100 bg-white p-6 text-center shadow-sm sm:p-8"><ShieldCheck className="mx-auto text-forest" size={28} /><h2 className="mt-3 text-xl font-bold">Privatësia dhe të dhënat tuaja</h2><p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-600">Për kërkesë për qasje, korrigjim ose fshirje të të dhënave, hapni chat-in e mbështetjes dhe zgjidhni “Llogaria ime”. Mund t’ju kërkojmë të verifikoni identitetin për ta mbrojtur llogarinë tuaj.</p><div className="mt-5 flex flex-wrap justify-center gap-3"><Link to="/privacy"><Button variant="secondary">Politika e privatësisë</Button></Link><Link to="/terms"><Button variant="secondary">Kushtet e përdorimit</Button></Link></div></div>
+        </section>
+      </main>
+    </>
+  );
+}
 
 export function AboutPage() {
   const { tr } = useI18n();

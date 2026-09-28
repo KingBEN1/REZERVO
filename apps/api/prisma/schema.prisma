@@ -377,6 +377,12 @@ model BusinessSettings {
   whatsappEnabled        Boolean  @default(false)
   requirePrepayment      Boolean  @default(false)
   depositPercent         Int      @default(100)
+  cashPaymentEnabled     Boolean  @default(true)
+  bankTransferEnabled    Boolean  @default(false)
+  bankName               String?
+  bankAccountHolder      String?
+  bankIban               String?
+  bankReferenceInstructions String?
   primaryColor           String   @default("#155e75")
   hidePlatformBranding   Boolean  @default(false)
   business               Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

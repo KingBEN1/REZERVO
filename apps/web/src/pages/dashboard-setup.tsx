@@ -31,6 +31,12 @@ type Settings = {
   whatsappEnabled: boolean;
   requirePrepayment: boolean;
   depositPercent: number;
+  cashPaymentEnabled: boolean;
+  bankTransferEnabled: boolean;
+  bankName: string | null;
+  bankAccountHolder: string | null;
+  bankIban: string | null;
+  bankReferenceInstructions: string | null;
 };
 type CurrentBusiness = {
   business: {
@@ -342,6 +348,12 @@ export function BusinessProfilePage() {
     whatsappEnabled: false,
     requirePrepayment: false,
     depositPercent: 100,
+    cashPaymentEnabled: true,
+    bankTransferEnabled: false,
+    bankName: '',
+    bankAccountHolder: '',
+    bankIban: '',
+    bankReferenceInstructions: '',
   };
   const saveProfile = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -379,6 +391,12 @@ export function BusinessProfilePage() {
       whatsappEnabled: data.get('whatsappEnabled') === 'on',
       requirePrepayment: data.get('requirePrepayment') === 'on',
       depositPercent: Number(data.get('depositPercent')),
+      cashPaymentEnabled: data.get('cashPaymentEnabled') === 'on',
+      bankTransferEnabled: data.get('bankTransferEnabled') === 'on',
+      bankName: String(data.get('bankName') ?? '').trim(),
+      bankAccountHolder: String(data.get('bankAccountHolder') ?? '').trim(),
+      bankIban: String(data.get('bankIban') ?? '').trim(),
+      bankReferenceInstructions: String(data.get('bankReferenceInstructions') ?? '').trim(),
     });
   };
   return (
@@ -578,6 +596,30 @@ export function BusinessProfilePage() {
               </small>
             </span>
           </label>
+          <div className="rounded-2xl border border-line bg-white p-4 sm:p-5">
+            <div>
+              <h3 className="font-bold">Mënyrat e pagesës për klientët</h3>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Zgjidhni si mund të paguajë klienti. Transferi bankar shkon drejtpërdrejt në llogarinë e biznesit tuaj.
+              </p>
+            </div>
+            <div className="mt-4 grid gap-3">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
+                <input name="cashPaymentEnabled" type="checkbox" className="mt-1 size-4 accent-[#155e75]" defaultChecked={currentSettings.cashPaymentEnabled} />
+                <span><b className="block text-sm">Cash në biznes</b><small className="text-slate-500">Klienti paguan kur vjen për termin ose shërbimin.</small></span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
+                <input name="bankTransferEnabled" type="checkbox" className="mt-1 size-4 accent-[#155e75]" defaultChecked={currentSettings.bankTransferEnabled} />
+                <span><b className="block text-sm">Transfer bankar</b><small className="text-slate-500">Pas rezervimit klienti merr detajet e llogarisë suaj bankare.</small></span>
+              </label>
+            </div>
+            <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
+              <label><span className="mb-1.5 block text-sm font-medium">Banka</span><input name="bankName" className="input" defaultValue={currentSettings.bankName ?? ''} placeholder="p.sh. ProCredit Bank" /></label>
+              <label><span className="mb-1.5 block text-sm font-medium">Mbajtësi i llogarisë</span><input name="bankAccountHolder" className="input" defaultValue={currentSettings.bankAccountHolder ?? ''} placeholder="Emri ligjor i biznesit" /></label>
+              <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-medium">IBAN / numri i llogarisë</span><input name="bankIban" className="input" defaultValue={currentSettings.bankIban ?? ''} placeholder="XK05…" /></label>
+              <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-medium">Udhëzime për transferin <small className="text-slate-400">(opsionale)</small></span><textarea name="bankReferenceInstructions" className="input min-h-20 py-3" maxLength={500} defaultValue={currentSettings.bankReferenceInstructions ?? ''} placeholder="p.sh. Shkruani numrin e rezervimit si referencë." /></label>
+            </div>
+          </div>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
             <input
               name="requirePrepayment"

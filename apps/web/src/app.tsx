@@ -114,8 +114,8 @@ const PricingPage = lazy(() =>
 const LegalPage = lazy(() =>
   import('./pages/platform-pages').then((module) => ({ default: module.LegalPage })),
 );
-const SimplePage = lazy(() =>
-  import('./pages/platform-pages').then((module) => ({ default: module.SimplePage })),
+const ContactPage = lazy(() =>
+  import('./pages/platform-pages').then((module) => ({ default: module.ContactPage })),
 );
 const AboutPage = lazy(() =>
   import('./pages/platform-pages').then((module) => ({ default: module.AboutPage })),
@@ -209,15 +209,7 @@ export function App() {
                 <Route path="/terms" element={<LegalPage type="terms" />} />
                 <Route path="/privacy" element={<LegalPage type="privacy" />} />
                 <Route path="/about" element={<AboutPage />} />
-                <Route
-                  path="/contact"
-                  element={
-                    <SimplePage
-                      title="Kontakt"
-                      text="Për ndihmë me Rezervo, përdorni kanalin e mbështetjes së biznesit tuaj pasi të hyni në llogari."
-                    />
-                  }
-                />
+                <Route path="/contact" element={<ContactPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/verify-email" element={<VerifyEmailPage />} />

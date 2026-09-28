@@ -184,6 +184,21 @@ export const businessSettingsSchema = z.object({
     whatsappEnabled: z.boolean(),
     requirePrepayment: z.boolean(),
     depositPercent: z.number().int().min(1).max(100),
+    cashPaymentEnabled: z.boolean(),
+    bankTransferEnabled: z.boolean(),
+    bankName: z.string().trim().max(120).optional().or(z.literal('')),
+    bankAccountHolder: z.string().trim().max(160).optional().or(z.literal('')),
+    bankIban: z.string().trim().max(64).optional().or(z.literal('')),
+    bankReferenceInstructions: z.string().trim().max(500).optional().or(z.literal('')),
+  }).superRefine((value, context) => {
+    if (!value.cashPaymentEnabled && !value.bankTransferEnabled && !value.requirePrepayment) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['cashPaymentEnabled'], message: 'Aktivizoni të paktën një mënyrë pagese.' });
+    }
+    if (value.bankTransferEnabled) {
+      for (const field of ['bankName', 'bankAccountHolder', 'bankIban'] as const) {
+        if (!value[field]) context.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: 'Plotësojeni këtë të dhënë për transfer bankar.' });
+      }
+    }
   }),
   query: z.object({}),
   params: z.object({}),
@@ -282,6 +297,7 @@ export const publicBookingSchema = z.object({
       destinationAddress: z.string().trim().min(3).max(300).optional(),
       passengerCount: z.number().int().min(1).max(100).optional(),
       couponCode: z.string().trim().min(3).max(40).optional(),
+      paymentMethod: z.enum(['CASH', 'BANK_TRANSFER']).optional(),
       customer: z.object({
         name: z.string().trim().min(2).max(120),
         email: email.optional(),

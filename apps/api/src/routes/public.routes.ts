@@ -349,6 +349,8 @@ publicRouter.get(
             reschedulingEnabled: true,
             requirePrepayment: true,
             depositPercent: true,
+            cashPaymentEnabled: true,
+            bankTransferEnabled: true,
           },
         },
       },

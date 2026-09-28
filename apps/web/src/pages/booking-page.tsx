@@ -51,6 +51,8 @@ type PublicBusiness = {
     reschedulingEnabled: boolean;
     requirePrepayment: boolean;
     depositPercent: number;
+    cashPaymentEnabled: boolean;
+    bankTransferEnabled: boolean;
   } | null;
 };
 type Slot = { startAt: string; endAt: string };
@@ -145,6 +147,7 @@ function BookingFlow() {
   });
   const [verification, setVerification] = useState<{ challengeId: string; channel: 'EMAIL' | 'SMS'; contact: string; verified: boolean }>();
   const [verificationChannel, setVerificationChannel] = useState<'EMAIL' | 'SMS'>('EMAIL');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'BANK_TRANSFER'>('CASH');
   const [smsUnavailableOpen, setSmsUnavailableOpen] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -164,6 +167,8 @@ function BookingFlow() {
     staff: Staff;
     business: PublicBusiness;
     payment?: { amount: string; currency: string; status: string } | null;
+    paymentMethod?: 'CASH' | 'BANK_TRANSFER';
+    bankTransfer?: { bankName: string; accountHolder: string; iban: string; instructions?: string | null } | null;
   }>();
   const me = useQuery({
     queryKey: ['me'],
@@ -190,6 +195,9 @@ function BookingFlow() {
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${business.address ?? ''}, ${business.city}`)}`
     : '';
   const service = business?.services.find((item) => item.id === serviceId);
+  const cashEnabled = business?.settings?.cashPaymentEnabled !== false;
+  const bankEnabled = Boolean(business?.settings?.bankTransferEnabled);
+  const selectedPaymentMethod = !cashEnabled && bankEnabled ? 'BANK_TRANSFER' : paymentMethod;
   const isHotel = business?.category?.slug === 'hotels';
   const isTaxi = business?.category?.slug === 'taxi-transport';
   const requestLabel =
@@ -314,6 +322,7 @@ function BookingFlow() {
               }
             : {}),
           couponCode: details.couponCode.trim() || undefined,
+          paymentMethod: selectedPaymentMethod,
           customer: { name: details.name, email: details.email || undefined, phone: details.phone },
           customerNote: details.customerNote.trim() || undefined,
           bookingVerificationId: verification?.challengeId,
@@ -355,11 +364,13 @@ function BookingFlow() {
             <CheckCircle2 size={34} />
           </span>
           <p className="eyebrow mt-5">
-            {submitted.payment ? 'Pagesa kërkohet' : business.settings?.requireApproval ? 'Kërkesa u pranua' : 'Rezervimi u konfirmua'}
+            {submitted.payment ? 'Pagesa kërkohet' : submitted.paymentMethod === 'BANK_TRANSFER' || business.settings?.requireApproval ? 'Kërkesa u pranua' : 'Rezervimi u konfirmua'}
           </p>
           <h1 className="display mt-2 text-3xl font-bold">
             {submitted.payment
               ? 'Kryeni pagesën e sigurt për ta konfirmuar termin. Pa pagesë, kërkesa mbetet në pritje.'
+              : submitted.paymentMethod === 'BANK_TRANSFER'
+              ? 'Bëjeni transferin bankar dhe biznesi do ta konfirmojë rezervimin.'
               : business.settings?.requireApproval
               ? 'Biznesi do ta konfirmojë së shpejti.'
               : 'Shihemi së shpejti!'}
@@ -368,6 +379,8 @@ function BookingFlow() {
             Ruajeni referencën më poshtë.{' '}
             {submitted.payment
               ? `Për të paguar tani: ${money(submitted.payment.amount, submitted.payment.currency)}.`
+              : submitted.paymentMethod === 'BANK_TRANSFER'
+              ? 'Përdorni të dhënat e bankës më poshtë dhe vendosni referencën e rezervimit në përshkrimin e pagesës.'
               : business.settings?.requireApproval
               ? 'Do të merrni njoftim pasi biznesi ta miratojë kërkesën.'
               : 'Do të merrni konfirmimin e rezervimit në email ose telefon.'}
@@ -394,6 +407,18 @@ function BookingFlow() {
               </div>
             </dl>
           </div>
+          {submitted.bankTransfer && (
+            <div className="mt-5 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-left text-sm text-indigo-950">
+              <p className="font-bold">Udhëzime për transfer bankar</p>
+              <dl className="mt-3 space-y-2">
+                <div><dt className="text-indigo-700">Banka</dt><dd className="font-semibold">{submitted.bankTransfer.bankName}</dd></div>
+                <div><dt className="text-indigo-700">Mbajtësi i llogarisë</dt><dd className="font-semibold">{submitted.bankTransfer.accountHolder}</dd></div>
+                <div><dt className="text-indigo-700">IBAN / llogaria</dt><dd className="break-all font-mono font-bold">{submitted.bankTransfer.iban}</dd></div>
+                <div><dt className="text-indigo-700">Referenca</dt><dd className="font-mono font-bold">{submitted.reference}</dd></div>
+              </dl>
+              {submitted.bankTransfer.instructions && <p className="mt-3 border-t border-indigo-200 pt-3 leading-6">{submitted.bankTransfer.instructions}</p>}
+            </div>
+          )}
           {submitted.payment && <PayPalPayment manageToken={submitted.manageToken} amount={submitted.payment.amount} currency={submitted.payment.currency} />}
           <Link to={`/manage/${submitted.manageToken}`} className="mt-5 block">
             <Button className="w-full">Menaxho ose anulo rezervimin</Button>
@@ -878,6 +903,25 @@ function BookingFlow() {
                       </span>
                     </div>
                   )}
+                  {!business.settings?.requirePrepayment && (cashEnabled || bankEnabled) && (
+                    <fieldset className="rounded-2xl border border-line bg-slate-50 p-4">
+                      <legend className="px-1 text-sm font-bold text-ink">Mënyra e pagesës</legend>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {cashEnabled && (
+                          <label className={`cursor-pointer rounded-xl border p-3 transition ${selectedPaymentMethod === 'CASH' ? 'border-forest bg-green-50' : 'border-line bg-white'}`}>
+                            <input className="sr-only" type="radio" name="paymentMethod" checked={selectedPaymentMethod === 'CASH'} onChange={() => setPaymentMethod('CASH')} />
+                            <b className="block text-sm">Cash në biznes</b><small className="mt-1 block text-slate-500">Paguani kur të arrini për termin.</small>
+                          </label>
+                        )}
+                        {bankEnabled && (
+                          <label className={`cursor-pointer rounded-xl border p-3 transition ${selectedPaymentMethod === 'BANK_TRANSFER' ? 'border-indigo-500 bg-indigo-50' : 'border-line bg-white'}`}>
+                            <input className="sr-only" type="radio" name="paymentMethod" checked={selectedPaymentMethod === 'BANK_TRANSFER'} onChange={() => setPaymentMethod('BANK_TRANSFER')} />
+                            <b className="block text-sm">Transfer bankar</b><small className="mt-1 block text-slate-500">Detajet e bankës shfaqen pas rezervimit.</small>
+                          </label>
+                        )}
+                      </div>
+                    </fieldset>
+                  )}
                   <label>
                     <span className="mb-1.5 block text-sm font-medium">
                       Kod promocional <small className="text-slate-400">(opsional)</small>
@@ -924,6 +968,8 @@ function BookingFlow() {
                       ? 'Vazhdo te pagesa PayPal'
                     : business.settings?.requireApproval
                       ? 'Dërgo kërkesën për rezervim'
+                      : selectedPaymentMethod === 'BANK_TRANSFER'
+                        ? 'Dërgo kërkesën dhe shiko bankën'
                       : 'Konfirmo rezervimin'}
                 </Button>
               </div>
@@ -985,6 +1031,12 @@ function BookingFlow() {
                       </b>
                     </div>
                     <p className="mt-2 text-xs">Verifikoni kontaktin dhe shtypni “Vazhdo te pagesa PayPal”. Butoni i sigurt PayPal hapet në hapin tjetër.</p>
+                  </div>
+                )}
+                {!business.settings?.requirePrepayment && service && (cashEnabled || bankEnabled) && (
+                  <div className="rounded-xl bg-slate-50 p-3 text-slate-700">
+                    <b className="block">{selectedPaymentMethod === 'BANK_TRANSFER' ? 'Transfer bankar' : 'Cash në biznes'}</b>
+                    <p className="mt-1 text-xs">{selectedPaymentMethod === 'BANK_TRANSFER' ? 'Detajet e bankës së biznesit dalin pas krijimit të rezervimit.' : 'Pagesa bëhet kur të arrini për termin.'}</p>
                   </div>
                 )}
               </div>

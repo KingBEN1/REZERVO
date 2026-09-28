@@ -33,6 +33,7 @@ export async function createPublicBooking(input: {
   destinationAddress?: string;
   passengerCount?: number;
   couponCode?: string;
+  paymentMethod?: 'CASH' | 'BANK_TRANSFER';
   customer: { name: string; email?: string; phone?: string };
   customerNote?: string;
   customerUserId?: string;
@@ -53,6 +54,13 @@ export async function createPublicBooking(input: {
           );
         if (!business.settings?.allowGuestBooking && !input.customerUserId) {
           throw new AppError(401, 'ACCOUNT_REQUIRED', 'Ky biznes kërkon llogari për rezervim.');
+        }
+        const paymentMethod = input.paymentMethod ?? 'CASH';
+        if (!business.settings?.requirePrepayment) {
+          if (paymentMethod === 'CASH' && business.settings && !business.settings.cashPaymentEnabled)
+            throw new AppError(422, 'PAYMENT_METHOD_UNAVAILABLE', 'Pagesa cash nuk është e aktivizuar nga ky biznes.');
+          if (paymentMethod === 'BANK_TRANSFER' && (!business.settings?.bankTransferEnabled || !business.settings.bankName || !business.settings.bankAccountHolder || !business.settings.bankIban))
+            throw new AppError(422, 'PAYMENT_METHOD_UNAVAILABLE', 'Transferi bankar nuk është i disponueshëm për këtë biznes.');
         }
         const service = await tx.service.findFirst({
           where: { id: input.serviceId, businessId: business.id, active: true },
@@ -264,7 +272,7 @@ export async function createPublicBooking(input: {
             bufferStartAt,
             bufferEndAt,
             status:
-              business.settings?.requireApproval || business.settings?.requirePrepayment
+              business.settings?.requireApproval || business.settings?.requirePrepayment || paymentMethod === 'BANK_TRANSFER'
                 ? 'PENDING'
                 : 'CONFIRMED',
             kind: bookingKind,
@@ -291,7 +299,23 @@ export async function createPublicBooking(input: {
                 metadata: { depositPercent: business.settings.depositPercent },
               },
             })
-          : null;
+          : await tx.payment.create({
+              data: {
+                businessId: business.id,
+                bookingId: booking.id,
+                amount: price,
+                currency: business.currency,
+                provider: paymentMethod === 'BANK_TRANSFER' ? 'bank_transfer' : 'cash',
+                metadata: paymentMethod === 'BANK_TRANSFER'
+                  ? {
+                      bankName: business.settings?.bankName,
+                      accountHolder: business.settings?.bankAccountHolder,
+                      iban: business.settings?.bankIban,
+                      instructions: business.settings?.bankReferenceInstructions ?? null,
+                    }
+                  : undefined,
+              },
+            });
         await tx.auditLog.create({
           data: {
             businessId: business.id,
@@ -304,8 +328,11 @@ export async function createPublicBooking(input: {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
-    if (!booking.payment) await notifyBookingEvent(booking.id, 'confirmed');
-    return booking;
+    if (booking.payment?.provider !== 'paypal') await notifyBookingEvent(booking.id, 'confirmed');
+    const bankTransfer = booking.payment?.provider === 'bank_transfer'
+      ? booking.payment.metadata as { bankName: string; accountHolder: string; iban: string; instructions?: string | null }
+      : null;
+    return { ...booking, payment: booking.payment?.provider === 'paypal' ? booking.payment : null, paymentMethod: booking.payment?.provider === 'bank_transfer' ? 'BANK_TRANSFER' : 'CASH', bankTransfer };
   } catch (error) {
     if (error instanceof AppError) throw error;
     // PostgreSQL exclusion constraint error means a concurrent request claimed the slot.
