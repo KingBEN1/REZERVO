@@ -56,7 +56,11 @@ publicRouter.post(
       where: { manageToken },
       include: { payment: true },
     });
-    if (!booking?.payment || booking.payment.status !== 'PENDING')
+    if (
+      !booking?.payment ||
+      booking.payment.provider !== 'paypal' ||
+      booking.payment.status !== 'PENDING'
+    )
       throw new AppError(422, 'PAYMENT_NOT_AVAILABLE', 'Kjo pagesë nuk është e disponueshme.');
     const order = await createPayPalOrder({
       amount: booking.payment.amount.toFixed(2),
@@ -83,6 +87,7 @@ publicRouter.post(
     });
     if (
       !booking?.payment ||
+      booking.payment.provider !== 'paypal' ||
       booking.payment.status !== 'PENDING' ||
       booking.payment.providerPaymentId !== orderId
     )

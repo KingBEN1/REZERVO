@@ -322,7 +322,7 @@ export function ForgotPasswordPage() {
         </p>
         {mutation.isSuccess ? (
           <div className="mt-7 rounded-2xl bg-green-50 p-5 text-sm leading-6 text-green-900">
-            Kontrolloni emailin tuaj. Në versionin lokal, lidhja shfaqet në dritaren e serverit.
+            Nëse kjo adresë emaili ka llogari, lidhja e rikuperimit është dërguar. Kontrolloni edhe dosjen Spam / Junk.
           </div>
         ) : (
           <form

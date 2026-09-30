@@ -14,7 +14,7 @@ const fallback: BusinessCategoryUi = {
 };
 
 const categories: Record<string, BusinessCategoryUi> = {
-  hotels: { servicePlural: 'Dhomat & qëndrimet', serviceSingular: 'dhomë ose qëndrim', resourcePlural: 'Dhomat', resourceSingular: 'dhomë', serviceExample: 'Dhomë dyshe standarde', resourceExample: 'Dhoma 101', onboarding: 'Shtoni dhomat, kapacitetin, çmimet për natë dhe orarin e pritjes.' },
+  hotels: { servicePlural: 'Dhomat & qëndrimet', serviceSingular: 'lloj dhome', resourcePlural: 'Dhomat', resourceSingular: 'dhomë', serviceExample: 'Dhomë dyshe standarde', resourceExample: 'Dhoma 101', onboarding: 'Shtoni llojet e dhomave, dhomat fizike, kapacitetin dhe çmimet për natë.' },
   restaurants: { servicePlural: 'Tavolinat & rezervimet', serviceSingular: 'rezervim tavoline', resourcePlural: 'Tavolinat', resourceSingular: 'tavolinë', serviceExample: 'Drekë për dy persona', resourceExample: 'Tavolina 4', onboarding: 'Shtoni tavolinat, kapacitetin dhe oraret e shërbimit.' },
   barbers: { servicePlural: 'Shërbimet', serviceSingular: 'shërbim', resourcePlural: 'Berberët', resourceSingular: 'berber', serviceExample: 'Prerje flokësh', resourceExample: 'Ardit Berberi', onboarding: 'Shtoni shërbimet, berberët dhe kohëzgjatjen e secilit termin.' },
   'beauty-salons': { servicePlural: 'Trajtimet', serviceSingular: 'trajtim', resourcePlural: 'Stilistët', resourceSingular: 'stilist', serviceExample: 'Manikyr xhel', resourceExample: 'Era Stiliste', onboarding: 'Shtoni trajtimet, stilistët dhe kohën e nevojshme për secilin.' },

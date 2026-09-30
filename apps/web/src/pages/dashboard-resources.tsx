@@ -252,6 +252,7 @@ export function StaffPage() {
   const { membership } = useTenant();
   const current = useBusinessQuery<{ business: { category: { slug: string } | null } }>('business-current', '/business/current');
   const ui = categoryUi(current.data?.business.category?.slug);
+  const isHotel = current.data?.business.category?.slug === 'hotels';
   const query = useBusinessQuery<{ staff: Staff[] }>('staff', '/business/staff');
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -274,10 +275,10 @@ export function StaffPage() {
     <>
       <div className="flex items-end justify-between">
         <div>
-          <p className="eyebrow">Kapaciteti i biznesit</p>
+          <p className="eyebrow">{isHotel ? 'Inventari i akomodimit' : 'Kapaciteti i biznesit'}</p>
           <h1 className="display mt-1 text-3xl font-bold">{ui.resourcePlural}</h1>
           <p className="mt-2 max-w-xl text-sm text-slate-500">
-            Shtoni çdo {ui.resourceSingular} që klienti mund ta rezervojë.
+            {isHotel ? 'Shtoni çdo dhomë fizike që klienti mund ta rezervojë.' : `Shtoni çdo ${ui.resourceSingular} që klienti mund ta rezervojë.`}
           </p>
         </div>
         <Button size="sm" onClick={() => setOpen(!open)}>
@@ -301,15 +302,15 @@ export function StaffPage() {
           />
           <input
             className="input"
-            placeholder={`Roli ose lloji i ${ui.resourceSingular}`}
+            placeholder={isHotel ? 'Lloji i dhomës, p.sh. Standard' : `Roli ose lloji i ${ui.resourceSingular}`}
             value={values.position}
             onChange={(event) => setValues({ ...values, position: event.target.value })}
           />
           <label>
-            <span className="sr-only">Kapaciteti</span>
+            <span className="sr-only">{isHotel ? 'Mysafirë maksimum' : 'Kapaciteti'}</span>
             <input
               required
-              aria-label="Kapaciteti"
+              aria-label={isHotel ? 'Mysafirë maksimum' : 'Kapaciteti'}
               className="input"
               type="number"
               min="1"
@@ -321,7 +322,7 @@ export function StaffPage() {
           <div className="flex gap-2">
             <input
               className="input"
-              placeholder="Përshkrim i shkurtër"
+              placeholder={isHotel ? 'Detaje të dhomës (opsionale)' : 'Përshkrim i shkurtër'}
               value={values.bio}
               onChange={(event) => setValues({ ...values, bio: event.target.value })}
             />
@@ -346,7 +347,7 @@ export function StaffPage() {
             </span>
             <h2 className="mt-4 font-bold">{person.name}</h2>
             <p className="text-sm text-slate-500">{person.position ?? ui.resourceSingular}</p>
-            <p className="mt-1 text-xs text-slate-500">Kapaciteti: {person.capacity}</p>
+            <p className="mt-1 text-xs text-slate-500">{isHotel ? 'Mysafirë maksimum' : 'Kapaciteti'}: {person.capacity}</p>
             <p className="mt-4 border-t border-line pt-3 text-xs text-slate-500">
               {person.services?.length
                 ? person.services.map((item) => item.service.name).join(', ')
@@ -359,7 +360,7 @@ export function StaffPage() {
         <div className="mt-7">
           <EmptyState
             title={`Nuk keni shtuar ${ui.resourcePlural.toLowerCase()}`}
-            detail={`Shtoni ${ui.resourceSingular}in e parë që klientët do ta rezervojnë.`}
+            detail={isHotel ? 'Shtoni dhomën e parë fizike që klientët mund ta rezervojnë.' : `Shtoni ${ui.resourceSingular}in e parë që klientët do ta rezervojnë.`}
             action={<Button onClick={() => setOpen(true)}>Shto {ui.resourceSingular}</Button>}
           />
         </div>
@@ -411,34 +412,54 @@ export function ServicesPage() {
   const ui = categoryUi(category);
   const isHotel = category === 'hotels';
   const isTaxi = category === 'taxi-transport';
+  const operationCopy = {
+    restaurants: { duration: 'Kohëzgjatja e qëndrimit në tavolinë', before: 'Kohë për përgatitjen e tavolinës (min)', after: 'Kohë për pastrimin e tavolinës (min)' },
+    'taxi-transport': { duration: 'Kohëzgjatja e parashikuar e udhëtimit', before: 'Kohë para nisjes (min)', after: 'Kohë ndërmjet udhëtimeve (min)' },
+    rentals: { duration: 'Kohëzgjatja e qirasë', before: 'Kohë për dorëzim (min)', after: 'Kohë për kontroll pas kthimit (min)' },
+    'events-venues': { duration: 'Kohëzgjatja e eventit', before: 'Kohë për përgatitjen e hapësirës (min)', after: 'Kohë për pastrimin e hapësirës (min)' },
+    coworking: { duration: 'Kohëzgjatja e përdorimit', before: 'Kohë për përgatitjen e hapësirës (min)', after: 'Kohë për rregullimin e hapësirës (min)' },
+    'home-services': { duration: 'Kohëzgjatja e vizitës', before: 'Kohë para nisjes në terren (min)', after: 'Kohë ndërmjet vizitave (min)' },
+    photography: { duration: 'Kohëzgjatja e fotosesionit', before: 'Kohë për përgatitje (min)', after: 'Kohë për përfundim / përpunim (min)' },
+    fitness: { duration: 'Kohëzgjatja e klasës ose seancës', before: 'Kohë për përgatitjen e sallës (min)', after: 'Kohë për pushim mes seancave (min)' },
+  }[category] ?? { duration: 'Kohëzgjatja e rezervimit', before: 'Kohë përgatitjeje para rezervimit (min)', after: 'Kohë pushimi pas rezervimit (min)' };
+  const operationCopyEn = {
+    restaurants: { duration: 'Table stay duration', before: 'Table preparation time (min)', after: 'Table cleaning time (min)' },
+    'taxi-transport': { duration: 'Estimated trip duration', before: 'Time before departure (min)', after: 'Time between trips (min)' },
+    rentals: { duration: 'Rental duration', before: 'Handover time (min)', after: 'Return inspection time (min)' },
+    'events-venues': { duration: 'Event duration', before: 'Venue setup time (min)', after: 'Venue cleanup time (min)' },
+    coworking: { duration: 'Usage duration', before: 'Workspace setup time (min)', after: 'Workspace reset time (min)' },
+    'home-services': { duration: 'Visit duration', before: 'Travel preparation time (min)', after: 'Time between visits (min)' },
+    photography: { duration: 'Photoshoot duration', before: 'Setup time (min)', after: 'Wrap-up / processing time (min)' },
+    fitness: { duration: 'Class or session duration', before: 'Room setup time (min)', after: 'Break between sessions (min)' },
+  }[category] ?? { duration: 'Booking duration', before: 'Preparation time before booking (min)', after: 'Buffer time after booking (min)' };
   const copy = locale === 'en'
     ? {
         eyebrow: 'Your catalog', title: 'What can customers book?', add: 'Create offer',
-        intro: 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
+        intro: isHotel ? 'Create one room type for every accommodation category, then connect the physical rooms that belong to that room type.' : 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
         offer: 'Offer', resource: 'Provider / resource', newTitle: editingId ? 'Edit offer' : 'New offer',
         newHelp: 'Add only the information customers need before booking.', name: isHotel ? 'Room or stay name' : isTaxi ? 'Route or transfer name' : 'Offer name',
         namePlaceholder: isHotel ? 'e.g. Standard double room' : isTaxi ? 'e.g. Prishtina Airport transfer' : 'e.g. Haircut or consultation',
-        duration: isHotel ? 'Default booking block' : isTaxi ? 'Estimated trip duration' : 'Booking duration',
+        duration: operationCopyEn.duration,
         price: isHotel ? 'Price per night (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
-        description: 'Offer description', select: 'Who or which resource provides this?', close: 'Close without saving',
+        description: 'Offer description', select: isHotel ? 'Which rooms belong to this room type?' : 'Who or which resource provides this?', close: 'Close without saving',
         save: editingId ? 'Save changes' : 'Create and publish offer', edit: 'Edit', assigned: 'Provider / resource:', minutes: 'minutes',
-        offerHelp: 'This is the option a customer books.', resourceHelp: 'Choose the person or resource that delivers it.',
-        durationHelp: isHotel ? 'For stays, the price is calculated per night.' : 'Set the typical duration for this booking.',
+        offerHelp: isHotel ? 'This is the room type customers see and book.' : 'This is the option a customer books.', resourceHelp: isHotel ? 'Choose at least one physical room for this room type.' : 'Choose the person or resource that delivers it.',
+        durationHelp: 'Set the typical duration for this booking.',
         priceHelp: isHotel ? 'Set the price per night.' : 'Set the price for this booking; use 0 only when it is free.',
         descriptionPlaceholder: 'Add the details customers need before booking.', selectHelp: 'Select at least one person or resource.', titleLabel: 'Title customers see',
       }
     : {
         eyebrow: 'Katalogu juaj', title: ui.servicePlural, add: `Shto ${ui.serviceSingular}`,
-        intro: `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
+        intro: isHotel ? 'Krijoni një lloj dhome për çdo kategori akomodimi, pastaj lidhni dhomat fizike që i përkasin atij lloji.' : `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
         offer: ui.serviceSingular, resource: ui.resourceSingular, newTitle: editingId ? `Ndrysho ${ui.serviceSingular}` : `Shto ${ui.serviceSingular}`,
         newHelp: `Plotësoni vetëm informacionin që klienti duhet të shohë para se të rezervojë këtë ${ui.serviceSingular}.`, name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTaxi ? 'Emri i rrugës ose transferit' : `Emri i ${ui.serviceSingular}`,
         namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : `p.sh. ${ui.serviceExample}`,
-        duration: isHotel ? 'Blloku bazë i rezervimit' : isTaxi ? 'Kohëzgjatja e parashikuar e udhëtimit' : 'Kohëzgjatja e rezervimit',
+        duration: operationCopy.duration,
         price: isHotel ? 'Çmimi për një natë (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
-        description: `Përshkrimi për klientin`, select: `Cili ${ui.resourceSingular} e realizon?`, close: 'Mbyll pa ruajtur',
+        description: `Përshkrimi për klientin`, select: isHotel ? 'Cilat dhoma i përkasin këtij lloji?' : `Cili ${ui.resourceSingular} e realizon?`, close: 'Mbyll pa ruajtur',
         save: editingId ? 'Ruaj ndryshimet' : `Ruaj ${ui.serviceSingular}in`, edit: 'Ndrysho', assigned: `${ui.resourcePlural}:`, minutes: 'minuta',
-        offerHelp: `Kjo është zgjedhja që klienti rezervon, p.sh. “${ui.serviceExample}”.`, resourceHelp: `Zgjidhni ${ui.resourceSingular}in që e realizon, p.sh. “${ui.resourceExample}”.`,
-        durationHelp: isHotel ? 'Për qëndrime, çmimi llogaritet për natë.' : isTaxi ? 'Vendosni kohën e parashikuar të udhëtimit.' : `Vendosni sa zgjat zakonisht ${ui.serviceSingular}i.`,
+        offerHelp: isHotel ? `Ky është lloji i dhomës që e sheh klienti, p.sh. “${ui.serviceExample}”.` : `Kjo është zgjedhja që klienti rezervon, p.sh. “${ui.serviceExample}”.`, resourceHelp: isHotel ? `Zgjidhni të paktën një dhomë fizike, p.sh. “${ui.resourceExample}”.` : `Zgjidhni ${ui.resourceSingular}in që e realizon, p.sh. “${ui.resourceExample}”.`,
+        durationHelp: isTaxi ? 'Vendosni kohën e parashikuar të udhëtimit.' : `Vendosni sa zgjat zakonisht ${ui.serviceSingular}i.`,
         priceHelp: isHotel ? 'Vendosni çmimin për një natë.' : isTaxi ? 'Vendosni çmimin e transferit ose niseni nga 0 për marrëveshje.' : `Vendosni çmimin për këtë ${ui.serviceSingular}; 0 përdoret vetëm kur është falas.`,
         descriptionPlaceholder: `p.sh. Detaje për ${ui.serviceExample.toLowerCase()}.`, selectHelp: `Zgjidhni të paktën një ${ui.resourceSingular}.`, titleLabel: 'Titulli që shohin klientët',
       };
@@ -494,7 +515,7 @@ export function ServicesPage() {
               <input required className="input" placeholder={copy.namePlaceholder} value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} />
               <small className="mt-1.5 block text-slate-500">{copy.offerHelp}</small>
             </label>
-            <label>
+            {!isHotel && <label>
               <span className="mb-1.5 block text-sm font-semibold">{copy.duration}</span>
               <input
                 required
@@ -510,7 +531,7 @@ export function ServicesPage() {
                 }
               />
               <small className="mt-1.5 block text-slate-500">{copy.durationHelp}</small>
-            </label>
+            </label>}
             <label>
               <span className="mb-1.5 block text-sm font-semibold">{copy.price}</span>
               <input
@@ -532,10 +553,10 @@ export function ServicesPage() {
               <small className="mt-1.5 block text-slate-500">Tregoni shkurt çfarë merr klienti.</small>
             </label>
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {!isHotel && <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label>
               <span className="mb-1.5 block text-sm font-medium">
-                Kohë përgatitjeje para rezervimit (min)
+                {locale === 'en' ? operationCopyEn.before : operationCopy.before}
               </span>
               <input
                 className="input"
@@ -550,7 +571,7 @@ export function ServicesPage() {
             </label>
             <label>
               <span className="mb-1.5 block text-sm font-medium">
-                Kohë pushimi pas rezervimit (min)
+                {locale === 'en' ? operationCopyEn.after : operationCopy.after}
               </span>
               <input
                 className="input"
@@ -563,7 +584,7 @@ export function ServicesPage() {
                 }
               />
             </label>
-          </div>
+          </div>}
           <fieldset className="mt-4">
             <legend className="text-sm font-semibold">{copy.select}</legend>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500"><Info size={14} /> {copy.selectHelp}</p>

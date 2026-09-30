@@ -269,7 +269,7 @@ authRouter.post(
       where: { email: req.body.email.toLowerCase() },
       select: { id: true, email: true, firstName: true, passwordHash: true, deletedAt: true },
     });
-    if (user && !user.deletedAt) await emailAccountLink(user, 'password-reset');
+    if (user && !user.deletedAt) await emailAccountLink(user, 'password-reset', true);
     res.json({
       success: true,
       data: { message: 'Nëse emaili ekziston, lidhja e rikuperimit është dërguar.' },
