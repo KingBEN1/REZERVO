@@ -60,11 +60,17 @@ async function sendRegistrationCode(user: { id: string; email: string; firstName
   }
 }
 
-const accountTokenKey = (passwordHash: string) =>
-  new TextEncoder().encode(createHmac('sha256', env.JWT_SECRET).update(passwordHash).digest('hex'));
+const accountTokenKey = (user: { id: string; email: string; passwordHash: string | null }) =>
+  new TextEncoder().encode(
+    createHmac('sha256', env.JWT_SECRET)
+      // Google-only accounts have no password hash yet. The HMAC still makes
+      // the key server-secret, and setting a password invalidates this link.
+      .update(user.passwordHash ?? `passwordless:${user.id}:${user.email}`)
+      .digest('hex'),
+  );
 
 async function createAccountToken(
-  user: { id: string; passwordHash: string },
+  user: { id: string; email: string; passwordHash: string | null },
   purpose: 'password-reset' | 'verify-email',
 ) {
   return new SignJWT({ purpose })
@@ -72,7 +78,7 @@ async function createAccountToken(
     .setSubject(user.id)
     .setIssuedAt()
     .setExpirationTime(purpose === 'password-reset' ? '1h' : '24h')
-    .sign(accountTokenKey(user.passwordHash));
+    .sign(accountTokenKey(user));
 }
 
 async function readAccountToken(token: string, purpose: 'password-reset' | 'verify-email') {
@@ -88,10 +94,10 @@ async function readAccountToken(token: string, purpose: 'password-reset' | 'veri
   if (!subject)
     throw new AppError(400, 'INVALID_TOKEN', 'Lidhja nuk është e vlefshme ose ka skaduar.');
   const user = await prisma.user.findUnique({ where: { id: subject } });
-  if (!user?.passwordHash || user.deletedAt)
+  if (!user || user.deletedAt)
     throw new AppError(400, 'INVALID_TOKEN', 'Lidhja nuk është e vlefshme ose ka skaduar.');
   try {
-    const verified = await jwtVerify(token, accountTokenKey(user.passwordHash));
+    const verified = await jwtVerify(token, accountTokenKey(user));
     if (verified.payload.sub !== user.id || verified.payload.purpose !== purpose)
       throw new Error('Purpose mismatch');
   } catch {
@@ -105,8 +111,7 @@ async function emailAccountLink(
   purpose: 'password-reset' | 'verify-email',
   reportDeliveryFailure = false,
 ) {
-  if (!user.passwordHash) return;
-  const token = await createAccountToken({ id: user.id, passwordHash: user.passwordHash }, purpose);
+  const token = await createAccountToken(user, purpose);
   const baseUrl = webOrigins[0] ?? env.WEB_ORIGIN;
   const path = purpose === 'password-reset' ? '/reset-password' : '/verify-email';
   const link = `${baseUrl}${path}?token=${encodeURIComponent(token)}`;

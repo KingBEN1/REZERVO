@@ -63,6 +63,13 @@ describe('registration and authentication regressions (isolated database/provide
     expect((await post('/login', { email, password: 'wrong' })).status).toBe(401);
     expect(mocks.sendEmail).not.toHaveBeenCalled();
   });
+  it('sends a password-reset link for a Google-only account', async () => {
+    mocks.findUnique.mockResolvedValue({ ...user(), passwordHash: null, emailVerifiedAt: new Date() });
+    const result = await post('/forgot-password', { email });
+    expect(result.status).toBe(200);
+    expect(mocks.sendEmail).toHaveBeenCalledOnce();
+    expect(mocks.sendEmail.mock.calls[0]![0].text).toContain('/reset-password?token=');
+  });
   it('logs in a verified user', async () => {
     mocks.findUnique.mockResolvedValue({ ...user(), emailVerifiedAt: new Date() });
     const result = await post('/login', { email, password });
