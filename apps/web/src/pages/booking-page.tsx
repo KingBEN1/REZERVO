@@ -155,6 +155,7 @@ function BookingFlow() {
     destinationAddress: '',
     passengerCount: 1,
     tourParticipants: 1,
+    partySize: 2,
     couponCode: '',
     customerNote: '',
     website: '',
@@ -213,30 +214,36 @@ function BookingFlow() {
   const bankEnabled = Boolean(business?.settings?.bankTransferEnabled);
   const selectedPaymentMethod = !cashEnabled && bankEnabled ? 'BANK_TRANSFER' : paymentMethod;
   const isHotel = business?.category?.slug === 'hotels';
+  const isRental = business?.category?.slug === 'rentals';
   const isTour = business?.category?.slug === 'tourism-activities';
+  const isClass = ['fitness', 'education', 'child-care'].includes(business?.category?.slug ?? '');
+  const isScheduled = isTour || isClass;
+  const isRestaurant = business?.category?.slug === 'restaurants';
+  const isEvent = business?.category?.slug === 'events-venues';
+  const isStayBooking = isHotel || isRental;
   const isTaxi = business?.category?.slug === 'taxi-transport';
-  const requestLabel =
-    business?.category?.slug === 'restaurants'
-      ? 'Kërkesë për tavolinën'
-      : business?.category?.slug === 'car-service'
-        ? 'Automjeti (marka, modeli ose targa)'
-        : business?.category?.slug === 'events-venues'
-          ? 'Detajet e eventit'
-          : business?.category?.slug === 'home-services'
-            ? 'Adresa ose detaje për vizitën'
-            : business?.category?.slug === 'rentals'
-              ? 'Detaje për qiranë'
-              : 'Shënim për rezervimin';
-  const requestPlaceholder =
-    business?.category?.slug === 'restaurants'
-      ? 'p.sh. 4 persona, tavolinë pranë dritares'
-      : business?.category?.slug === 'car-service'
-        ? 'p.sh. VW Golf 7, 2017, 01-123-AB'
-        : business?.category?.slug === 'events-venues'
-          ? 'p.sh. Ditëlindje, rreth 40 mysafirë'
-          : business?.category?.slug === 'home-services'
-            ? 'p.sh. Rr. Dëshmorët, nr. 12, kati 3'
-            : 'Opsionale — tregoni çfarë ju nevojitet.';
+  const requestCopy = {
+    restaurants: { label: 'Kërkesë për tavolinën', placeholder: 'p.sh. 4 persona, tavolinë pranë dritares' },
+    'legal-notary': { label: 'Arsyeja e takimit', placeholder: 'p.sh. Konsultë për kontratë, pronë, çështje familjare ose dokument noterial.', required: true },
+    'professional-services': { label: 'Çfarë dëshironi të diskutoni?', placeholder: 'p.sh. Konsultë biznesi, kontabilitet ose këshillim profesional.' },
+    'health-clinics': { label: 'Arsyeja e vizitës', placeholder: 'Shkruani shkurt arsyen e vizitës ose simptomat kryesore.' },
+    dentists: { label: 'Arsyeja e vizitës dentare', placeholder: 'p.sh. Kontrollë, dhimbje dhëmbi ose pastrim.' },
+    physiotherapy: { label: 'Qëllimi i seancës', placeholder: 'p.sh. Dhimbje shpine, rehabilitim pas lëndimit.' },
+    'car-service': { label: 'Automjeti (marka, modeli ose targa)', placeholder: 'p.sh. VW Golf 7, 2017, 01-123-AB', required: true },
+    'events-venues': { label: 'Detajet e eventit', placeholder: 'p.sh. Ditëlindje, rreth 40 mysafirë.' },
+    'home-services': { label: 'Adresa ose detaje për vizitën', placeholder: 'p.sh. Rr. Dëshmorët, nr. 12, kati 3.', required: true },
+    photography: { label: 'Detajet e fotosesionit', placeholder: 'p.sh. Fotosesion familjar, vendndodhja dhe numri i personave.' },
+    fitness: { label: 'Qëllimi i seancës', placeholder: 'p.sh. Trajnim personal, humbje peshe ose përgatitje fizike.' },
+    education: { label: 'Tema e mësimit ose konsultës', placeholder: 'p.sh. Lënda, niveli dhe çfarë dëshironi të mësoni.' },
+    rentals: { label: 'Detajet e qirasë', placeholder: 'p.sh. Qëllimi i qirasë dhe kërkesa të veçanta.' },
+    'electronics-repair': { label: 'Pajisja për riparim', placeholder: 'p.sh. iPhone 13, problemi me ekranin ose baterinë.', required: true },
+    'pet-care': { label: 'Detajet për kafshën', placeholder: 'p.sh. Lloji, mosha dhe shërbimi që kërkoni.' },
+    'child-care': { label: 'Detajet për fëmijën', placeholder: 'p.sh. Mosha, nevoja të veçanta ose aktiviteti i dëshiruar.' },
+  }[business?.category?.slug ?? ''] ?? { label: 'Shënim për rezervimin', placeholder: 'Opsionale — tregoni çfarë ju nevojitet.' };
+  const requestLabel = requestCopy.label;
+  const requestPlaceholder = requestCopy.placeholder;
+  const requestRequired = 'required' in requestCopy && Boolean(requestCopy.required);
+  const hasDefinedTaxiRoute = Boolean(isTaxi && service?.bookingDetails?.departurePoint && service.bookingDetails?.returnPoint);
   const nights = Math.max(
     1,
     Math.round(
@@ -250,7 +257,7 @@ function BookingFlow() {
     queryKey: ['availability', slug, serviceId, staffId, date],
     staleTime: 0,
     refetchOnWindowFocus: true,
-    enabled: Boolean(serviceId && staffId && date && !isHotel && !isTour),
+    enabled: Boolean(serviceId && staffId && date && !isStayBooking && !isScheduled && !isRestaurant),
     queryFn: () =>
       api<{ slots: Slot[] }>(
         `/public/businesses/${slug}/availability?serviceId=${serviceId}&staffId=${staffId}&date=${date}`,
@@ -258,10 +265,15 @@ function BookingFlow() {
   });
   const tourDepartures = useQuery({
     queryKey: ['tour-departures', slug, serviceId],
-    enabled: Boolean(isTour && serviceId),
+    enabled: Boolean(isScheduled && serviceId),
     queryFn: () => api<{ departures: TourDeparture[] }>(`/public/businesses/${slug}/tour-departures?serviceId=${serviceId}`),
   });
   const selectedDeparture = tourDepartures.data?.departures.find((departure) => departure.id === tourDepartureId);
+  const restaurantAvailability = useQuery({
+    queryKey: ['table-availability', slug, serviceId, date, details.partySize],
+    enabled: Boolean(isRestaurant && serviceId && date && details.partySize > 0),
+    queryFn: () => api<{ slots: Array<Slot & { staffId: string }> }>(`/public/businesses/${slug}/table-availability?serviceId=${serviceId}&date=${date}&guestCount=${details.partySize}`),
+  });
   const slotTime = (startAt: string) => new Intl.DateTimeFormat('sq-XK', {
     hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Belgrade',
   }).format(new Date(startAt));
@@ -279,7 +291,7 @@ function BookingFlow() {
       stay.guestCount,
     ],
     enabled: Boolean(
-      isHotel &&
+      isStayBooking &&
       serviceId &&
       stay.checkInDate &&
       stay.checkOutDate &&
@@ -325,20 +337,20 @@ function BookingFlow() {
         body: JSON.stringify({
           serviceId,
           staffId,
-          bookingKind: isHotel ? 'ACCOMMODATION' : isTaxi ? 'TRANSPORT' : isTour ? 'TOUR' : 'APPOINTMENT',
-          ...(isHotel
+          bookingKind: isHotel ? 'ACCOMMODATION' : isRental ? 'RENTAL' : isTaxi ? 'TRANSPORT' : isTour ? 'TOUR' : isClass ? 'CLASS' : isEvent ? 'EVENT' : isRestaurant ? 'TABLE' : 'APPOINTMENT',
+          ...(isStayBooking
             ? {
                 checkInDate: stay.checkInDate,
                 checkOutDate: stay.checkOutDate,
                 guestCount: stay.guestCount,
               }
             : { startAt: slot?.startAt }),
-          ...(isTour ? { guestCount: details.tourParticipants } : {}),
-          ...(isTour ? { tourDepartureId } : {}),
+          ...(isScheduled ? { guestCount: details.tourParticipants, tourDepartureId } : {}),
+          ...(isEvent || isRestaurant ? { guestCount: details.partySize } : {}),
           ...(isTaxi
             ? {
-                pickupAddress: details.pickupAddress,
-                destinationAddress: details.destinationAddress,
+                pickupAddress: service?.bookingDetails?.departurePoint || details.pickupAddress,
+                destinationAddress: service?.bookingDetails?.returnPoint || details.destinationAddress,
                 passengerCount: details.passengerCount,
               }
             : {}),
@@ -351,7 +363,6 @@ function BookingFlow() {
         }),
       }),
     onSuccess: (data) => setSubmitted(data.booking),
-    onError: () => setSlot(undefined),
   });
   const step = submitted ? 5 : slot ? 4 : staffId ? 3 : serviceId ? 2 : 1;
   if (businessQuery.isLoading)
@@ -414,7 +425,7 @@ function BookingFlow() {
                 <dt className="text-slate-500">Oferta</dt>
                 <dd className="font-semibold">{submitted.service.name}</dd>
               </div>
-              {!isHotel && <div className="flex justify-between gap-5">
+              {!isStayBooking && <div className="flex justify-between gap-5">
                 <dt className="text-slate-500">Ofruesi / burimi</dt>
                 <dd className="font-semibold">{submitted.staff.name}</dd>
               </div>}
@@ -562,12 +573,13 @@ function BookingFlow() {
                           <small className="mt-1 block text-slate-500">{item.description}</small>
                         )}
                         {isTour && item.bookingDetails?.departurePoint && <small className="mt-1 flex items-center gap-1 font-semibold text-amber-800"><MapPin size={13} /> Nisja: {item.bookingDetails.departurePoint}{item.bookingDetails.departureTime ? ` · ${item.bookingDetails.departureTime}` : ''}</small>}
+                        {isTaxi && item.bookingDetails?.departurePoint && item.bookingDetails?.returnPoint && <small className="mt-1 flex items-center gap-1 font-semibold text-cyan-800"><MapPin size={13} /> {item.bookingDetails.departurePoint} → {item.bookingDetails.returnPoint}</small>}
                         </span>
                       </span>
                       <span className="text-right text-sm">
                         <b className="block">{money(item.price, business.currency)}</b>
                         <small className="text-slate-500">
-                          {isHotel ? 'për natë' : isTour ? 'për person' : `${item.durationMin} min`}
+                          {isHotel ? 'për natë' : isRental ? 'për ditë' : isScheduled ? 'për person' : isTaxi ? 'një drejtim' : `${item.durationMin} min`}
                         </small>
                         <small className="mt-1 block font-bold text-forest opacity-0 transition group-hover:opacity-100">Zgjidh →</small>
                       </span>
@@ -576,7 +588,7 @@ function BookingFlow() {
                 </div>
               </div>
             )}
-            {serviceId && !staffId && !isHotel && !isTour && (
+            {serviceId && !staffId && !isStayBooking && !isScheduled && !isRestaurant && (
               <div>
                 <button
                   onClick={() => setServiceId(undefined)}
@@ -612,40 +624,52 @@ function BookingFlow() {
                 </div>
               </div>
             )}
-            {serviceId && !staffId && isTour && (
+            {serviceId && !staffId && isScheduled && (
               <div>
-                <button onClick={() => setServiceId(undefined)} className="text-sm font-semibold text-forest">← Ndrysho turin</button>
-                <h2 className="mt-4 text-lg font-bold">Zgjidh nisjen</h2>
+                <button onClick={() => setServiceId(undefined)} className="text-sm font-semibold text-forest">← Ndrysho {isTour ? 'turin' : 'klasën'}</button>
+                <h2 className="mt-4 text-lg font-bold">{isTour ? 'Zgjidh nisjen' : 'Zgjidh klasën'}</h2>
                 <p className="mt-1 text-sm text-slate-500">Zgjidhni një datë dhe orë reale. Vendet e mbetura përditësohen automatikisht.</p>
                 {tourDepartures.isLoading && <div className="mt-5 h-28 animate-pulse rounded-2xl bg-sand" />}
-                {tourDepartures.data?.departures.length ? <div className="mt-5 grid gap-3 sm:grid-cols-2">{tourDepartures.data.departures.map((departure) => <button key={departure.id} type="button" onClick={() => { setTourDepartureId(departure.id); setStaffId(departure.staffId); setSlot({ startAt: departure.startAt, endAt: departure.endAt }); }} className="rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-50"><b className="block">{dateTime(departure.startAt)}</b><span className="mt-1 block text-sm text-slate-600">{departure.availableSeats} {departure.availableSeats === 1 ? 'vend i lirë' : 'vende të lira'}</span></button>)}</div> : !tourDepartures.isLoading && <p className="mt-5 rounded-2xl bg-sand p-4 text-sm text-slate-600">Ende nuk ka nisje të hapura për këtë tur. Kontaktoni organizatorin ose provoni më vonë.</p>}
+                {tourDepartures.data?.departures.length ? <div className="mt-5 grid gap-3 sm:grid-cols-2">{tourDepartures.data.departures.map((departure) => <button key={departure.id} type="button" onClick={() => { setTourDepartureId(departure.id); setStaffId(departure.staffId); setSlot({ startAt: departure.startAt, endAt: departure.endAt }); }} className="rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-50"><b className="block">{dateTime(departure.startAt)}</b><span className="mt-1 block text-sm text-slate-600">{departure.availableSeats} {departure.availableSeats === 1 ? 'vend i lirë' : 'vende të lira'}</span></button>)}</div> : !tourDepartures.isLoading && <p className="mt-5 rounded-2xl bg-sand p-4 text-sm text-slate-600">Ende nuk ka {isTour ? 'nisje' : 'klasa'} të hapura. Kontaktoni biznesin ose provoni më vonë.</p>}
               </div>
             )}
-            {serviceId && !staffId && isHotel && (
+            {serviceId && !staffId && isRestaurant && (
+              <div>
+                <button onClick={() => setServiceId(undefined)} className="text-sm font-semibold text-forest">← Ndrysho rezervimin</button>
+                <h2 className="mt-4 text-lg font-bold">Zgjidh datën, orën dhe numrin e personave</h2>
+                <p className="mt-1 text-sm text-slate-500">Sistemi zgjedh automatikisht një tavolinë të lirë me kapacitetin e duhur.</p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2"><label><span className="mb-1.5 block text-sm font-medium">Data</span><input className="input" type="date" min={localIsoDate(0)} value={date} onChange={(event) => { setDate(event.target.value); setSlot(undefined); }} /></label><label><span className="mb-1.5 block text-sm font-medium">Persona</span><input className="input" type="number" min="1" max="100" value={details.partySize} onChange={(event) => { setDetails({ ...details, partySize: Number(event.target.value) }); setSlot(undefined); }} /></label></div>
+                {restaurantAvailability.isLoading && <p className="mt-4 text-sm text-slate-500">Po kontrollojmë tavolinat e lira…</p>}
+                {restaurantAvailability.data && <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">{restaurantAvailability.data.slots.map((item) => <button key={item.startAt} type="button" onClick={() => { setStaffId(item.staffId); setSlot(item); }} className="rounded-xl border border-line bg-white px-3 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-forest hover:bg-green-50 hover:text-forest"><Clock3 className="mr-1 inline" size={14} />{slotTime(item.startAt)}</button>)}</div>}
+                {restaurantAvailability.data?.slots.length === 0 && <p className="mt-4 rounded-xl bg-sand p-4 text-sm text-slate-600">Nuk ka tavolina të lira për këtë numër personash në këtë datë.</p>}
+                {restaurantAvailability.isError && <p className="mt-4 text-sm text-red-600">Nuk mund të kontrollojmë tavolinat tani. Provoni përsëri.</p>}
+              </div>
+            )}
+            {serviceId && !staffId && isStayBooking && (
               <div>
                 <button
                   onClick={() => setServiceId(undefined)}
                   className="text-sm font-semibold text-forest"
                 >
-                  ← Ndrysho llojin e dhomës
+                  ← Ndrysho {isHotel ? 'llojin e dhomës' : 'artikullin për qira'}
                 </button>
                 <h2 className="mt-4 text-lg font-bold">Kontrollo disponueshmërinë</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Zgjidhni datat dhe mysafirët. Hoteli cakton automatikisht një dhomë të lirë të këtij lloji.
+                  {isHotel ? 'Zgjidhni datat dhe mysafirët. Hoteli cakton automatikisht një dhomë të lirë të këtij lloji.' : 'Zgjidhni datat e marrjes dhe kthimit. Sistemi cakton automatikisht një artikull ose automjet të lirë.'}
                 </p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label>
-                    <span className="mb-1.5 block text-sm font-medium">Hyrja</span>
+                    <span className="mb-1.5 block text-sm font-medium">{isHotel ? 'Hyrja' : 'Marrja'}</span>
                     <input
                       className="input"
                       type="date"
-                      min={localIsoDate(1)}
+                      min={localIsoDate(isHotel ? 1 : 0)}
                       value={stay.checkInDate}
                       onChange={(event) => setStay({ ...stay, checkInDate: event.target.value })}
                     />
                   </label>
                   <label>
-                    <span className="mb-1.5 block text-sm font-medium">Dalja</span>
+                    <span className="mb-1.5 block text-sm font-medium">{isHotel ? 'Dalja' : 'Kthimi'}</span>
                     <input
                       className="input"
                       type="date"
@@ -655,7 +679,7 @@ function BookingFlow() {
                     />
                   </label>
                   <label>
-                    <span className="mb-1.5 block text-sm font-medium">Mysafirë</span>
+                    <span className="mb-1.5 block text-sm font-medium">{isHotel ? 'Mysafirë' : 'Sasia'}</span>
                     <input
                       className="input"
                       type="number"
@@ -669,22 +693,22 @@ function BookingFlow() {
                   </label>
                 </div>
                 <p className="mt-4 rounded-xl bg-sand p-3 text-sm text-slate-600">
-                  {nights} {nights === 1 ? 'natë' : 'net'} · Totali i vlerësuar:{' '}
+                  {nights} {isHotel ? (nights === 1 ? 'natë' : 'net') : (nights === 1 ? 'ditë' : 'ditë')} · Totali i vlerësuar:{' '}
                   {money(Number(service?.price ?? 0) * nights, business.currency)}
                 </p>
                 {hotelSearch.isLoading && (
                   <p className="mt-3 text-sm text-slate-500">
-                    Po kontrollojmë disponueshmërinë e dhomës…
+                    Po kontrollojmë disponueshmërinë…
                   </p>
                 )}
                 {hotelSearch.data && hotelSearch.data.availableCount === 0 && (
                   <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                    Nuk ka dhoma të lira të këtij lloji për këto data. Ndryshoni datat, mysafirët ose zgjidhni një lloj tjetër dhome.
+                    Nuk ka {isHotel ? 'dhoma' : 'artikuj'} të lirë për këto data. Ndryshoni datat ose zgjidhni një ofertë tjetër.
                   </p>
                 )}
                 {hotelSearch.data && hotelSearch.data.availableCount > 0 && (
                   <p className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-900">
-                    {hotelSearch.data.availableCount} {hotelSearch.data.availableCount === 1 ? 'dhomë e lirë' : 'dhoma të lira'} për këtë qëndrim.
+                    {hotelSearch.data.availableCount} {isHotel ? (hotelSearch.data.availableCount === 1 ? 'dhomë e lirë' : 'dhoma të lira') : (hotelSearch.data.availableCount === 1 ? 'artikull i lirë' : 'artikuj të lirë')} për këtë periudhë.
                   </p>
                 )}
                 {hotelSearch.isError && (
@@ -717,7 +741,7 @@ function BookingFlow() {
                 </Button>
               </div>
             )}
-            {staffId && !slot && !isHotel && !isTour && (
+            {staffId && !slot && !isStayBooking && !isScheduled && !isRestaurant && (
               <div>
                 <button
                   onClick={() => setStaffId(undefined)}
@@ -803,7 +827,7 @@ function BookingFlow() {
                 </p>
               )}
                 <div className="mt-5 grid gap-4">
-                  {isTaxi && (
+                  {isTaxi && !hasDefinedTaxiRoute && (
                     <>
                       <label>
                         <span className="mb-1.5 block text-sm font-medium">Vendi i nisjes</span>
@@ -827,35 +851,49 @@ function BookingFlow() {
                           }
                         />
                       </label>
+                    </>
+                  )}
+                  {isTaxi && hasDefinedTaxiRoute && (
+                    <>
+                      <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm text-cyan-950">
+                        <b className="block">Linja e zgjedhur</b>
+                        <span className="mt-1 block font-semibold">{service?.bookingDetails?.departurePoint} → {service?.bookingDetails?.returnPoint}</span>
+                        <small className="mt-1 block text-cyan-800">Çmimi është për një drejtim. Shkruani më poshtë vetëm vendin e saktë të marrjes, nëse duhet.</small>
+                      </div>
                       <label>
-                        <span className="mb-1.5 block text-sm font-medium">Numri i udhëtarëve</span>
-                        <input
-                          className="input"
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={details.passengerCount}
-                          onChange={(event) =>
-                            setDetails({ ...details, passengerCount: Number(event.target.value) })
-                          }
-                        />
+                        <span className="mb-1.5 block text-sm font-medium">Vendi i marrjes <small className="text-slate-400">(opsional)</small></span>
+                        <input className="input" placeholder="p.sh. te stacioni i autobusëve" value={details.customerNote} onChange={(event) => setDetails({ ...details, customerNote: event.target.value })} />
                       </label>
                     </>
                   )}
-                  {isTour && (
+                  {isTaxi && (
+                    <label>
+                      <span className="mb-1.5 block text-sm font-medium">Numri i udhëtarëve</span>
+                      <input className="input" type="number" min="1" max="100" value={details.passengerCount} onChange={(event) => setDetails({ ...details, passengerCount: Number(event.target.value) })} />
+                    </label>
+                  )}
+                  {isScheduled && (
                     <label>
                       <span className="mb-1.5 block text-sm font-medium">Numri i pjesëmarrësve</span>
                       <input className="input" type="number" min={service?.bookingDetails?.minParticipants ?? 1} max={selectedDeparture?.availableSeats ?? 1} value={details.tourParticipants} onChange={(event) => setDetails({ ...details, tourParticipants: Number(event.target.value) })} />
                       <small className="mt-1.5 block text-slate-500">Çmimi llogaritet për person.</small>
                     </label>
                   )}
-                  {!isTaxi && !isTour && (
+                  {isEvent && (
+                    <label>
+                      <span className="mb-1.5 block text-sm font-medium">Numri i mysafirëve</span>
+                      <input className="input" type="number" min="1" max={eligibleStaff.find((item) => item.id === staffId)?.capacity ?? 1000} value={details.partySize} onChange={(event) => setDetails({ ...details, partySize: Number(event.target.value) })} />
+                      <small className="mt-1.5 block text-slate-500">Kapaciteti kontrollohet sipas hapësirës së zgjedhur.</small>
+                    </label>
+                  )}
+                  {!isTaxi && !isScheduled && (
                     <label>
                       <span className="mb-1.5 block text-sm font-medium">
-                        {requestLabel} <small className="text-slate-400">(opsionale)</small>
+                        {requestLabel} {!requestRequired && <small className="text-slate-400">(opsionale)</small>}
                       </span>
                       <textarea
                         className="input min-h-24 py-3"
+                        required={requestRequired}
                         maxLength={1000}
                         placeholder={requestPlaceholder}
                         value={details.customerNote}
@@ -1001,6 +1039,14 @@ function BookingFlow() {
                       alert(parsed.error.issues[0]?.message);
                       return;
                     }
+                    if (requestRequired && !details.customerNote.trim()) {
+                      alert(`Plotësoni fushën “${requestLabel}” para rezervimit.`);
+                      return;
+                    }
+                    if (isTaxi && !hasDefinedTaxiRoute && (!details.pickupAddress.trim() || !details.destinationAddress.trim())) {
+                      alert('Shkruani vendin e nisjes dhe destinacionin.');
+                      return;
+                    }
                     const currentContact = (verificationChannel === 'EMAIL' ? details.email : details.phone).trim().toLowerCase();
                     if (!verification?.verified || verification.channel !== verificationChannel || verification.contact !== currentContact) {
                       alert('Verifikoni emailin me kodin 6-shifror para rezervimit.');
@@ -1034,14 +1080,14 @@ function BookingFlow() {
                 <div className="border-b border-line pb-3">
                   <b className="block">{service.name}</b>
                   <span className="text-slate-500">
-                    {isHotel
-                      ? `për natë · ${money(service.price, business.currency)}`
-                      : isTour
+                    {isStayBooking
+                      ? `${isHotel ? 'për natë' : 'për ditë'} · ${money(service.price, business.currency)}`
+                      : isScheduled
                         ? `${service.durationMin} minuta · ${money(service.price, business.currency)} për person`
                         : `${service.durationMin} minuta · ${money(service.price, business.currency)}`}
                   </span>
                 </div>
-                {staffId && !isHotel && (
+                {staffId && !isStayBooking && (
                   <div>
                     <span className="text-slate-500">Ofruesi / burimi</span>
                     <b className="block">
@@ -1049,12 +1095,12 @@ function BookingFlow() {
                     </b>
                   </div>
                 )}
-                {staffId && isHotel && <div><span className="text-slate-500">Disponueshmëria</span><b className="block">Lloji i dhomës është i konfirmuar</b></div>}
+                {staffId && isStayBooking && <div><span className="text-slate-500">Disponueshmëria</span><b className="block">{isHotel ? 'Lloji i dhomës është i konfirmuar' : 'Artikulli është i konfirmuar'}</b></div>}
                 {slot && (
                   <div>
-                    <span className="text-slate-500">{isHotel ? 'Qëndrimi' : 'Rezervimi'}</span>
+                    <span className="text-slate-500">{isStayBooking ? (isHotel ? 'Qëndrimi' : 'Qiraja') : 'Rezervimi'}</span>
                     <b className="block">
-                      {isHotel
+                      {isStayBooking
                         ? `${stay.checkInDate} → ${stay.checkOutDate}`
                         : dateTime(slot.startAt)}
                     </b>
@@ -1064,7 +1110,7 @@ function BookingFlow() {
                   <span className="text-slate-500">Totali</span>
                   <b className="text-ink">
                     {money(
-                      isHotel ? Number(service.price) * nights : isTour ? Number(service.price) * details.tourParticipants : service.price,
+                      isStayBooking ? Number(service.price) * nights : isScheduled ? Number(service.price) * details.tourParticipants : service.price,
                       business.currency,
                     )}
                   </b>
@@ -1075,7 +1121,7 @@ function BookingFlow() {
                       <span>Parapagimi me PayPal ({business.settings.depositPercent}%)</span>
                       <b>
                         {money(
-                          (isHotel ? Number(service.price) * nights : isTour ? Number(service.price) * details.tourParticipants : Number(service.price)) *
+                          (isStayBooking ? Number(service.price) * nights : isScheduled ? Number(service.price) * details.tourParticipants : Number(service.price)) *
                             business.settings.depositPercent /
                             100,
                           business.currency,

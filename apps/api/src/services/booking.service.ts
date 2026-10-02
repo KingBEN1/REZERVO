@@ -24,7 +24,7 @@ export async function createPublicBooking(input: {
   slug: string;
   serviceId: string;
   staffId: string;
-  bookingKind?: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT' | 'TOUR';
+  bookingKind?: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT' | 'TOUR' | 'CLASS' | 'RENTAL' | 'EVENT' | 'TABLE';
   startAt?: Date;
   checkInDate?: string;
   checkOutDate?: string;
@@ -45,7 +45,7 @@ export async function createPublicBooking(input: {
       async (tx) => {
         const business = await tx.business.findFirst({
           where: { slug: input.slug, status: 'ACTIVE', deletedAt: null },
-          include: { settings: true },
+          include: { settings: true, category: { select: { slug: true } } },
         });
         if (!business)
           throw new AppError(
@@ -80,6 +80,8 @@ export async function createPublicBooking(input: {
             'INVALID_BOOKING',
             'Shërbimi ose anëtari i stafit nuk është i vlefshëm.',
           );
+        if (['legal-notary', 'car-service', 'electronics-repair', 'home-services'].includes(business.category?.slug ?? '') && !input.customerNote?.trim())
+          throw new AppError(422, 'BOOKING_DETAILS_REQUIRED', 'Shkruani detajet e nevojshme para rezervimit.');
 
         const bookingKind = input.bookingKind ?? 'APPOINTMENT';
         let startAt: Date;
@@ -90,31 +92,33 @@ export async function createPublicBooking(input: {
         let checkInDate: Date | undefined;
         let checkOutDate: Date | undefined;
         let tourDepartureId: string | undefined;
+        let pickupAddress = input.pickupAddress;
+        let destinationAddress = input.destinationAddress;
 
-        if (bookingKind === 'TOUR') {
+        if (bookingKind === 'TOUR' || bookingKind === 'CLASS') {
           if (!input.tourDepartureId || !input.guestCount)
-            throw new AppError(422, 'INVALID_BOOKING', 'Zgjidhni nisjen dhe pjesëmarrësit e turit.');
+            throw new AppError(422, 'INVALID_BOOKING', bookingKind === 'TOUR' ? 'Zgjidhni nisjen dhe pjesëmarrësit e turit.' : 'Zgjidhni seancën dhe pjesëmarrësit.');
           const departure = await tx.tourDeparture.findFirst({
             where: { id: input.tourDepartureId, serviceId: service.id, staffId: staff.id, active: true },
             include: { bookings: { where: { status: { in: ['PENDING', 'CONFIRMED'] } }, select: { guestCount: true } } },
           });
           if (!departure || departure.startAt.getTime() <= Date.now())
-            throw new AppError(409, 'TOUR_DEPARTURE_UNAVAILABLE', 'Kjo nisje nuk është më e disponueshme.');
+            throw new AppError(409, 'SCHEDULED_SESSION_UNAVAILABLE', bookingKind === 'TOUR' ? 'Kjo nisje nuk është më e disponueshme.' : 'Kjo seancë nuk është më e disponueshme.');
           const bookedSeats = departure.bookings.reduce((sum, booking) => sum + (booking.guestCount ?? 0), 0);
           if (bookedSeats + input.guestCount > departure.capacity)
             throw new AppError(409, 'CAPACITY_EXCEEDED', `Kanë mbetur vetëm ${Math.max(0, departure.capacity - bookedSeats)} vende.`);
           const details = (service.bookingDetails ?? {}) as { minParticipants?: number };
           if (details.minParticipants && input.guestCount < details.minParticipants)
-            throw new AppError(422, 'MINIMUM_PARTICIPANTS', `Ky tur kërkon të paktën ${details.minParticipants} pjesëmarrës.`);
+            throw new AppError(422, 'MINIMUM_PARTICIPANTS', `${bookingKind === 'TOUR' ? 'Ky tur' : 'Kjo seancë'} kërkon të paktën ${details.minParticipants} pjesëmarrës.`);
           startAt = departure.startAt;
           endAt = departure.endAt;
           bufferStartAt = startAt;
           bufferEndAt = endAt;
           price = new Prisma.Decimal(service.price).mul(input.guestCount);
           tourDepartureId = departure.id;
-        } else if (bookingKind === 'ACCOMMODATION') {
+        } else if (bookingKind === 'ACCOMMODATION' || bookingKind === 'RENTAL') {
           if (!input.checkInDate || !input.checkOutDate || !input.guestCount)
-            throw new AppError(422, 'INVALID_BOOKING', 'Plotësoni datat dhe numrin e mysafirëve.');
+            throw new AppError(422, 'INVALID_BOOKING', bookingKind === 'ACCOMMODATION' ? 'Plotësoni datat dhe numrin e mysafirëve.' : 'Plotësoni datat e marrjes dhe kthimit.');
           checkInDate = new Date(`${input.checkInDate}T12:00:00.000Z`);
           checkOutDate = new Date(`${input.checkOutDate}T12:00:00.000Z`);
           if (
@@ -145,7 +149,7 @@ export async function createPublicBooking(input: {
             throw new AppError(
               422,
               'CAPACITY_EXCEEDED',
-              `Ky burim pranon maksimumi ${staff.capacity} mysafirë.`,
+              bookingKind === 'ACCOMMODATION' ? `Ky burim pranon maksimumi ${staff.capacity} mysafirë.` : `Ky artikull mund të rezervohet për maksimumi ${staff.capacity} njësi.`,
             );
           const nights = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / 86_400_000);
           startAt = checkInDate;
@@ -176,11 +180,20 @@ export async function createPublicBooking(input: {
           bufferStartAt = addMinutes(startAt, -service.bufferBefore);
           bufferEndAt = addMinutes(endAt, service.bufferAfter);
         }
+        if ((bookingKind === 'EVENT' || bookingKind === 'TABLE') && (!input.guestCount || input.guestCount > staff.capacity))
+          throw new AppError(422, 'CAPACITY_EXCEEDED', bookingKind === 'TABLE' ? `Kjo tavolinë pranon maksimumi ${staff.capacity} persona.` : `Kjo hapësirë pranon maksimumi ${staff.capacity} mysafirë.`);
+        if (bookingKind === 'TRANSPORT') {
+          const route = (service.bookingDetails ?? {}) as { departurePoint?: string; returnPoint?: string };
+          if (route.departurePoint && route.returnPoint) {
+            pickupAddress = route.departurePoint;
+            destinationAddress = route.returnPoint;
+          }
+        }
         const collision = await tx.booking.findFirst({
           where: {
             staffId: staff.id,
             status: { in: ['PENDING', 'CONFIRMED'] },
-            ...(bookingKind === 'TOUR' ? { OR: [{ tourDepartureId: null }, { tourDepartureId: { not: tourDepartureId } }] } : {}),
+            ...(['TOUR', 'CLASS'].includes(bookingKind) ? { OR: [{ tourDepartureId: null }, { tourDepartureId: { not: tourDepartureId } }] } : {}),
             bufferStartAt: { lt: bufferEndAt },
             bufferEndAt: { gt: bufferStartAt },
           },
@@ -302,9 +315,9 @@ export async function createPublicBooking(input: {
             kind: bookingKind,
             checkInDate,
             checkOutDate,
-            guestCount: bookingKind === 'ACCOMMODATION' || bookingKind === 'TOUR' ? input.guestCount : null,
-            pickupAddress: bookingKind === 'TRANSPORT' ? input.pickupAddress : null,
-            destinationAddress: bookingKind === 'TRANSPORT' ? input.destinationAddress : null,
+            guestCount: ['ACCOMMODATION', 'RENTAL', 'TOUR', 'CLASS', 'EVENT', 'TABLE'].includes(bookingKind) ? input.guestCount : null,
+            pickupAddress: bookingKind === 'TRANSPORT' ? pickupAddress : null,
+            destinationAddress: bookingKind === 'TRANSPORT' ? destinationAddress : null,
             passengerCount: bookingKind === 'TRANSPORT' ? input.passengerCount : null,
             tourDepartureId,
             price,

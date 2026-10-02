@@ -154,7 +154,7 @@ export function ManageBookingPage() {
       </main>
     );
   const canChange = ['PENDING', 'CONFIRMED'].includes(booking.status);
-  const canReschedule = canChange && booking.kind !== 'ACCOMMODATION';
+  const canReschedule = canChange && booking.kind !== 'ACCOMMODATION' && booking.kind !== 'RENTAL';
   const settings = booking.business.settings;
   return (
     <main className="min-h-screen bg-sand">

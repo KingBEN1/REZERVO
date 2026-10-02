@@ -336,12 +336,22 @@ export const publicTourDeparturesSchema = z.object({
   params: z.object({ slug: z.string().min(3).max(80) }),
 });
 
+export const tableAvailabilitySchema = z.object({
+  body: z.object({}),
+  query: z.object({
+    serviceId: z.string().cuid(),
+    date: isoDate,
+    guestCount: z.coerce.number().int().min(1).max(100),
+  }),
+  params: z.object({ slug: z.string().min(3).max(80) }),
+});
+
 export const publicBookingSchema = z.object({
   body: z
     .object({
       serviceId: z.string().cuid(),
       staffId: z.string().cuid(),
-      bookingKind: z.enum(['APPOINTMENT', 'ACCOMMODATION', 'TRANSPORT', 'TOUR']).default('APPOINTMENT'),
+      bookingKind: z.enum(['APPOINTMENT', 'ACCOMMODATION', 'TRANSPORT', 'TOUR', 'CLASS', 'RENTAL', 'EVENT', 'TABLE']).default('APPOINTMENT'),
       startAt: z.string().datetime({ offset: true }).optional(),
       checkInDate: isoDate.optional(),
       checkOutDate: isoDate.optional(),
@@ -362,13 +372,13 @@ export const publicBookingSchema = z.object({
       website: z.string().max(0).optional(),
     })
     .superRefine((data, context) => {
-      if (data.bookingKind !== 'ACCOMMODATION' && !data.startAt)
+      if (!['ACCOMMODATION', 'RENTAL'].includes(data.bookingKind) && !data.startAt)
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['startAt'],
           message: 'Zgjidhni kohën e rezervimit.',
         });
-      if (data.bookingKind === 'ACCOMMODATION') {
+      if (data.bookingKind === 'ACCOMMODATION' || data.bookingKind === 'RENTAL') {
         if (!data.checkInDate)
           context.addIssue({
             code: z.ZodIssueCode.custom,
@@ -391,14 +401,18 @@ export const publicBookingSchema = z.object({
           context.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['guestCount'],
-            message: 'Zgjidhni numrin e mysafirëve.',
+            message: data.bookingKind === 'RENTAL' ? 'Zgjidhni sasinë që dëshironi të merrni me qira.' : 'Zgjidhni numrin e mysafirëve.',
           });
       }
-      if (data.bookingKind === 'TOUR') {
+      if (data.bookingKind === 'TOUR' || data.bookingKind === 'CLASS') {
         if (!data.guestCount)
           context.addIssue({ code: z.ZodIssueCode.custom, path: ['guestCount'], message: 'Zgjidhni numrin e pjesëmarrësve.' });
         if (!data.tourDepartureId)
-          context.addIssue({ code: z.ZodIssueCode.custom, path: ['tourDepartureId'], message: 'Zgjidhni një nisje të turit.' });
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ['tourDepartureId'], message: data.bookingKind === 'CLASS' ? 'Zgjidhni një klasë ose seancë.' : 'Zgjidhni një nisje të turit.' });
+      }
+      if (data.bookingKind === 'EVENT' || data.bookingKind === 'TABLE') {
+        if (!data.guestCount)
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ['guestCount'], message: data.bookingKind === 'TABLE' ? 'Zgjidhni numrin e personave.' : 'Zgjidhni numrin e mysafirëve.' });
       }
       if (data.bookingKind === 'TRANSPORT') {
         if (!data.pickupAddress)

@@ -55,7 +55,7 @@ type Booking = {
   status: string;
   price: string;
   customerNote: string | null;
-  kind: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT' | 'TOUR';
+  kind: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT' | 'TOUR' | 'CLASS' | 'RENTAL' | 'EVENT' | 'TABLE';
   checkInDate: string | null;
   checkOutDate: string | null;
   guestCount: number | null;
@@ -83,6 +83,10 @@ function BookingDetails({ booking }: { booking: Booking }) {
       Tur: <b>{booking.guestCount ?? 1} pjesëmarrës</b>
     </span>
   );
+  if (booking.kind === 'CLASS') return <span className="mt-1 block text-xs leading-5 text-slate-600">Klasë / seancë: <b>{booking.guestCount ?? 1} pjesëmarrës</b></span>;
+  if (booking.kind === 'RENTAL') return <span className="mt-1 block text-xs leading-5 text-slate-600">Qira: <b>{booking.checkInDate?.slice(0, 10)}</b> → <b>{booking.checkOutDate?.slice(0, 10)}</b></span>;
+  if (booking.kind === 'EVENT') return <span className="mt-1 block text-xs leading-5 text-slate-600">Event: <b>{booking.guestCount ?? 1} mysafirë</b></span>;
+  if (booking.kind === 'TABLE') return <span className="mt-1 block text-xs leading-5 text-slate-600">Tavolinë për <b>{booking.guestCount ?? 1} persona</b></span>;
   return booking.customerNote ? <span className="mt-1 block max-w-64 text-xs leading-5 text-slate-500">Shënim: {booking.customerNote}</span> : null;
 }
 function PaymentStatus({ payment }: { payment: Booking['payment'] }) {
@@ -107,7 +111,7 @@ function useBusinessQuery<T>(key: string, path: string, refresh = false) {
     refetchInterval: refresh ? 15_000 : false,
   });
 }
-function TourDeparturePanel({ service }: { service: Service }) {
+function TourDeparturePanel({ service, classSession = false }: { service: Service; classSession?: boolean }) {
   const { membership } = useTenant();
   const client = useQueryClient();
   const guides = service.staff.map((item) => item.staff);
@@ -145,23 +149,23 @@ function TourDeparturePanel({ service }: { service: Service }) {
     <section className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="flex items-center gap-2 text-sm font-bold text-ink"><CalendarDays size={16} className="text-indigo-700" /> Nisjet e planifikuara</h3>
+          <h3 className="flex items-center gap-2 text-sm font-bold text-ink"><CalendarDays size={16} className="text-indigo-700" /> {classSession ? 'Klasat e planifikuara' : 'Nisjet e planifikuara'}</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">Publikoni vetëm datat, orët dhe vendet që janë realisht në dispozicion.</p>
         </div>
-        <Button type="button" size="sm" onClick={() => setOpen(!open)} disabled={!guides.length}><Plus size={14} /> Nisje</Button>
+        <Button type="button" size="sm" onClick={() => setOpen(!open)} disabled={!guides.length}><Plus size={14} /> {classSession ? 'Klasë' : 'Nisje'}</Button>
       </div>
-      {!guides.length && <p className="mt-3 rounded-xl bg-white p-3 text-xs text-amber-800">Së pari lidheni këtë tur me një guidë ose automjet.</p>}
+      {!guides.length && <p className="mt-3 rounded-xl bg-white p-3 text-xs text-amber-800">Së pari lidheni këtë {classSession ? 'klasë me një trajner ose instruktor.' : 'tur me një guidë ose automjet.'}</p>}
       {open && (
         <form className="mt-4 grid gap-3 rounded-xl bg-white p-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); create.mutate(); }}>
-          <label><span className="mb-1 block text-xs font-semibold">Guida / automjeti</span><select required className="input" value={values.staffId} onChange={(event) => selectGuide(event.target.value)}>{guides.map((guide) => <option key={guide.id} value={guide.id}>{guide.name}</option>)}</select></label>
-          <label><span className="mb-1 block text-xs font-semibold">Data dhe ora e nisjes</span><input required className="input" type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={values.startAt} onChange={(event) => setValues({ ...values, startAt: event.target.value })} /></label>
-          <label><span className="mb-1 block text-xs font-semibold">Vende në dispozicion</span><input required className="input" type="number" min="1" max={guides.find((guide) => guide.id === values.staffId)?.capacity ?? 1} value={values.capacity} onChange={(event) => setValues({ ...values, capacity: Number(event.target.value) })} /></label>
-          <div className="flex items-end gap-2"><Button type="submit" size="sm" disabled={create.isPending}>Publiko nisjen</Button><Button type="button" size="sm" variant="secondary" onClick={() => setOpen(false)}>Mbyll</Button></div>
+          <label><span className="mb-1 block text-xs font-semibold">{classSession ? 'Trajneri / instruktori' : 'Guida / automjeti'}</span><select required className="input" value={values.staffId} onChange={(event) => selectGuide(event.target.value)}>{guides.map((guide) => <option key={guide.id} value={guide.id}>{guide.name}</option>)}</select></label>
+          <label><span className="mb-1 block text-xs font-semibold">{classSession ? 'Data dhe ora e klasës' : 'Data dhe ora e nisjes'}</span><input required className="input" type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={values.startAt} onChange={(event) => setValues({ ...values, startAt: event.target.value })} /></label>
+          <label><span className="mb-1 block text-xs font-semibold">{classSession ? 'Pjesëmarrës në dispozicion' : 'Vende në dispozicion'}</span><input required className="input" type="number" min="1" max={guides.find((guide) => guide.id === values.staffId)?.capacity ?? 1} value={values.capacity} onChange={(event) => setValues({ ...values, capacity: Number(event.target.value) })} /></label>
+          <div className="flex items-end gap-2"><Button type="submit" size="sm" disabled={create.isPending}>{classSession ? 'Publiko klasën' : 'Publiko nisjen'}</Button><Button type="button" size="sm" variant="secondary" onClick={() => setOpen(false)}>Mbyll</Button></div>
           {create.error && <p className="sm:col-span-2 text-xs text-red-700">{create.error instanceof Error ? create.error.message : 'Nuk mundëm ta krijojmë nisjen.'}</p>}
         </form>
       )}
       {departures.isLoading && <div className="mt-3 h-12 animate-pulse rounded-xl bg-white" />}
-      {departures.data?.departures.length ? <div className="mt-3 space-y-2">{departures.data.departures.map((departure) => <div key={departure.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 text-xs ${departure.active ? '' : 'opacity-60'}`}><span><b className="block text-sm text-ink">{dateTime(departure.startAt)}</b><span className="text-slate-500">{departure.staff.name} · {departure.bookedSeats}/{departure.capacity} vende të zëna</span></span>{departure.active ? <Button type="button" size="sm" variant="secondary" disabled={close.isPending} onClick={() => close.mutate(departure.id)}>Mbyll nisjen</Button> : <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">E mbyllur</span>}</div>)}</div> : !departures.isLoading && <p className="mt-3 text-xs text-slate-500">Ende nuk ka nisje të publikuara.</p>}
+      {departures.data?.departures.length ? <div className="mt-3 space-y-2">{departures.data.departures.map((departure) => <div key={departure.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 text-xs ${departure.active ? '' : 'opacity-60'}`}><span><b className="block text-sm text-ink">{dateTime(departure.startAt)}</b><span className="text-slate-500">{departure.staff.name} · {departure.bookedSeats}/{departure.capacity} {classSession ? 'pjesëmarrës të regjistruar' : 'vende të zëna'}</span></span>{departure.active ? <Button type="button" size="sm" variant="secondary" disabled={close.isPending} onClick={() => close.mutate(departure.id)}>{classSession ? 'Mbyll klasën' : 'Mbyll nisjen'}</Button> : <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">E mbyllur</span>}</div>)}</div> : !departures.isLoading && <p className="mt-3 text-xs text-slate-500">{classSession ? 'Ende nuk ka klasa të publikuara.' : 'Ende nuk ka nisje të publikuara.'}</p>}
     </section>
   );
 }
@@ -505,8 +509,12 @@ export function ServicesPage() {
   const category = current.data?.business.category?.slug ?? '';
   const ui = categoryUi(category);
   const isHotel = category === 'hotels';
+  const isRental = category === 'rentals';
   const isTaxi = category === 'taxi-transport';
   const isTour = category === 'tourism-activities';
+  const isClass = ['fitness', 'education', 'child-care'].includes(category);
+  const isScheduled = isTour || isClass;
+  const isStayProduct = isHotel || isRental;
   const operationCopy = {
     restaurants: { duration: 'Kohëzgjatja e qëndrimit në tavolinë', before: 'Kohë për përgatitjen e tavolinës (min)', after: 'Kohë për pastrimin e tavolinës (min)' },
     'taxi-transport': { duration: 'Kohëzgjatja e parashikuar e udhëtimit', before: 'Kohë para nisjes (min)', after: 'Kohë ndërmjet udhëtimeve (min)' },
@@ -532,12 +540,12 @@ export function ServicesPage() {
   const copy = locale === 'en'
     ? {
         eyebrow: 'Your catalog', title: 'What can customers book?', add: 'Create offer',
-        intro: isHotel ? 'Create one room type for every accommodation category, then connect the physical rooms that belong to that room type.' : isTour ? 'Create each tour with its itinerary, departure point, group size and price per guest.' : 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
+        intro: isHotel ? 'Create one room type for every accommodation category, then connect the physical rooms that belong to that room type.' : isRental ? 'Create one rental product for every car or item type, then connect the physical units available for the selected dates.' : isTour ? 'Create each tour with its itinerary, departure point, group size and price per guest.' : isClass ? 'Create each class or session, then publish the dates, coach and places that are actually available.' : isTaxi ? 'Create one fixed route for each transfer, set its one-way price, then connect the available vehicles.' : 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
         offer: 'Offer', resource: 'Provider / resource', newTitle: editingId ? 'Edit offer' : 'New offer',
         newHelp: 'Add only the information customers need before booking.', name: isHotel ? 'Room or stay name' : isTour ? 'Tour or activity name' : isTaxi ? 'Route or transfer name' : 'Offer name',
         namePlaceholder: isHotel ? 'e.g. Standard double room' : isTour ? 'e.g. Prizren day tour' : isTaxi ? 'e.g. Prishtina Airport transfer' : 'e.g. Haircut or consultation',
         duration: operationCopyEn.duration,
-        price: isHotel ? 'Price per night (€)' : isTour ? 'Price per guest (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
+        price: isHotel ? 'Price per night (€)' : isRental ? 'Price per day (€)' : isScheduled ? 'Price per participant (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
         description: 'Offer description', select: isHotel ? 'Which rooms belong to this room type?' : 'Who or which resource provides this?', close: 'Close without saving',
         save: editingId ? 'Save changes' : 'Create and publish offer', edit: 'Edit', assigned: 'Provider / resource:', minutes: 'minutes',
         offerHelp: isHotel ? 'This is the room type customers see and book.' : 'This is the option a customer books.', resourceHelp: isHotel ? 'Choose at least one physical room for this room type.' : 'Choose the person or resource that delivers it.',
@@ -547,17 +555,17 @@ export function ServicesPage() {
       }
     : {
         eyebrow: 'Katalogu juaj', title: ui.servicePlural, add: `Shto ${ui.serviceSingular}`,
-        intro: isHotel ? 'Krijoni një lloj dhome për çdo kategori akomodimi, pastaj lidhni dhomat fizike që i përkasin atij lloji.' : isTour ? 'Krijoni secilin tur me itinerar, pikë nisjeje, pjesëmarrës dhe çmim për person.' : `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
+        intro: isHotel ? 'Krijoni një lloj dhome për çdo kategori akomodimi, pastaj lidhni dhomat fizike që i përkasin atij lloji.' : isRental ? 'Krijoni një produkt për çdo lloj pajisjeje ose automjeti me qira, pastaj lidhni njësitë fizike që janë të lira në datat e zgjedhura.' : isTour ? 'Krijoni secilin tur me itinerar, pikë nisjeje, pjesëmarrës dhe çmim për person.' : isClass ? 'Krijoni secilën klasë ose seancë, pastaj publikoni datat, trajnerin dhe vendet që janë realisht të lira.' : isTaxi ? 'Krijoni një linjë të veçantë për çdo transfer, caktoni çmimin për një drejtim dhe lidhni automjetet që e realizojnë.' : `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
         offer: ui.serviceSingular, resource: ui.resourceSingular, newTitle: editingId ? `Ndrysho ${ui.serviceSingular}` : `Shto ${ui.serviceSingular}`,
         newHelp: `Plotësoni vetëm informacionin që klienti duhet të shohë para se të rezervojë këtë ${ui.serviceSingular}.`, name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTour ? 'Emri i turit ose aktivitetit' : isTaxi ? 'Emri i rrugës ose transferit' : `Emri i ${ui.serviceSingular}`,
         namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTour ? 'p.sh. Tur ditor në Prizren' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : `p.sh. ${ui.serviceExample}`,
         duration: operationCopy.duration,
-        price: isHotel ? 'Çmimi për një natë (€)' : isTour ? 'Çmimi për person (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
+        price: isHotel ? 'Çmimi për një natë (€)' : isRental ? 'Çmimi për një ditë (€)' : isScheduled ? 'Çmimi për pjesëmarrës (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
         description: `Përshkrimi për klientin`, select: isHotel ? 'Cilat dhoma i përkasin këtij lloji?' : `Cili ${ui.resourceSingular} e realizon?`, close: 'Mbyll pa ruajtur',
         save: editingId ? 'Ruaj ndryshimet' : `Ruaj ${ui.serviceSingular}in`, edit: 'Ndrysho', assigned: `${ui.resourcePlural}:`, minutes: 'minuta',
         offerHelp: isHotel ? `Ky është lloji i dhomës që e sheh klienti, p.sh. “${ui.serviceExample}”.` : `Kjo është zgjedhja që klienti rezervon, p.sh. “${ui.serviceExample}”.`, resourceHelp: isHotel ? `Zgjidhni të paktën një dhomë fizike, p.sh. “${ui.resourceExample}”.` : `Zgjidhni ${ui.resourceSingular}in që e realizon, p.sh. “${ui.resourceExample}”.`,
         durationHelp: isTour ? 'Vendosni kohëzgjatjen e plotë të turit.' : isTaxi ? 'Vendosni kohën e parashikuar të udhëtimit.' : `Vendosni sa zgjat zakonisht ${ui.serviceSingular}i.`,
-        priceHelp: isHotel ? 'Vendosni çmimin për një natë.' : isTour ? 'Vendosni çmimin për një pjesëmarrës.' : isTaxi ? 'Vendosni çmimin e transferit ose niseni nga 0 për marrëveshje.' : `Vendosni çmimin për këtë ${ui.serviceSingular}; 0 përdoret vetëm kur është falas.`,
+        priceHelp: isHotel ? 'Vendosni çmimin për një natë.' : isRental ? 'Vendosni çmimin për një ditë qiraje.' : isScheduled ? 'Vendosni çmimin për një pjesëmarrës.' : isTaxi ? 'Vendosni çmimin e transferit ose niseni nga 0 për marrëveshje.' : `Vendosni çmimin për këtë ${ui.serviceSingular}; 0 përdoret vetëm kur është falas.`,
         descriptionPlaceholder: `p.sh. Detaje për ${ui.serviceExample.toLowerCase()}.`, selectHelp: `Zgjidhni të paktën një ${ui.resourceSingular}.`, titleLabel: 'Titulli që shohin klientët',
       };
   const editService = (service: Service) => {
@@ -613,7 +621,7 @@ export function ServicesPage() {
               <input required className="input" placeholder={copy.namePlaceholder} value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} />
               <small className="mt-1.5 block text-slate-500">{copy.offerHelp}</small>
             </label>
-            {!isHotel && <label>
+            {!isStayProduct && <label>
               <span className="mb-1.5 block text-sm font-semibold">{copy.duration}</span>
               <input
                 required
@@ -663,7 +671,17 @@ export function ServicesPage() {
               </div>
             </section>
           )}
-          {!isHotel && !isTour && <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {isTaxi && (
+            <section className="mt-5 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4 sm:p-5">
+              <div className="flex gap-3"><Route className="mt-0.5 shrink-0 text-cyan-700" size={19} /><div><h3 className="font-bold">Linja e transferit</h3><p className="mt-1 text-sm text-slate-600">Krijoni një ofertë për secilën rrugë, p.sh. “Ferizaj → Prishtinë”. Klienti nuk ka nevojë t’i shkruajë këto të dhëna përsëri.</p></div></div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label><span className="mb-1.5 block text-sm font-semibold">Nisja</span><input className="input" placeholder="p.sh. Ferizaj" value={values.bookingDetails.departurePoint ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, departurePoint: event.target.value } })} /></label>
+                <label><span className="mb-1.5 block text-sm font-semibold">Destinacioni</span><input className="input" placeholder="p.sh. Prishtinë" value={values.bookingDetails.returnPoint ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, returnPoint: event.target.value } })} /></label>
+              </div>
+              <p className="mt-3 text-xs text-cyan-900">Çmimi i mësipërm ruhet si çmim për një drejtim.</p>
+            </section>
+          )}
+          {!isStayProduct && !isScheduled && <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label>
               <span className="mb-1.5 block text-sm font-medium">
                 {locale === 'en' ? operationCopyEn.before : operationCopy.before}
@@ -745,9 +763,9 @@ export function ServicesPage() {
             <div className="flex justify-between gap-3">
               <div>
                 <h2 className="font-bold">{service.name}</h2>
-                {!isHotel && <p className="mt-1 text-sm text-slate-500">{copy.duration}: {service.durationMin} {copy.minutes}</p>}
+                {!isStayProduct && <p className="mt-1 text-sm text-slate-500">{copy.duration}: {service.durationMin} {copy.minutes}</p>}
               </div>
-              <div className="text-right"><b className="block text-forest">{money(service.price)}</b>{isHotel && <small className="text-slate-500">/{locale === 'en' ? 'night' : 'natë'}</small>}</div>
+              <div className="text-right"><b className="block text-forest">{money(service.price)}</b>{isHotel && <small className="text-slate-500">/{locale === 'en' ? 'night' : 'natë'}</small>}{isRental && <small className="text-slate-500">/{locale === 'en' ? 'day' : 'ditë'}</small>}{isScheduled && <small className="text-slate-500">/{locale === 'en' ? 'person' : 'person'}</small>}</div>
             </div>
             {service.description && (
               <p className="mt-3 text-sm leading-6 text-slate-600">{service.description}</p>
@@ -761,7 +779,10 @@ export function ServicesPage() {
                 {service.bookingDetails.inclusions && <span className="sm:col-span-2">Përfshin: <b>{service.bookingDetails.inclusions}</b></span>}
               </div>
             )}
-            {isTour && <TourDeparturePanel service={service} />}
+            {isTaxi && service.bookingDetails?.departurePoint && service.bookingDetails?.returnPoint && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl bg-cyan-50 p-3 text-sm text-cyan-950"><Route size={16} className="shrink-0 text-cyan-700" /><b>{service.bookingDetails.departurePoint} → {service.bookingDetails.returnPoint}</b><span className="ml-auto text-xs text-cyan-800">një drejtim</span></div>
+            )}
+            {isScheduled && <TourDeparturePanel service={service} classSession={isClass} />}
             <p className="mt-5 border-t border-line pt-3 text-xs text-slate-500">
               <b className="text-slate-700">{copy.assigned}</b>{' '}
               {service.staff.map((item) => item.staff.name).join(' · ') || 'Nuk është caktuar'}

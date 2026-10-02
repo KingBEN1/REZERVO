@@ -173,7 +173,9 @@ export function CustomerAccountPage() {
                     <p className="mt-2 text-sm font-semibold text-forest">
                       {booking.kind === 'ACCOMMODATION'
                         ? 'Qëndrim hoteli'
-                        : dateTime(booking.startAt)}
+                        : booking.kind === 'RENTAL'
+                          ? 'Qira e rezervuar'
+                          : dateTime(booking.startAt)}
                     </p>
                   </div>
                   <span className="ml-auto h-fit rounded-full bg-green-50 px-2 py-1 text-xs font-bold text-forest">

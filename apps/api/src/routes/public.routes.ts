@@ -18,6 +18,7 @@ import {
   manageBookingTokenSchema,
   publicBookingSchema,
   publicTourDeparturesSchema,
+  tableAvailabilitySchema,
   rescheduleManagedBookingSchema,
   bookingVerificationConfirmSchema,
   bookingVerificationRequestSchema,
@@ -395,6 +396,37 @@ publicRouter.get(
 );
 
 publicRouter.get(
+  '/businesses/:slug/table-availability',
+  validate(tableAvailabilitySchema),
+  asyncHandler(async (req, res) => {
+    const business = await prisma.business.findFirst({
+      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null, category: { slug: 'restaurants' } },
+      select: { id: true },
+    });
+    if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Restoranti nuk u gjet.');
+    const tables = await prisma.staff.findMany({
+      where: {
+        businessId: business.id,
+        active: true,
+        capacity: { gte: Number(req.query.guestCount) },
+        services: { some: { serviceId: String(req.query.serviceId) } },
+      },
+      select: { id: true },
+    });
+    const perTable = await Promise.all(tables.map(async (table) => ({
+      tableId: table.id,
+      slots: await getPublicAvailability({ businessId: business.id, serviceId: String(req.query.serviceId), staffId: table.id, date: String(req.query.date) }),
+    })));
+    const byStart = new Map<string, { startAt: string; endAt: string; staffId: string }>();
+    perTable.forEach(({ tableId, slots }) => slots.forEach((slot) => {
+      const key = slot.start.toISOString();
+      if (!byStart.has(key)) byStart.set(key, { startAt: key, endAt: slot.end.toISOString(), staffId: tableId });
+    }));
+    res.json({ success: true, data: { slots: [...byStart.values()].sort((left, right) => left.startAt.localeCompare(right.startAt)) } });
+  }),
+);
+
+publicRouter.get(
   '/businesses/:slug/tour-departures',
   validate(publicTourDeparturesSchema),
   asyncHandler(async (req, res) => {
@@ -432,7 +464,7 @@ publicRouter.get(
       where: { id: String(req.query.serviceId), businessId: business.id, active: true },
       select: { id: true },
     });
-    if (!service) throw new AppError(404, 'SERVICE_NOT_FOUND', 'Lloji i dhomës nuk u gjet.');
+    if (!service) throw new AppError(404, 'SERVICE_NOT_FOUND', 'Oferta nuk u gjet.');
     const rooms = await prisma.staff.findMany({
       where: {
         businessId: business.id,

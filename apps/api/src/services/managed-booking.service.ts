@@ -80,11 +80,13 @@ export async function rescheduleManagedBooking(token: string, startAt: Date) {
   try {
     const booking = await getManagedBooking(token);
     assertCanChange(booking);
-    if (booking.kind === 'ACCOMMODATION')
+    if (booking.kind === 'ACCOMMODATION' || booking.kind === 'RENTAL')
       throw new AppError(
         409,
         'RESCHEDULING_DISABLED',
-        'Për akomodim, kontaktoni biznesin për ndryshimin e datave ose dhomës.',
+        booking.kind === 'ACCOMMODATION'
+          ? 'Për akomodim, kontaktoni biznesin për ndryshimin e datave ose dhomës.'
+          : 'Për qira, kontaktoni biznesin për ndryshimin e datave ose artikullit.',
       );
     if (!booking.business.settings?.reschedulingEnabled)
       throw new AppError(
