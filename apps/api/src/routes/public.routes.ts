@@ -11,11 +11,13 @@ import { optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
   accommodationAvailabilitySchema,
+  accommodationSearchSchema,
   availabilitySchema,
   cancelManagedBookingSchema,
   createReviewSchema,
   manageBookingTokenSchema,
   publicBookingSchema,
+  publicTourDeparturesSchema,
   rescheduleManagedBookingSchema,
   bookingVerificationConfirmSchema,
   bookingVerificationRequestSchema,
@@ -389,6 +391,69 @@ publicRouter.get(
         })),
       },
     });
+  }),
+);
+
+publicRouter.get(
+  '/businesses/:slug/tour-departures',
+  validate(publicTourDeparturesSchema),
+  asyncHandler(async (req, res) => {
+    const business = await prisma.business.findFirst({ where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null }, select: { id: true } });
+    if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');
+    const departures = await prisma.tourDeparture.findMany({
+      where: { serviceId: String(req.query.serviceId), service: { businessId: business.id, active: true }, active: true, startAt: { gte: new Date() } },
+      orderBy: { startAt: 'asc' },
+      take: 50,
+    });
+    const booked = await prisma.booking.groupBy({
+      by: ['tourDepartureId'],
+      where: { tourDepartureId: { in: departures.map((departure) => departure.id) }, status: { in: ['PENDING', 'CONFIRMED'] } },
+      _sum: { guestCount: true },
+    });
+    const seats = new Map(booked.map((item) => [item.tourDepartureId, item._sum.guestCount ?? 0]));
+    res.json({ success: true, data: { departures: departures.map((departure) => ({ id: departure.id, staffId: departure.staffId, startAt: departure.startAt, endAt: departure.endAt, capacity: departure.capacity, availableSeats: Math.max(0, departure.capacity - (seats.get(departure.id) ?? 0)) })).filter((departure) => departure.availableSeats > 0) } });
+  }),
+);
+
+publicRouter.get(
+  '/businesses/:slug/accommodation-search',
+  validate(accommodationSearchSchema),
+  asyncHandler(async (req, res) => {
+    const checkInDate = new Date(`${req.query.checkInDate}T12:00:00.000Z`);
+    const checkOutDate = new Date(`${req.query.checkOutDate}T12:00:00.000Z`);
+    if (checkOutDate <= checkInDate)
+      throw new AppError(422, 'INVALID_DATES', 'Data e daljes duhet të jetë pas datës së hyrjes.');
+    const business = await prisma.business.findFirst({
+      where: { slug: String(req.params.slug), status: 'ACTIVE', deletedAt: null },
+      include: { settings: true },
+    });
+    if (!business) throw new AppError(404, 'BUSINESS_NOT_FOUND', 'Biznesi nuk u gjet.');
+    const service = await prisma.service.findFirst({
+      where: { id: String(req.query.serviceId), businessId: business.id, active: true },
+      select: { id: true },
+    });
+    if (!service) throw new AppError(404, 'SERVICE_NOT_FOUND', 'Lloji i dhomës nuk u gjet.');
+    const rooms = await prisma.staff.findMany({
+      where: {
+        businessId: business.id,
+        active: true,
+        capacity: { gte: Number(req.query.guestCount) },
+        services: { some: { serviceId: service.id } },
+      },
+      select: { id: true },
+    });
+    const reserved = await prisma.booking.findMany({
+      where: {
+        staffId: { in: rooms.map((room) => room.id) },
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        bufferStartAt: { lt: checkOutDate },
+        bufferEndAt: { gt: checkInDate },
+      },
+      select: { staffId: true },
+    });
+    const reservedIds = new Set(reserved.map((booking) => booking.staffId));
+    const availableRoomIds = rooms.filter((room) => !reservedIds.has(room.id)).map((room) => room.id);
+    res.json({ success: true, data: { availableRoomIds, availableCount: availableRoomIds.length } });
   }),
 );
 

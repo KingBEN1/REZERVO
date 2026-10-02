@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { CalendarDays, CheckCircle2, ChevronLeft, Clock3, MapPin, Moon, Phone, Star, Sun } from 'lucide-react';
 import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import QRCode from 'qrcode';
 import { z } from 'zod';
 import { Button } from '../components/ui/button';
 import { CountryPhoneInput } from '../components/country-phone-input';
@@ -13,6 +14,8 @@ type Staff = {
   id: string;
   name: string;
   position: string | null;
+  roomNumber: string | null;
+  bedCount: number | null;
   capacity: number;
   photo: string | null;
 };
@@ -22,6 +25,14 @@ type Service = {
   description: string | null;
   durationMin: number;
   price: string;
+  bookingDetails: {
+    departurePoint?: string;
+    returnPoint?: string;
+    departureTime?: string;
+    minParticipants?: number;
+    maxParticipants?: number;
+    inclusions?: string;
+  } | null;
   staff: Array<{ staff: Staff }>;
 };
 type PublicBusiness = {
@@ -56,6 +67,7 @@ type PublicBusiness = {
   } | null;
 };
 type Slot = { startAt: string; endAt: string };
+type TourDeparture = { id: string; staffId: string; startAt: string; endAt: string; capacity: number; availableSeats: number };
 type SignedInUser = { user: { firstName: string; lastName: string; email: string } };
 type PayPalButtonApi = { Buttons: (options: Record<string, unknown>) => { render: (target: string) => Promise<void> } };
 declare global { interface Window { paypal?: PayPalButtonApi } }
@@ -134,6 +146,7 @@ function BookingFlow() {
   const [staffId, setStaffId] = useState<string>();
   const [date, setDate] = useState(localIsoDate(1));
   const [slot, setSlot] = useState<Slot>();
+  const [tourDepartureId, setTourDepartureId] = useState<string>();
   const [details, setDetails] = useState({
     name: '',
     email: '',
@@ -141,6 +154,7 @@ function BookingFlow() {
     pickupAddress: '',
     destinationAddress: '',
     passengerCount: 1,
+    tourParticipants: 1,
     couponCode: '',
     customerNote: '',
     website: '',
@@ -168,7 +182,7 @@ function BookingFlow() {
     business: PublicBusiness;
     payment?: { amount: string; currency: string; status: string } | null;
     paymentMethod?: 'CASH' | 'BANK_TRANSFER';
-    bankTransfer?: { bankName: string; accountHolder: string; iban: string; instructions?: string | null } | null;
+    bankTransfer?: { bankName: string; accountHolder: string; iban: string; instructions?: string | null; qrUrlTemplate?: string | null } | null;
   }>();
   const me = useQuery({
     queryKey: ['me'],
@@ -199,6 +213,7 @@ function BookingFlow() {
   const bankEnabled = Boolean(business?.settings?.bankTransferEnabled);
   const selectedPaymentMethod = !cashEnabled && bankEnabled ? 'BANK_TRANSFER' : paymentMethod;
   const isHotel = business?.category?.slug === 'hotels';
+  const isTour = business?.category?.slug === 'tourism-activities';
   const isTaxi = business?.category?.slug === 'taxi-transport';
   const requestLabel =
     business?.category?.slug === 'restaurants'
@@ -235,25 +250,30 @@ function BookingFlow() {
     queryKey: ['availability', slug, serviceId, staffId, date],
     staleTime: 0,
     refetchOnWindowFocus: true,
-    enabled: Boolean(serviceId && staffId && date && !isHotel),
+    enabled: Boolean(serviceId && staffId && date && !isHotel && !isTour),
     queryFn: () =>
       api<{ slots: Slot[] }>(
         `/public/businesses/${slug}/availability?serviceId=${serviceId}&staffId=${staffId}&date=${date}`,
       ),
   });
+  const tourDepartures = useQuery({
+    queryKey: ['tour-departures', slug, serviceId],
+    enabled: Boolean(isTour && serviceId),
+    queryFn: () => api<{ departures: TourDeparture[] }>(`/public/businesses/${slug}/tour-departures?serviceId=${serviceId}`),
+  });
+  const selectedDeparture = tourDepartures.data?.departures.find((departure) => departure.id === tourDepartureId);
   const slotTime = (startAt: string) => new Intl.DateTimeFormat('sq-XK', {
     hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Belgrade',
   }).format(new Date(startAt));
   const morningSlots = (availability.data?.slots ?? []).filter((item) => Number(slotTime(item.startAt).slice(0, 2)) < 12);
   const afternoonSlots = (availability.data?.slots ?? []).filter((item) => Number(slotTime(item.startAt).slice(0, 2)) >= 12);
-  const hotelAvailability = useQuery({
+  const hotelSearch = useQuery({
     staleTime: 0,
     refetchOnWindowFocus: true,
     queryKey: [
-      'accommodation-availability',
+      'accommodation-search',
       slug,
       serviceId,
-      staffId,
       stay.checkInDate,
       stay.checkOutDate,
       stay.guestCount,
@@ -261,15 +281,14 @@ function BookingFlow() {
     enabled: Boolean(
       isHotel &&
       serviceId &&
-      staffId &&
       stay.checkInDate &&
       stay.checkOutDate &&
       stay.checkOutDate > stay.checkInDate &&
       stay.guestCount > 0,
     ),
     queryFn: () =>
-      api<{ available: boolean }>(
-        `/public/businesses/${slug}/accommodation-availability?serviceId=${serviceId}&staffId=${staffId}&checkInDate=${stay.checkInDate}&checkOutDate=${stay.checkOutDate}&guestCount=${stay.guestCount}`,
+      api<{ availableRoomIds: string[]; availableCount: number }>(
+        `/public/businesses/${slug}/accommodation-search?serviceId=${serviceId}&checkInDate=${stay.checkInDate}&checkOutDate=${stay.checkOutDate}&guestCount=${stay.guestCount}`,
       ),
   });
   const requestVerification = useMutation({
@@ -306,7 +325,7 @@ function BookingFlow() {
         body: JSON.stringify({
           serviceId,
           staffId,
-          bookingKind: isHotel ? 'ACCOMMODATION' : isTaxi ? 'TRANSPORT' : 'APPOINTMENT',
+          bookingKind: isHotel ? 'ACCOMMODATION' : isTaxi ? 'TRANSPORT' : isTour ? 'TOUR' : 'APPOINTMENT',
           ...(isHotel
             ? {
                 checkInDate: stay.checkInDate,
@@ -314,6 +333,8 @@ function BookingFlow() {
                 guestCount: stay.guestCount,
               }
             : { startAt: slot?.startAt }),
+          ...(isTour ? { guestCount: details.tourParticipants } : {}),
+          ...(isTour ? { tourDepartureId } : {}),
           ...(isTaxi
             ? {
                 pickupAddress: details.pickupAddress,
@@ -393,10 +414,10 @@ function BookingFlow() {
                 <dt className="text-slate-500">Oferta</dt>
                 <dd className="font-semibold">{submitted.service.name}</dd>
               </div>
-              <div className="flex justify-between gap-5">
+              {!isHotel && <div className="flex justify-between gap-5">
                 <dt className="text-slate-500">Ofruesi / burimi</dt>
                 <dd className="font-semibold">{submitted.staff.name}</dd>
-              </div>
+              </div>}
               <div className="flex justify-between gap-5">
                 <dt className="text-slate-500">Data dhe ora</dt>
                 <dd className="text-right font-semibold">{dateTime(submitted.startAt)}</dd>
@@ -417,6 +438,7 @@ function BookingFlow() {
                 <div><dt className="text-indigo-700">Referenca</dt><dd className="font-mono font-bold">{submitted.reference}</dd></div>
               </dl>
               {submitted.bankTransfer.instructions && <p className="mt-3 border-t border-indigo-200 pt-3 leading-6">{submitted.bankTransfer.instructions}</p>}
+              {submitted.bankTransfer.qrUrlTemplate && <BankTransferQr bankTransfer={submitted.bankTransfer} amount={submitted.price} currency={submitted.currency} reference={submitted.reference} businessName={business.name} />}
             </div>
           )}
           {submitted.payment && <PayPalPayment manageToken={submitted.manageToken} amount={submitted.payment.amount} currency={submitted.payment.currency} />}
@@ -527,6 +549,7 @@ function BookingFlow() {
                       onClick={() => {
                         setServiceId(item.id);
                         setStaffId(undefined);
+                        setTourDepartureId(undefined);
                         setSlot(undefined);
                       }}
                       className="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/40 hover:shadow-md"
@@ -538,12 +561,13 @@ function BookingFlow() {
                         {item.description && (
                           <small className="mt-1 block text-slate-500">{item.description}</small>
                         )}
+                        {isTour && item.bookingDetails?.departurePoint && <small className="mt-1 flex items-center gap-1 font-semibold text-amber-800"><MapPin size={13} /> Nisja: {item.bookingDetails.departurePoint}{item.bookingDetails.departureTime ? ` · ${item.bookingDetails.departureTime}` : ''}</small>}
                         </span>
                       </span>
                       <span className="text-right text-sm">
                         <b className="block">{money(item.price, business.currency)}</b>
                         <small className="text-slate-500">
-                          {isHotel ? 'për natë' : `${item.durationMin} min`}
+                          {isHotel ? 'për natë' : isTour ? 'për person' : `${item.durationMin} min`}
                         </small>
                         <small className="mt-1 block font-bold text-forest opacity-0 transition group-hover:opacity-100">Zgjidh →</small>
                       </span>
@@ -552,7 +576,7 @@ function BookingFlow() {
                 </div>
               </div>
             )}
-            {serviceId && !staffId && (
+            {serviceId && !staffId && !isHotel && !isTour && (
               <div>
                 <button
                   onClick={() => setServiceId(undefined)}
@@ -581,23 +605,33 @@ function BookingFlow() {
                         <small className="text-slate-500">
                           {item.position ?? 'Ofrues / burim'}
                         </small>
+                        {isHotel && <small className="mt-1 block font-semibold text-indigo-700">{item.roomNumber ? `Dhoma ${item.roomNumber} · ` : ''}{item.bedCount ?? 1} {item.bedCount === 1 ? 'shtrat' : 'shtretër'} · deri në {item.capacity} mysafirë</small>}
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            {staffId && !slot && isHotel && (
+            {serviceId && !staffId && isTour && (
+              <div>
+                <button onClick={() => setServiceId(undefined)} className="text-sm font-semibold text-forest">← Ndrysho turin</button>
+                <h2 className="mt-4 text-lg font-bold">Zgjidh nisjen</h2>
+                <p className="mt-1 text-sm text-slate-500">Zgjidhni një datë dhe orë reale. Vendet e mbetura përditësohen automatikisht.</p>
+                {tourDepartures.isLoading && <div className="mt-5 h-28 animate-pulse rounded-2xl bg-sand" />}
+                {tourDepartures.data?.departures.length ? <div className="mt-5 grid gap-3 sm:grid-cols-2">{tourDepartures.data.departures.map((departure) => <button key={departure.id} type="button" onClick={() => { setTourDepartureId(departure.id); setStaffId(departure.staffId); setSlot({ startAt: departure.startAt, endAt: departure.endAt }); }} className="rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-50"><b className="block">{dateTime(departure.startAt)}</b><span className="mt-1 block text-sm text-slate-600">{departure.availableSeats} {departure.availableSeats === 1 ? 'vend i lirë' : 'vende të lira'}</span></button>)}</div> : !tourDepartures.isLoading && <p className="mt-5 rounded-2xl bg-sand p-4 text-sm text-slate-600">Ende nuk ka nisje të hapura për këtë tur. Kontaktoni organizatorin ose provoni më vonë.</p>}
+              </div>
+            )}
+            {serviceId && !staffId && isHotel && (
               <div>
                 <button
-                  onClick={() => setStaffId(undefined)}
+                  onClick={() => setServiceId(undefined)}
                   className="text-sm font-semibold text-forest"
                 >
-                  ← Ndrysho dhomën
+                  ← Ndrysho llojin e dhomës
                 </button>
-                <h2 className="mt-4 text-lg font-bold">Zgjidh qëndrimin</h2>
+                <h2 className="mt-4 text-lg font-bold">Kontrollo disponueshmërinë</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Çmimi llogaritet për natë. Dhoma bllokohet për të gjithë periudhën e qëndrimit.
+                  Zgjidhni datat dhe mysafirët. Hoteli cakton automatikisht një dhomë të lirë të këtij lloji.
                 </p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label>
@@ -638,18 +672,22 @@ function BookingFlow() {
                   {nights} {nights === 1 ? 'natë' : 'net'} · Totali i vlerësuar:{' '}
                   {money(Number(service?.price ?? 0) * nights, business.currency)}
                 </p>
-                {hotelAvailability.isLoading && (
+                {hotelSearch.isLoading && (
                   <p className="mt-3 text-sm text-slate-500">
                     Po kontrollojmë disponueshmërinë e dhomës…
                   </p>
                 )}
-                {hotelAvailability.data && !hotelAvailability.data.available && (
+                {hotelSearch.data && hotelSearch.data.availableCount === 0 && (
                   <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                    Kjo dhomë nuk është e lirë për këto data. Ndryshoni datat ose zgjidhni një dhomë
-                    tjetër.
+                    Nuk ka dhoma të lira të këtij lloji për këto data. Ndryshoni datat, mysafirët ose zgjidhni një lloj tjetër dhome.
                   </p>
                 )}
-                {hotelAvailability.isError && (
+                {hotelSearch.data && hotelSearch.data.availableCount > 0 && (
+                  <p className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-900">
+                    {hotelSearch.data.availableCount} {hotelSearch.data.availableCount === 1 ? 'dhomë e lirë' : 'dhoma të lira'} për këtë qëndrim.
+                  </p>
+                )}
+                {hotelSearch.isError && (
                   <p className="mt-3 text-sm text-red-700">
                     Nuk mund ta kontrollojmë disponueshmërinë tani. Provoni përsëri.
                   </p>
@@ -661,21 +699,25 @@ function BookingFlow() {
                     !stay.checkOutDate ||
                     stay.checkOutDate <= stay.checkInDate ||
                     stay.guestCount < 1 ||
-                    hotelAvailability.isLoading ||
-                    hotelAvailability.data?.available === false
+                    hotelSearch.isLoading ||
+                    !hotelSearch.data ||
+                    hotelSearch.data?.availableCount === 0
                   }
-                  onClick={() =>
+                  onClick={() => {
+                    const roomId = hotelSearch.data?.availableRoomIds[0];
+                    if (!roomId) return;
+                    setStaffId(roomId);
                     setSlot({
                       startAt: new Date(`${stay.checkInDate}T12:00:00.000Z`).toISOString(),
                       endAt: new Date(`${stay.checkOutDate}T12:00:00.000Z`).toISOString(),
-                    })
-                  }
+                    });
+                  }}
                 >
                   Vazhdo me të dhënat
                 </Button>
               </div>
             )}
-            {staffId && !slot && !isHotel && (
+            {staffId && !slot && !isHotel && !isTour && (
               <div>
                 <button
                   onClick={() => setStaffId(undefined)}
@@ -800,7 +842,14 @@ function BookingFlow() {
                       </label>
                     </>
                   )}
-                  {!isTaxi && (
+                  {isTour && (
+                    <label>
+                      <span className="mb-1.5 block text-sm font-medium">Numri i pjesëmarrësve</span>
+                      <input className="input" type="number" min={service?.bookingDetails?.minParticipants ?? 1} max={selectedDeparture?.availableSeats ?? 1} value={details.tourParticipants} onChange={(event) => setDetails({ ...details, tourParticipants: Number(event.target.value) })} />
+                      <small className="mt-1.5 block text-slate-500">Çmimi llogaritet për person.</small>
+                    </label>
+                  )}
+                  {!isTaxi && !isTour && (
                     <label>
                       <span className="mb-1.5 block text-sm font-medium">
                         {requestLabel} <small className="text-slate-400">(opsionale)</small>
@@ -987,10 +1036,12 @@ function BookingFlow() {
                   <span className="text-slate-500">
                     {isHotel
                       ? `për natë · ${money(service.price, business.currency)}`
-                      : `${service.durationMin} minuta · ${money(service.price, business.currency)}`}
+                      : isTour
+                        ? `${service.durationMin} minuta · ${money(service.price, business.currency)} për person`
+                        : `${service.durationMin} minuta · ${money(service.price, business.currency)}`}
                   </span>
                 </div>
-                {staffId && (
+                {staffId && !isHotel && (
                   <div>
                     <span className="text-slate-500">Ofruesi / burimi</span>
                     <b className="block">
@@ -998,6 +1049,7 @@ function BookingFlow() {
                     </b>
                   </div>
                 )}
+                {staffId && isHotel && <div><span className="text-slate-500">Disponueshmëria</span><b className="block">Lloji i dhomës është i konfirmuar</b></div>}
                 {slot && (
                   <div>
                     <span className="text-slate-500">{isHotel ? 'Qëndrimi' : 'Rezervimi'}</span>
@@ -1012,7 +1064,7 @@ function BookingFlow() {
                   <span className="text-slate-500">Totali</span>
                   <b className="text-ink">
                     {money(
-                      isHotel ? Number(service.price) * nights : service.price,
+                      isHotel ? Number(service.price) * nights : isTour ? Number(service.price) * details.tourParticipants : service.price,
                       business.currency,
                     )}
                   </b>
@@ -1023,7 +1075,7 @@ function BookingFlow() {
                       <span>Parapagimi me PayPal ({business.settings.depositPercent}%)</span>
                       <b>
                         {money(
-                          (isHotel ? Number(service.price) * nights : Number(service.price)) *
+                          (isHotel ? Number(service.price) * nights : isTour ? Number(service.price) * details.tourParticipants : Number(service.price)) *
                             business.settings.depositPercent /
                             100,
                           business.currency,
@@ -1092,6 +1144,63 @@ function BookingFlow() {
         </div>
       )}
     </main>
+  );
+}
+
+type BankTransferDetails = {
+  bankName: string;
+  accountHolder: string;
+  iban: string;
+  instructions?: string | null;
+  qrUrlTemplate?: string | null;
+};
+
+function BankTransferQr({
+  bankTransfer,
+  amount,
+  currency,
+  reference,
+  businessName,
+}: {
+  bankTransfer: BankTransferDetails;
+  amount: string;
+  currency: string;
+  reference: string;
+  businessName: string;
+}) {
+  const [image, setImage] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+
+  useEffect(() => {
+    const template = bankTransfer.qrUrlTemplate;
+    if (!template) return;
+    const values: Record<string, string> = {
+      amount: Number(amount).toFixed(2),
+      iban: bankTransfer.iban,
+      reference,
+      name: bankTransfer.accountHolder,
+      business: businessName,
+      currency,
+    };
+    const paymentUrl = template.replace(/\{(amount|iban|reference|name|business|currency)\}/g, (_match, key: string) => encodeURIComponent(values[key] ?? ''));
+    try {
+      const url = new URL(paymentUrl);
+      if (url.protocol !== 'https:') throw new Error('URL jo e sigurt');
+      void QRCode.toDataURL(url.toString(), { width: 220, margin: 1, errorCorrectionLevel: 'M' })
+        .then(setImage)
+        .catch(() => setUnavailable(true));
+    } catch {
+      setUnavailable(true);
+    }
+  }, [amount, bankTransfer, businessName, currency, reference]);
+
+  if (unavailable) return null;
+  return (
+    <div className="mt-4 border-t border-indigo-200 pt-4 text-center">
+      <p className="font-semibold">Paguaj me QR bankar</p>
+      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-indigo-800">Skanoje me aplikacionin e bankës. Kontrollo gjithmonë përfituesin dhe shumën para konfirmimit.</p>
+      {image ? <img className="mx-auto mt-3 size-44 rounded-xl bg-white p-2" src={image} alt="QR për transfer bankar" /> : <div className="mx-auto mt-3 size-44 animate-pulse rounded-xl bg-white" />}
+    </div>
   );
 }
 

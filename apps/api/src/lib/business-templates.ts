@@ -9,6 +9,9 @@ type StarterTemplate = {
   durationMin: number;
   price: number;
   priceType: PriceType;
+  roomNumber?: string;
+  bedCount?: number;
+  bookingDetails?: { departurePoint?: string; returnPoint?: string; departureTime?: string; minParticipants?: number; maxParticipants?: number; inclusions?: string };
 };
 
 const templates: Record<string, StarterTemplate> = {
@@ -19,11 +22,13 @@ const templates: Record<string, StarterTemplate> = {
   dentists: { resourceName: 'Dr. 1', resourceRole: 'Dentist', capacity: 1, serviceName: 'Kontrollë dentare', description: 'Model fillestar — përshtateni me shërbimet dentare.', durationMin: 30, price: 0, priceType: 'CUSTOM' },
   physiotherapy: { resourceName: 'Fizioterapisti 1', resourceRole: 'Fizioterapist', capacity: 1, serviceName: 'Seancë fizioterapie', description: 'Model fillestar — përshtateni me seancat e rehabilitimit.', durationMin: 45, price: 0, priceType: 'CUSTOM' },
   hotels: {
-    resourceName: 'Dhoma standarde 1',
-    resourceRole: 'Dhomë',
+    resourceName: 'Dhoma 101',
+    resourceRole: 'Dhomë dyshe standarde',
     capacity: 2,
-    serviceName: 'Qëndrim për natë',
-    description: 'Model fillestar — vendosni çmimin dhe detajet e dhomës.',
+    roomNumber: '101',
+    bedCount: 2,
+    serviceName: 'Dhomë dyshe standarde',
+    description: 'Dhomë me 2 shtretër. Përshtateni me çmimin dhe pajisjet e dhomës.',
     durationMin: 60,
     price: 0,
     priceType: 'CUSTOM',
@@ -100,7 +105,7 @@ const templates: Record<string, StarterTemplate> = {
   },
   photography: { resourceName: 'Fotografi 1', resourceRole: 'Fotograf', capacity: 1, serviceName: 'Fotosesion', description: 'Model fillestar — përshtateni me paketat e fotografisë ose videos.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
   rentals: { resourceName: 'Artikulli 1', resourceRole: 'Pajisje ose automjet', capacity: 1, serviceName: 'Qira ditore', description: 'Model fillestar — përshtateni me artikullin që jepni me qira.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
-  'tourism-activities': { resourceName: 'Guida 1', resourceRole: 'Guidë', capacity: 12, serviceName: 'Tur i organizuar', description: 'Model fillestar — përshtateni me turin ose aktivitetin.', durationMin: 180, price: 0, priceType: 'CUSTOM' },
+  'tourism-activities': { resourceName: 'Guida 1', resourceRole: 'Guidë', capacity: 12, serviceName: 'Tur i organizuar', description: 'Model fillestar — përshtateni me itinerarin, çmimin dhe pjesëmarrësit.', durationMin: 180, price: 0, priceType: 'CUSTOM', bookingDetails: { minParticipants: 1, maxParticipants: 12 } },
   coworking: { resourceName: 'Tavolina 1', resourceRole: 'Tavolinë pune', capacity: 1, serviceName: 'Hapësirë pune ditore', description: 'Model fillestar — përshtateni me hapësirat dhe paketat tuaja.', durationMin: 60, price: 0, priceType: 'CUSTOM' },
   'electronics-repair': { resourceName: 'Tekniku 1', resourceRole: 'Teknik', capacity: 1, serviceName: 'Riparim pajisjeje', description: 'Model fillestar — përshtateni me llojet e riparimit.', durationMin: 45, price: 0, priceType: 'CUSTOM' },
   'child-care': { resourceName: 'Edukatori 1', resourceRole: 'Edukator', capacity: 8, serviceName: 'Aktivitet për fëmijë', description: 'Model fillestar — përshtateni me aktivitetet dhe grupmoshat.', durationMin: 60, price: 0, priceType: 'CUSTOM' },

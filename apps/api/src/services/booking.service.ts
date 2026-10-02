@@ -24,7 +24,7 @@ export async function createPublicBooking(input: {
   slug: string;
   serviceId: string;
   staffId: string;
-  bookingKind?: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT';
+  bookingKind?: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT' | 'TOUR';
   startAt?: Date;
   checkInDate?: string;
   checkOutDate?: string;
@@ -32,6 +32,7 @@ export async function createPublicBooking(input: {
   pickupAddress?: string;
   destinationAddress?: string;
   passengerCount?: number;
+  tourDepartureId?: string;
   couponCode?: string;
   paymentMethod?: 'CASH' | 'BANK_TRANSFER';
   customer: { name: string; email?: string; phone?: string };
@@ -88,8 +89,30 @@ export async function createPublicBooking(input: {
         let price: Prisma.Decimal = service.price;
         let checkInDate: Date | undefined;
         let checkOutDate: Date | undefined;
+        let tourDepartureId: string | undefined;
 
-        if (bookingKind === 'ACCOMMODATION') {
+        if (bookingKind === 'TOUR') {
+          if (!input.tourDepartureId || !input.guestCount)
+            throw new AppError(422, 'INVALID_BOOKING', 'Zgjidhni nisjen dhe pjesëmarrësit e turit.');
+          const departure = await tx.tourDeparture.findFirst({
+            where: { id: input.tourDepartureId, serviceId: service.id, staffId: staff.id, active: true },
+            include: { bookings: { where: { status: { in: ['PENDING', 'CONFIRMED'] } }, select: { guestCount: true } } },
+          });
+          if (!departure || departure.startAt.getTime() <= Date.now())
+            throw new AppError(409, 'TOUR_DEPARTURE_UNAVAILABLE', 'Kjo nisje nuk është më e disponueshme.');
+          const bookedSeats = departure.bookings.reduce((sum, booking) => sum + (booking.guestCount ?? 0), 0);
+          if (bookedSeats + input.guestCount > departure.capacity)
+            throw new AppError(409, 'CAPACITY_EXCEEDED', `Kanë mbetur vetëm ${Math.max(0, departure.capacity - bookedSeats)} vende.`);
+          const details = (service.bookingDetails ?? {}) as { minParticipants?: number };
+          if (details.minParticipants && input.guestCount < details.minParticipants)
+            throw new AppError(422, 'MINIMUM_PARTICIPANTS', `Ky tur kërkon të paktën ${details.minParticipants} pjesëmarrës.`);
+          startAt = departure.startAt;
+          endAt = departure.endAt;
+          bufferStartAt = startAt;
+          bufferEndAt = endAt;
+          price = new Prisma.Decimal(service.price).mul(input.guestCount);
+          tourDepartureId = departure.id;
+        } else if (bookingKind === 'ACCOMMODATION') {
           if (!input.checkInDate || !input.checkOutDate || !input.guestCount)
             throw new AppError(422, 'INVALID_BOOKING', 'Plotësoni datat dhe numrin e mysafirëve.');
           checkInDate = new Date(`${input.checkInDate}T12:00:00.000Z`);
@@ -157,6 +180,7 @@ export async function createPublicBooking(input: {
           where: {
             staffId: staff.id,
             status: { in: ['PENDING', 'CONFIRMED'] },
+            ...(bookingKind === 'TOUR' ? { OR: [{ tourDepartureId: null }, { tourDepartureId: { not: tourDepartureId } }] } : {}),
             bufferStartAt: { lt: bufferEndAt },
             bufferEndAt: { gt: bufferStartAt },
           },
@@ -278,10 +302,11 @@ export async function createPublicBooking(input: {
             kind: bookingKind,
             checkInDate,
             checkOutDate,
-            guestCount: bookingKind === 'ACCOMMODATION' ? input.guestCount : null,
+            guestCount: bookingKind === 'ACCOMMODATION' || bookingKind === 'TOUR' ? input.guestCount : null,
             pickupAddress: bookingKind === 'TRANSPORT' ? input.pickupAddress : null,
             destinationAddress: bookingKind === 'TRANSPORT' ? input.destinationAddress : null,
             passengerCount: bookingKind === 'TRANSPORT' ? input.passengerCount : null,
+            tourDepartureId,
             price,
             currency: business.currency,
             customerNote: input.customerNote,
@@ -312,6 +337,7 @@ export async function createPublicBooking(input: {
                       accountHolder: business.settings?.bankAccountHolder,
                       iban: business.settings?.bankIban,
                       instructions: business.settings?.bankReferenceInstructions ?? null,
+                      qrUrlTemplate: business.settings?.bankQrUrlTemplate ?? null,
                     }
                   : undefined,
               },
@@ -330,7 +356,7 @@ export async function createPublicBooking(input: {
     );
     if (booking.payment?.provider !== 'paypal') await notifyBookingEvent(booking.id, 'confirmed');
     const bankTransfer = booking.payment?.provider === 'bank_transfer'
-      ? booking.payment.metadata as { bankName: string; accountHolder: string; iban: string; instructions?: string | null }
+      ? booking.payment.metadata as { bankName: string; accountHolder: string; iban: string; instructions?: string | null; qrUrlTemplate?: string | null }
       : null;
     return { ...booking, payment: booking.payment?.provider === 'paypal' ? booking.payment : null, paymentMethod: booking.payment?.provider === 'bank_transfer' ? 'BANK_TRANSFER' : 'CASH', bankTransfer };
   } catch (error) {

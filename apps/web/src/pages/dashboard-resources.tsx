@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Check, ChevronDown, Clock3, Info, Pencil, Plus, Sparkles, UserPlus } from 'lucide-react';
+import { BedDouble, CalendarDays, Check, ChevronDown, Clock3, Info, MapPinned, Pencil, Plus, Route, Sparkles, UserPlus, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -14,6 +14,8 @@ type Staff = {
   id: string;
   name: string;
   position: string | null;
+  roomNumber: string | null;
+  bedCount: number | null;
   capacity: number;
   active: boolean;
   services?: Array<{ service: { name: string } }>;
@@ -27,7 +29,25 @@ type Service = {
   bufferBefore: number;
   bufferAfter: number;
   active: boolean;
+  bookingDetails: TourDetails | null;
   staff: Array<{ staff: Staff }>;
+};
+type TourDetails = {
+  departurePoint?: string;
+  returnPoint?: string;
+  departureTime?: string;
+  minParticipants?: number;
+  maxParticipants?: number;
+  inclusions?: string;
+};
+type TourDeparture = {
+  id: string;
+  startAt: string;
+  endAt: string;
+  capacity: number;
+  active: boolean;
+  bookedSeats: number;
+  staff: { id: string; name: string };
 };
 type Booking = {
   id: string;
@@ -35,7 +55,7 @@ type Booking = {
   status: string;
   price: string;
   customerNote: string | null;
-  kind: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT';
+  kind: 'APPOINTMENT' | 'ACCOMMODATION' | 'TRANSPORT' | 'TOUR';
   checkInDate: string | null;
   checkOutDate: string | null;
   guestCount: number | null;
@@ -56,6 +76,11 @@ function BookingDetails({ booking }: { booking: Booking }) {
   if (booking.kind === 'ACCOMMODATION') return (
     <span className="mt-1 block text-xs leading-5 text-slate-600">
       Qëndrim: <b>{booking.checkInDate?.slice(0, 10)}</b> → <b>{booking.checkOutDate?.slice(0, 10)}</b>{booking.guestCount ? ` · ${booking.guestCount} mysafirë` : ''}
+    </span>
+  );
+  if (booking.kind === 'TOUR') return (
+    <span className="mt-1 block text-xs leading-5 text-slate-600">
+      Tur: <b>{booking.guestCount ?? 1} pjesëmarrës</b>
     </span>
   );
   return booking.customerNote ? <span className="mt-1 block max-w-64 text-xs leading-5 text-slate-500">Shënim: {booking.customerNote}</span> : null;
@@ -81,6 +106,64 @@ function useBusinessQuery<T>(key: string, path: string, refresh = false) {
     queryFn: () => api<T>(path, {}, membership!.business.id),
     refetchInterval: refresh ? 15_000 : false,
   });
+}
+function TourDeparturePanel({ service }: { service: Service }) {
+  const { membership } = useTenant();
+  const client = useQueryClient();
+  const guides = service.staff.map((item) => item.staff);
+  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState({
+    staffId: guides[0]?.id ?? '',
+    startAt: '',
+    capacity: Math.min(service.bookingDetails?.maxParticipants ?? guides[0]?.capacity ?? 1, guides[0]?.capacity ?? 1),
+  });
+  const departures = useQuery({
+    queryKey: ['tour-departures', membership?.business.id, service.id],
+    enabled: Boolean(membership),
+    queryFn: () => api<{ departures: TourDeparture[] }>(`/business/tour-departures?serviceId=${service.id}`, {}, membership!.business.id),
+  });
+  const create = useMutation({
+    mutationFn: () => api('/business/tour-departures', {
+      method: 'POST',
+      body: JSON.stringify({ ...values, startAt: new Date(values.startAt).toISOString() }),
+    }, membership!.business.id),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ['tour-departures', membership?.business.id, service.id] });
+      setValues({ ...values, startAt: '' });
+      setOpen(false);
+    },
+  });
+  const close = useMutation({
+    mutationFn: (id: string) => api(`/business/tour-departures/${id}`, { method: 'PATCH', body: JSON.stringify({ active: false }) }, membership!.business.id),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['tour-departures', membership?.business.id, service.id] }),
+  });
+  const selectGuide = (staffId: string) => {
+    const guide = guides.find((item) => item.id === staffId);
+    setValues({ ...values, staffId, capacity: Math.min(service.bookingDetails?.maxParticipants ?? guide?.capacity ?? 1, guide?.capacity ?? 1) });
+  };
+  return (
+    <section className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="flex items-center gap-2 text-sm font-bold text-ink"><CalendarDays size={16} className="text-indigo-700" /> Nisjet e planifikuara</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">Publikoni vetëm datat, orët dhe vendet që janë realisht në dispozicion.</p>
+        </div>
+        <Button type="button" size="sm" onClick={() => setOpen(!open)} disabled={!guides.length}><Plus size={14} /> Nisje</Button>
+      </div>
+      {!guides.length && <p className="mt-3 rounded-xl bg-white p-3 text-xs text-amber-800">Së pari lidheni këtë tur me një guidë ose automjet.</p>}
+      {open && (
+        <form className="mt-4 grid gap-3 rounded-xl bg-white p-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); create.mutate(); }}>
+          <label><span className="mb-1 block text-xs font-semibold">Guida / automjeti</span><select required className="input" value={values.staffId} onChange={(event) => selectGuide(event.target.value)}>{guides.map((guide) => <option key={guide.id} value={guide.id}>{guide.name}</option>)}</select></label>
+          <label><span className="mb-1 block text-xs font-semibold">Data dhe ora e nisjes</span><input required className="input" type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={values.startAt} onChange={(event) => setValues({ ...values, startAt: event.target.value })} /></label>
+          <label><span className="mb-1 block text-xs font-semibold">Vende në dispozicion</span><input required className="input" type="number" min="1" max={guides.find((guide) => guide.id === values.staffId)?.capacity ?? 1} value={values.capacity} onChange={(event) => setValues({ ...values, capacity: Number(event.target.value) })} /></label>
+          <div className="flex items-end gap-2"><Button type="submit" size="sm" disabled={create.isPending}>Publiko nisjen</Button><Button type="button" size="sm" variant="secondary" onClick={() => setOpen(false)}>Mbyll</Button></div>
+          {create.error && <p className="sm:col-span-2 text-xs text-red-700">{create.error instanceof Error ? create.error.message : 'Nuk mundëm ta krijojmë nisjen.'}</p>}
+        </form>
+      )}
+      {departures.isLoading && <div className="mt-3 h-12 animate-pulse rounded-xl bg-white" />}
+      {departures.data?.departures.length ? <div className="mt-3 space-y-2">{departures.data.departures.map((departure) => <div key={departure.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-3 text-xs ${departure.active ? '' : 'opacity-60'}`}><span><b className="block text-sm text-ink">{dateTime(departure.startAt)}</b><span className="text-slate-500">{departure.staff.name} · {departure.bookedSeats}/{departure.capacity} vende të zëna</span></span>{departure.active ? <Button type="button" size="sm" variant="secondary" disabled={close.isPending} onClick={() => close.mutate(departure.id)}>Mbyll nisjen</Button> : <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-600">E mbyllur</span>}</div>)}</div> : !departures.isLoading && <p className="mt-3 text-xs text-slate-500">Ende nuk ka nisje të publikuara.</p>}
+    </section>
+  );
 }
 export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
   const { membership } = useTenant();
@@ -256,7 +339,7 @@ export function StaffPage() {
   const query = useBusinessQuery<{ staff: Staff[] }>('staff', '/business/staff');
   const client = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState({ name: '', position: '', bio: '', capacity: 1 });
+  const [values, setValues] = useState({ name: '', position: '', bio: '', capacity: 1, roomNumber: '', bedCount: 1 });
   const mutation = useMutation({
     mutationFn: () =>
       api(
@@ -266,7 +349,7 @@ export function StaffPage() {
       ),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ['staff'] });
-      setValues({ name: '', position: '', bio: '', capacity: 1 });
+      setValues({ name: '', position: '', bio: '', capacity: 1, roomNumber: '', bedCount: 1 });
       setOpen(false);
     },
   });
@@ -293,19 +376,27 @@ export function StaffPage() {
           }}
           className="surface mt-5 grid gap-3 p-5 sm:grid-cols-4"
         >
+          {isHotel && (
+            <div className="sm:col-span-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-indigo-950">
+              <b className="flex items-center gap-2"><BedDouble size={17} /> Dhoma fizike</b>
+              <p className="mt-1 text-indigo-800">Shtoni secilën dhomë që mund të rezervohet: p.sh. Dhoma 123, lloji “Dyshe”, 2 shtretër dhe 2 mysafirë maksimum.</p>
+            </div>
+          )}
           <input
             required
             className="input"
-            placeholder={`p.sh. ${ui.resourceExample}`}
+            placeholder={isHotel ? 'p.sh. Dhoma 123' : `p.sh. ${ui.resourceExample}`}
             value={values.name}
             onChange={(event) => setValues({ ...values, name: event.target.value })}
           />
+          {isHotel && <input className="input" placeholder="Numri i dhomës, p.sh. 123" value={values.roomNumber} onChange={(event) => setValues({ ...values, roomNumber: event.target.value })} />}
           <input
             className="input"
-            placeholder={isHotel ? 'Lloji i dhomës, p.sh. Standard' : `Roli ose lloji i ${ui.resourceSingular}`}
+            placeholder={isHotel ? 'Lloji, p.sh. Dyshe standarde' : `Roli ose lloji i ${ui.resourceSingular}`}
             value={values.position}
             onChange={(event) => setValues({ ...values, position: event.target.value })}
           />
+          {isHotel && <label><span className="sr-only">Numri i shtretërve</span><input required aria-label="Numri i shtretërve" className="input" type="number" min="1" max="20" value={values.bedCount} onChange={(event) => setValues({ ...values, bedCount: Number(event.target.value) })} /></label>}
           <label>
             <span className="sr-only">{isHotel ? 'Mysafirë maksimum' : 'Kapaciteti'}</span>
             <input
@@ -347,6 +438,7 @@ export function StaffPage() {
             </span>
             <h2 className="mt-4 font-bold">{person.name}</h2>
             <p className="text-sm text-slate-500">{person.position ?? ui.resourceSingular}</p>
+            {isHotel && <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-indigo-700"><span>{person.roomNumber ? `Dhoma ${person.roomNumber}` : person.name}</span><span>{person.bedCount ?? 1} {person.bedCount === 1 ? 'shtrat' : 'shtretër'}</span></p>}
             <p className="mt-1 text-xs text-slate-500">{isHotel ? 'Mysafirë maksimum' : 'Kapaciteti'}: {person.capacity}</p>
             <p className="mt-4 border-t border-line pt-3 text-xs text-slate-500">
               {person.services?.length
@@ -385,6 +477,7 @@ export function ServicesPage() {
     bufferBefore: 0,
     bufferAfter: 0,
     staffIds: [] as string[],
+    bookingDetails: {} as TourDetails,
   });
   const mutation = useMutation({
     mutationFn: () =>
@@ -405,6 +498,7 @@ export function ServicesPage() {
         bufferBefore: 0,
         bufferAfter: 0,
         staffIds: [],
+        bookingDetails: {},
       });
     },
   });
@@ -412,6 +506,7 @@ export function ServicesPage() {
   const ui = categoryUi(category);
   const isHotel = category === 'hotels';
   const isTaxi = category === 'taxi-transport';
+  const isTour = category === 'tourism-activities';
   const operationCopy = {
     restaurants: { duration: 'Kohëzgjatja e qëndrimit në tavolinë', before: 'Kohë për përgatitjen e tavolinës (min)', after: 'Kohë për pastrimin e tavolinës (min)' },
     'taxi-transport': { duration: 'Kohëzgjatja e parashikuar e udhëtimit', before: 'Kohë para nisjes (min)', after: 'Kohë ndërmjet udhëtimeve (min)' },
@@ -421,6 +516,7 @@ export function ServicesPage() {
     'home-services': { duration: 'Kohëzgjatja e vizitës', before: 'Kohë para nisjes në terren (min)', after: 'Kohë ndërmjet vizitave (min)' },
     photography: { duration: 'Kohëzgjatja e fotosesionit', before: 'Kohë për përgatitje (min)', after: 'Kohë për përfundim / përpunim (min)' },
     fitness: { duration: 'Kohëzgjatja e klasës ose seancës', before: 'Kohë për përgatitjen e sallës (min)', after: 'Kohë për pushim mes seancave (min)' },
+    'tourism-activities': { duration: 'Kohëzgjatja e turit', before: 'Kohë për përgatitjen e grupit (min)', after: 'Kohë pas kthimit (min)' },
   }[category] ?? { duration: 'Kohëzgjatja e rezervimit', before: 'Kohë përgatitjeje para rezervimit (min)', after: 'Kohë pushimi pas rezervimit (min)' };
   const operationCopyEn = {
     restaurants: { duration: 'Table stay duration', before: 'Table preparation time (min)', after: 'Table cleaning time (min)' },
@@ -431,16 +527,17 @@ export function ServicesPage() {
     'home-services': { duration: 'Visit duration', before: 'Travel preparation time (min)', after: 'Time between visits (min)' },
     photography: { duration: 'Photoshoot duration', before: 'Setup time (min)', after: 'Wrap-up / processing time (min)' },
     fitness: { duration: 'Class or session duration', before: 'Room setup time (min)', after: 'Break between sessions (min)' },
+    'tourism-activities': { duration: 'Tour duration', before: 'Group preparation time (min)', after: 'Time after return (min)' },
   }[category] ?? { duration: 'Booking duration', before: 'Preparation time before booking (min)', after: 'Buffer time after booking (min)' };
   const copy = locale === 'en'
     ? {
         eyebrow: 'Your catalog', title: 'What can customers book?', add: 'Create offer',
-        intro: isHotel ? 'Create one room type for every accommodation category, then connect the physical rooms that belong to that room type.' : 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
+        intro: isHotel ? 'Create one room type for every accommodation category, then connect the physical rooms that belong to that room type.' : isTour ? 'Create each tour with its itinerary, departure point, group size and price per guest.' : 'Create one offer for each service, stay, transfer, table or activity, then connect it to the person or resource that delivers it.',
         offer: 'Offer', resource: 'Provider / resource', newTitle: editingId ? 'Edit offer' : 'New offer',
-        newHelp: 'Add only the information customers need before booking.', name: isHotel ? 'Room or stay name' : isTaxi ? 'Route or transfer name' : 'Offer name',
-        namePlaceholder: isHotel ? 'e.g. Standard double room' : isTaxi ? 'e.g. Prishtina Airport transfer' : 'e.g. Haircut or consultation',
+        newHelp: 'Add only the information customers need before booking.', name: isHotel ? 'Room or stay name' : isTour ? 'Tour or activity name' : isTaxi ? 'Route or transfer name' : 'Offer name',
+        namePlaceholder: isHotel ? 'e.g. Standard double room' : isTour ? 'e.g. Prizren day tour' : isTaxi ? 'e.g. Prishtina Airport transfer' : 'e.g. Haircut or consultation',
         duration: operationCopyEn.duration,
-        price: isHotel ? 'Price per night (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
+        price: isHotel ? 'Price per night (€)' : isTour ? 'Price per guest (€)' : isTaxi ? 'Trip price (€)' : 'Price per booking (€)',
         description: 'Offer description', select: isHotel ? 'Which rooms belong to this room type?' : 'Who or which resource provides this?', close: 'Close without saving',
         save: editingId ? 'Save changes' : 'Create and publish offer', edit: 'Edit', assigned: 'Provider / resource:', minutes: 'minutes',
         offerHelp: isHotel ? 'This is the room type customers see and book.' : 'This is the option a customer books.', resourceHelp: isHotel ? 'Choose at least one physical room for this room type.' : 'Choose the person or resource that delivers it.',
@@ -450,17 +547,17 @@ export function ServicesPage() {
       }
     : {
         eyebrow: 'Katalogu juaj', title: ui.servicePlural, add: `Shto ${ui.serviceSingular}`,
-        intro: isHotel ? 'Krijoni një lloj dhome për çdo kategori akomodimi, pastaj lidhni dhomat fizike që i përkasin atij lloji.' : `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
+        intro: isHotel ? 'Krijoni një lloj dhome për çdo kategori akomodimi, pastaj lidhni dhomat fizike që i përkasin atij lloji.' : isTour ? 'Krijoni secilin tur me itinerar, pikë nisjeje, pjesëmarrës dhe çmim për person.' : `Krijoni një ${ui.serviceSingular} për çdo zgjedhje që ofroni dhe lidheni me ${ui.resourceSingular}in që e realizon.`,
         offer: ui.serviceSingular, resource: ui.resourceSingular, newTitle: editingId ? `Ndrysho ${ui.serviceSingular}` : `Shto ${ui.serviceSingular}`,
-        newHelp: `Plotësoni vetëm informacionin që klienti duhet të shohë para se të rezervojë këtë ${ui.serviceSingular}.`, name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTaxi ? 'Emri i rrugës ose transferit' : `Emri i ${ui.serviceSingular}`,
-        namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : `p.sh. ${ui.serviceExample}`,
+        newHelp: `Plotësoni vetëm informacionin që klienti duhet të shohë para se të rezervojë këtë ${ui.serviceSingular}.`, name: isHotel ? 'Emri i dhomës ose qëndrimit' : isTour ? 'Emri i turit ose aktivitetit' : isTaxi ? 'Emri i rrugës ose transferit' : `Emri i ${ui.serviceSingular}`,
+        namePlaceholder: isHotel ? 'p.sh. Dhomë dyshe standarde' : isTour ? 'p.sh. Tur ditor në Prizren' : isTaxi ? 'p.sh. Transfer Aeroporti i Prishtinës' : `p.sh. ${ui.serviceExample}`,
         duration: operationCopy.duration,
-        price: isHotel ? 'Çmimi për një natë (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
+        price: isHotel ? 'Çmimi për një natë (€)' : isTour ? 'Çmimi për person (€)' : isTaxi ? 'Çmimi i udhëtimit (€)' : 'Çmimi për një rezervim (€)',
         description: `Përshkrimi për klientin`, select: isHotel ? 'Cilat dhoma i përkasin këtij lloji?' : `Cili ${ui.resourceSingular} e realizon?`, close: 'Mbyll pa ruajtur',
         save: editingId ? 'Ruaj ndryshimet' : `Ruaj ${ui.serviceSingular}in`, edit: 'Ndrysho', assigned: `${ui.resourcePlural}:`, minutes: 'minuta',
         offerHelp: isHotel ? `Ky është lloji i dhomës që e sheh klienti, p.sh. “${ui.serviceExample}”.` : `Kjo është zgjedhja që klienti rezervon, p.sh. “${ui.serviceExample}”.`, resourceHelp: isHotel ? `Zgjidhni të paktën një dhomë fizike, p.sh. “${ui.resourceExample}”.` : `Zgjidhni ${ui.resourceSingular}in që e realizon, p.sh. “${ui.resourceExample}”.`,
-        durationHelp: isTaxi ? 'Vendosni kohën e parashikuar të udhëtimit.' : `Vendosni sa zgjat zakonisht ${ui.serviceSingular}i.`,
-        priceHelp: isHotel ? 'Vendosni çmimin për një natë.' : isTaxi ? 'Vendosni çmimin e transferit ose niseni nga 0 për marrëveshje.' : `Vendosni çmimin për këtë ${ui.serviceSingular}; 0 përdoret vetëm kur është falas.`,
+        durationHelp: isTour ? 'Vendosni kohëzgjatjen e plotë të turit.' : isTaxi ? 'Vendosni kohën e parashikuar të udhëtimit.' : `Vendosni sa zgjat zakonisht ${ui.serviceSingular}i.`,
+        priceHelp: isHotel ? 'Vendosni çmimin për një natë.' : isTour ? 'Vendosni çmimin për një pjesëmarrës.' : isTaxi ? 'Vendosni çmimin e transferit ose niseni nga 0 për marrëveshje.' : `Vendosni çmimin për këtë ${ui.serviceSingular}; 0 përdoret vetëm kur është falas.`,
         descriptionPlaceholder: `p.sh. Detaje për ${ui.serviceExample.toLowerCase()}.`, selectHelp: `Zgjidhni të paktën një ${ui.resourceSingular}.`, titleLabel: 'Titulli që shohin klientët',
       };
   const editService = (service: Service) => {
@@ -468,6 +565,7 @@ export function ServicesPage() {
       name: service.name, description: service.description ?? '', durationMin: service.durationMin,
       price: Number(service.price), bufferBefore: service.bufferBefore, bufferAfter: service.bufferAfter,
       staffIds: service.staff.map((item) => item.staff.id),
+      bookingDetails: service.bookingDetails ?? {},
     });
     setEditingId(service.id);
     setOpen(true);
@@ -553,7 +651,19 @@ export function ServicesPage() {
               <small className="mt-1.5 block text-slate-500">Tregoni shkurt çfarë merr klienti.</small>
             </label>
           </div>
-          {!isHotel && <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {isTour && (
+            <section className="mt-5 rounded-2xl border border-amber-100 bg-amber-50/60 p-4 sm:p-5">
+              <div className="flex gap-3"><MapPinned className="mt-0.5 shrink-0 text-amber-700" size={19} /><div><h3 className="font-bold">Itinerari i turit</h3><p className="mt-1 text-sm text-slate-600">Këto shfaqen para rezervimit që klienti të dijë saktësisht ku, kur dhe çfarë po rezervon.</p></div></div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label><span className="mb-1.5 block text-sm font-semibold">Pika e nisjes</span><input className="input" placeholder="p.sh. Sheshi Nënë Terezë, Prishtinë" value={values.bookingDetails.departurePoint ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, departurePoint: event.target.value } })} /></label>
+                <label><span className="mb-1.5 block text-sm font-semibold">Koha e nisjes</span><input className="input" placeholder="p.sh. 08:30" value={values.bookingDetails.departureTime ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, departureTime: event.target.value } })} /></label>
+                <label><span className="mb-1.5 block text-sm font-semibold">Pika e kthimit</span><input className="input" placeholder="p.sh. Prishtinë" value={values.bookingDetails.returnPoint ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, returnPoint: event.target.value } })} /></label>
+                <div className="grid grid-cols-2 gap-3"><label><span className="mb-1.5 block text-sm font-semibold">Minimumi</span><input className="input" type="number" min="1" placeholder="1" value={values.bookingDetails.minParticipants ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, minParticipants: event.target.value ? Number(event.target.value) : undefined } })} /></label><label><span className="mb-1.5 block text-sm font-semibold">Maksimumi</span><input className="input" type="number" min="1" placeholder="12" value={values.bookingDetails.maxParticipants ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, maxParticipants: event.target.value ? Number(event.target.value) : undefined } })} /></label></div>
+                <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-semibold">Çfarë përfshihet <small className="font-normal text-slate-500">(opsionale)</small></span><textarea className="input min-h-20 py-3" placeholder="p.sh. Transporti, guida, hyrja në muze dhe drekë." value={values.bookingDetails.inclusions ?? ''} onChange={(event) => setValues({ ...values, bookingDetails: { ...values.bookingDetails, inclusions: event.target.value } })} /></label>
+              </div>
+            </section>
+          )}
+          {!isHotel && !isTour && <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label>
               <span className="mb-1.5 block text-sm font-medium">
                 {locale === 'en' ? operationCopyEn.before : operationCopy.before}
@@ -642,6 +752,16 @@ export function ServicesPage() {
             {service.description && (
               <p className="mt-3 text-sm leading-6 text-slate-600">{service.description}</p>
             )}
+            {isTour && service.bookingDetails && (
+              <div className="mt-4 grid gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-950 sm:grid-cols-2">
+                {service.bookingDetails.departurePoint && <span className="flex gap-1.5"><Route size={14} className="shrink-0" /> Nisja: <b>{service.bookingDetails.departurePoint}</b></span>}
+                {service.bookingDetails.departureTime && <span className="flex gap-1.5"><Clock3 size={14} className="shrink-0" /> Nisja në: <b>{service.bookingDetails.departureTime}</b></span>}
+                {service.bookingDetails.returnPoint && <span>Kthimi: <b>{service.bookingDetails.returnPoint}</b></span>}
+                {service.bookingDetails.maxParticipants && <span className="flex gap-1.5"><UsersRound size={14} className="shrink-0" /> Deri në <b>{service.bookingDetails.maxParticipants} pjesëmarrës</b></span>}
+                {service.bookingDetails.inclusions && <span className="sm:col-span-2">Përfshin: <b>{service.bookingDetails.inclusions}</b></span>}
+              </div>
+            )}
+            {isTour && <TourDeparturePanel service={service} />}
             <p className="mt-5 border-t border-line pt-3 text-xs text-slate-500">
               <b className="text-slate-700">{copy.assigned}</b>{' '}
               {service.staff.map((item) => item.staff.name).join(' · ') || 'Nuk është caktuar'}

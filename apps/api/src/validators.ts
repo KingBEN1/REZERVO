@@ -126,6 +126,14 @@ export const serviceSchema = z.object({
     bufferBefore: z.number().int().min(0).max(120).default(0),
     bufferAfter: z.number().int().min(0).max(120).default(0),
     staffIds: z.array(z.string().cuid()).min(1),
+    bookingDetails: z.object({
+      departurePoint: z.string().trim().max(160).optional(),
+      returnPoint: z.string().trim().max(160).optional(),
+      departureTime: z.string().trim().max(40).optional(),
+      minParticipants: z.number().int().min(1).max(1000).optional(),
+      maxParticipants: z.number().int().min(1).max(1000).optional(),
+      inclusions: z.string().trim().max(800).optional(),
+    }).optional(),
   }),
   query: z.object({}),
   params: z.object({}),
@@ -141,9 +149,28 @@ export const staffSchema = z.object({
     position: z.string().trim().max(100).optional(),
     bio: z.string().trim().max(1200).optional(),
     capacity: z.number().int().min(1).max(1000).default(1),
+    roomNumber: z.string().trim().max(32).optional().or(z.literal('')),
+    bedCount: z.number().int().min(1).max(20).optional(),
   }),
   query: z.object({}),
   params: z.object({}),
+});
+
+export const tourDepartureSchema = z.object({
+  body: z.object({
+    serviceId: z.string().cuid(),
+    staffId: z.string().cuid(),
+    startAt: z.string().datetime({ offset: true }),
+    capacity: z.number().int().min(1).max(1000),
+  }),
+  query: z.object({}),
+  params: z.object({}),
+});
+
+export const tourDepartureUpdateSchema = z.object({
+  body: z.object({ active: z.boolean() }),
+  query: z.object({}),
+  params: z.object({ id: z.string().cuid() }),
 });
 
 export const businessProfileSchema = z.object({
@@ -190,6 +217,15 @@ export const businessSettingsSchema = z.object({
     bankAccountHolder: z.string().trim().max(160).optional().or(z.literal('')),
     bankIban: z.string().trim().max(64).optional().or(z.literal('')),
     bankReferenceInstructions: z.string().trim().max(500).optional().or(z.literal('')),
+    bankQrUrlTemplate: z.string().trim().max(2_000).refine((value) => {
+      if (!value) return true;
+      try {
+        new URL(value.replace(/\{(?:amount|iban|reference|name|business|currency)\}/g, 'test'));
+        return true;
+      } catch {
+        return false;
+      }
+    }, 'Shkruani URL-në e QR-së të dhënë nga banka.').optional().or(z.literal('')),
   }).superRefine((value, context) => {
     if (!value.cashPaymentEnabled && !value.bankTransferEnabled && !value.requirePrepayment) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ['cashPaymentEnabled'], message: 'Aktivizoni të paktën një mënyrë pagese.' });
@@ -283,12 +319,29 @@ export const accommodationAvailabilitySchema = z.object({
   params: z.object({ slug: z.string().min(3).max(80) }),
 });
 
+export const accommodationSearchSchema = z.object({
+  body: z.object({}),
+  query: z.object({
+    serviceId: z.string().cuid(),
+    checkInDate: isoDate,
+    checkOutDate: isoDate,
+    guestCount: z.coerce.number().int().min(1).max(1000),
+  }),
+  params: z.object({ slug: z.string().min(3).max(80) }),
+});
+
+export const publicTourDeparturesSchema = z.object({
+  body: z.object({}),
+  query: z.object({ serviceId: z.string().cuid() }),
+  params: z.object({ slug: z.string().min(3).max(80) }),
+});
+
 export const publicBookingSchema = z.object({
   body: z
     .object({
       serviceId: z.string().cuid(),
       staffId: z.string().cuid(),
-      bookingKind: z.enum(['APPOINTMENT', 'ACCOMMODATION', 'TRANSPORT']).default('APPOINTMENT'),
+      bookingKind: z.enum(['APPOINTMENT', 'ACCOMMODATION', 'TRANSPORT', 'TOUR']).default('APPOINTMENT'),
       startAt: z.string().datetime({ offset: true }).optional(),
       checkInDate: isoDate.optional(),
       checkOutDate: isoDate.optional(),
@@ -296,6 +349,7 @@ export const publicBookingSchema = z.object({
       pickupAddress: z.string().trim().min(3).max(300).optional(),
       destinationAddress: z.string().trim().min(3).max(300).optional(),
       passengerCount: z.number().int().min(1).max(100).optional(),
+      tourDepartureId: z.string().cuid().optional(),
       couponCode: z.string().trim().min(3).max(40).optional(),
       paymentMethod: z.enum(['CASH', 'BANK_TRANSFER']).optional(),
       customer: z.object({
@@ -339,6 +393,12 @@ export const publicBookingSchema = z.object({
             path: ['guestCount'],
             message: 'Zgjidhni numrin e mysafirëve.',
           });
+      }
+      if (data.bookingKind === 'TOUR') {
+        if (!data.guestCount)
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ['guestCount'], message: 'Zgjidhni numrin e pjesëmarrësve.' });
+        if (!data.tourDepartureId)
+          context.addIssue({ code: z.ZodIssueCode.custom, path: ['tourDepartureId'], message: 'Zgjidhni një nisje të turit.' });
       }
       if (data.bookingKind === 'TRANSPORT') {
         if (!data.pickupAddress)

@@ -17,6 +17,8 @@ import {
   serviceSchema,
   serviceUpdateSchema,
   staffSchema,
+  tourDepartureSchema,
+  tourDepartureUpdateSchema,
   workingHoursSchema,
 } from '../validators.js';
 
@@ -111,6 +113,8 @@ businessRouter.post(
           name: template.resourceName,
           position: template.resourceRole,
           capacity: template.capacity,
+          roomNumber: template.roomNumber,
+          bedCount: template.bedCount,
         },
       });
       const service = await tx.service.create({
@@ -121,6 +125,7 @@ businessRouter.post(
           durationMin: template.durationMin,
           price: template.price,
           priceType: template.priceType,
+          bookingDetails: template.bookingDetails,
         },
       });
       await tx.serviceStaff.create({ data: { serviceId: service.id, staffId: staff.id } });
@@ -610,6 +615,59 @@ businessRouter.post(
       ip: req.ip,
     });
     res.status(201).json({ success: true, data: { staff } });
+  }),
+);
+
+businessRouter.get(
+  '/tour-departures',
+  requireAuth,
+  requireTenant('BUSINESS_OWNER', 'MANAGER', 'STAFF'),
+  asyncHandler(async (req, res) => {
+    const serviceId = String(req.query.serviceId ?? '');
+    const departures = await prisma.tourDeparture.findMany({
+      where: { serviceId, service: { businessId: req.tenant!.businessId } },
+      include: { staff: { select: { id: true, name: true } } },
+      orderBy: { startAt: 'asc' },
+      take: 100,
+    });
+    const booked = await prisma.booking.groupBy({
+      by: ['tourDepartureId'],
+      where: { tourDepartureId: { in: departures.map((departure) => departure.id) }, status: { in: ['PENDING', 'CONFIRMED'] } },
+      _sum: { guestCount: true },
+    });
+    const seats = new Map(booked.map((item) => [item.tourDepartureId, item._sum.guestCount ?? 0]));
+    res.json({ success: true, data: { departures: departures.map((departure) => ({ ...departure, bookedSeats: seats.get(departure.id) ?? 0 })) } });
+  }),
+);
+
+businessRouter.post(
+  '/tour-departures',
+  requireAuth,
+  requireTenant('BUSINESS_OWNER', 'MANAGER'),
+  validate(tourDepartureSchema),
+  asyncHandler(async (req, res) => {
+    const service = await prisma.service.findFirst({ where: { id: req.body.serviceId, businessId: req.tenant!.businessId, active: true } });
+    const staff = await prisma.staff.findFirst({ where: { id: req.body.staffId, businessId: req.tenant!.businessId, active: true, services: { some: { serviceId: req.body.serviceId } } } });
+    if (!service || !staff) throw new AppError(422, 'INVALID_TOUR_DEPARTURE', 'Zgjidhni një tur dhe guidë të vlefshme.');
+    const startAt = new Date(req.body.startAt);
+    if (startAt.getTime() <= Date.now()) throw new AppError(422, 'INVALID_TOUR_DEPARTURE', 'Nisja duhet të jetë në të ardhmen.');
+    if (req.body.capacity > staff.capacity) throw new AppError(422, 'CAPACITY_EXCEEDED', `Guida pranon maksimumi ${staff.capacity} pjesëmarrës.`);
+    const departure = await prisma.tourDeparture.create({ data: { serviceId: service.id, staffId: staff.id, startAt, endAt: new Date(startAt.getTime() + service.durationMin * 60_000), capacity: req.body.capacity }, include: { staff: { select: { id: true, name: true } } } });
+    await audit({ action: 'TOUR_DEPARTURE_CREATED', entity: 'TourDeparture', entityId: departure.id, businessId: req.tenant!.businessId, userId: req.auth!.userId, ip: req.ip });
+    res.status(201).json({ success: true, data: { departure } });
+  }),
+);
+
+businessRouter.patch(
+  '/tour-departures/:id',
+  requireAuth,
+  requireTenant('BUSINESS_OWNER', 'MANAGER'),
+  validate(tourDepartureUpdateSchema),
+  asyncHandler(async (req, res) => {
+    const departure = await prisma.tourDeparture.findFirst({ where: { id: String(req.params.id), service: { businessId: req.tenant!.businessId } } });
+    if (!departure) throw new AppError(404, 'TOUR_DEPARTURE_NOT_FOUND', 'Nisja nuk u gjet.');
+    const updated = await prisma.tourDeparture.update({ where: { id: departure.id }, data: { active: req.body.active } });
+    res.json({ success: true, data: { departure: updated } });
   }),
 );
 

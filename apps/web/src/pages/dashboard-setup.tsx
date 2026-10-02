@@ -37,6 +37,7 @@ type Settings = {
   bankAccountHolder: string | null;
   bankIban: string | null;
   bankReferenceInstructions: string | null;
+  bankQrUrlTemplate: string | null;
 };
 type CurrentBusiness = {
   business: {
@@ -354,6 +355,7 @@ export function BusinessProfilePage() {
     bankAccountHolder: '',
     bankIban: '',
     bankReferenceInstructions: '',
+    bankQrUrlTemplate: '',
   };
   const saveProfile = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -397,6 +399,7 @@ export function BusinessProfilePage() {
       bankAccountHolder: String(data.get('bankAccountHolder') ?? '').trim(),
       bankIban: String(data.get('bankIban') ?? '').trim(),
       bankReferenceInstructions: String(data.get('bankReferenceInstructions') ?? '').trim(),
+      bankQrUrlTemplate: String(data.get('bankQrUrlTemplate') ?? '').trim(),
     });
   };
   return (
@@ -618,6 +621,7 @@ export function BusinessProfilePage() {
               <label><span className="mb-1.5 block text-sm font-medium">Mbajtësi i llogarisë</span><input name="bankAccountHolder" className="input" defaultValue={currentSettings.bankAccountHolder ?? ''} placeholder="Emri ligjor i biznesit" /></label>
               <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-medium">IBAN / numri i llogarisë</span><input name="bankIban" className="input" defaultValue={currentSettings.bankIban ?? ''} placeholder="XK05…" /></label>
               <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-medium">Udhëzime për transferin <small className="text-slate-400">(opsionale)</small></span><textarea name="bankReferenceInstructions" className="input min-h-20 py-3" maxLength={500} defaultValue={currentSettings.bankReferenceInstructions ?? ''} placeholder="p.sh. Shkruani numrin e rezervimit si referencë." /></label>
+              <label className="sm:col-span-2"><span className="mb-1.5 block text-sm font-medium">URL e QR-së nga banka <small className="text-slate-400">(opsionale)</small></span><input name="bankQrUrlTemplate" className="input" defaultValue={currentSettings.bankQrUrlTemplate ?? ''} placeholder="Jepet nga banka; përdorni {amount}, {iban}, {reference}, {name}, {business}, {currency}" /><small className="mt-1.5 block text-slate-500">Mos vendosni një URL të hamendësuar. Banka duhet t’jua japë URL-në/formatin QR; Rezervo plotëson automatikisht vlerat në kllapa.</small></label>
             </div>
           </div>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
