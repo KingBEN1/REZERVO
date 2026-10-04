@@ -228,7 +228,7 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
     );
   return (
     <>
-      <div className="flex items-end justify-between">
+      <div className="catalog-hero flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow">Rezervimet</p>
           <h1 className="display mt-1 text-3xl font-bold">Të gjitha rezervimet</h1>
@@ -759,7 +759,7 @@ export function ServicesPage() {
       )}
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         {(services.data?.services ?? []).map((service) => (
-          <article className="surface lift-3d p-5" key={service.id}>
+          <article className="catalog-card" key={service.id}>
             <div className="flex justify-between gap-3">
               <div>
                 <h2 className="font-bold">{service.name}</h2>

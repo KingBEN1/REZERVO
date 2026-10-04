@@ -91,7 +91,7 @@ function Step({
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`grid size-7 place-items-center rounded-xl text-xs font-bold shadow-sm ${done ? 'bg-gradient-to-br from-teal-500 to-indigo-600 text-white' : active ? 'bg-indigo-50 text-indigo-700 ring-2 ring-indigo-500' : 'bg-slate-100 text-slate-400'}`}
+        className={`grid size-7 place-items-center rounded-full text-xs font-bold shadow-sm ${done ? 'bg-emerald-600 text-white' : active ? 'bg-indigo-600 text-white ring-4 ring-indigo-100' : 'border border-slate-200 bg-white text-slate-400'}`}
       >
         {done ? '✓' : number}
       </span>
@@ -468,7 +468,7 @@ function BookingFlow() {
       </main>
     );
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,.13),transparent_30rem),radial-gradient(circle_at_90%_10%,rgba(99,102,241,.11),transparent_28rem),#f5f7fb]">
+    <main className="booking-page">
       <header className="border-b border-white/70 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <Link
@@ -484,15 +484,19 @@ function BookingFlow() {
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
-        <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_22px_65px_rgba(15,23,42,.12)]">
-          <div className="tech-grid h-28 bg-gradient-to-br from-[#0b1d32] via-indigo-950 to-teal-900 sm:h-40">
+        <div className="booking-hero">
+          <div className="tech-grid relative h-32 bg-gradient-to-br from-[#08162a] via-[#142b51] to-teal-900 sm:h-44">
             {business.coverImage && (
-              <img src={business.coverImage} alt="" className="h-full w-full object-cover" />
+              <img src={business.coverImage} alt="" className="h-full w-full object-cover opacity-75" />
             )}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#07111f]/75 via-[#07111f]/25 to-transparent" />
+            <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/35 px-3 py-1.5 text-xs font-semibold text-slate-100 backdrop-blur sm:left-8 sm:top-7">
+              <CheckCircle2 size={14} className="text-emerald-300" /> Rezervim i sigurt online
+            </div>
           </div>
-          <div className="relative px-5 pb-5 pt-0 sm:px-8">
-            <div className="-mt-7 grid size-14 place-items-center rounded-2xl border-4 border-white bg-gradient-to-br from-teal-500 to-indigo-600 text-xl font-bold text-white shadow-lg">
-              {business.name.slice(0, 1)}
+          <div className="relative bg-white px-5 pb-6 pt-0 text-ink sm:px-8">
+            <div className="-mt-8 grid size-16 place-items-center rounded-2xl border-4 border-white bg-gradient-to-br from-teal-500 to-indigo-600 text-xl font-bold text-white shadow-xl">
+              {business.logo ? <img src={business.logo} alt="" className="size-full rounded-xl object-cover" /> : business.name.slice(0, 1)}
             </div>
             <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <div>
@@ -503,7 +507,7 @@ function BookingFlow() {
                 <h1 className="display mt-1 text-2xl font-bold">{business.name}</h1>
                 <p className="mt-1 text-sm text-slate-600">{business.description}</p>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-500">
                 <a
                   href={mapLink}
                   target="_blank"
@@ -533,12 +537,12 @@ function BookingFlow() {
             </div>
           </div>
         </div>
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
-          <section className="rounded-[2rem] border border-white/80 bg-white/95 p-5 shadow-[0_18px_55px_rgba(15,23,42,.09)] sm:p-7">
-            <div className="mb-7 rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/70 p-4 sm:p-5">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_310px]">
+          <section className="booking-panel">
+            <div className="booking-stepper">
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm font-bold text-ink">Rezervo në 4 hapa të thjeshtë</p>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-forest shadow-sm">Hapi {step} / 4</span>
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-forest">Hapi {step} / 4</span>
               </div>
               <div className="flex justify-between">
               <Step number={1} title="Oferta" active={step === 1} done={step > 1} />
@@ -563,7 +567,7 @@ function BookingFlow() {
                         setTourDepartureId(undefined);
                         setSlot(undefined);
                       }}
-                      className="group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-line bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-50/40 hover:shadow-md"
+                      className="booking-option group"
                     >
                       <span className="flex min-w-0 items-center gap-3">
                         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-teal-100 to-indigo-100 text-sm font-extrabold text-indigo-700">{item.name.slice(0, 1)}</span>
@@ -1070,7 +1074,7 @@ function BookingFlow() {
               </div>
             )}
           </section>
-          <aside className="h-fit overflow-hidden rounded-[2rem] border border-indigo-100 bg-white p-5 shadow-[0_18px_55px_rgba(15,23,42,.10)] lg:sticky lg:top-6">
+          <aside className="booking-summary">
             <div className="flex items-center justify-between">
               <h2 className="font-bold">Përmbledhja</h2>
               <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-forest"><CheckCircle2 size={13} /> E sigurt</span>
