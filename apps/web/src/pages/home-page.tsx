@@ -3,7 +3,6 @@ import {
   CalendarCheck2,
   Heart,
   MapPin,
-  Play,
   ShieldCheck,
   Sparkles,
   Store,
@@ -132,84 +131,44 @@ export function HomePage() {
             <div className="mt-8 grid gap-5 lg:grid-cols-[1.45fr_1fr]">
               <Link
                 to="/blend-barber"
-                className="group relative min-h-72 overflow-hidden rounded-3xl border border-white/10 bg-[url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1400&q=85')] bg-cover bg-center shadow-2xl"
+                className="group relative min-h-[22rem] overflow-hidden rounded-[2rem] border border-white/10 bg-[url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1400&q=85')] bg-cover bg-center shadow-2xl"
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/25 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/5" />
                 <span className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-extrabold text-amber-950">
-                  <Play size={13} fill="currentColor" /> {tr('Reklamë e sponsorizuar', 'Sponsored promotion')}
+                  ★ {tr('Biznes i promovuar', 'Featured business')}
                 </span>
                 <div className="absolute inset-x-5 bottom-5">
-                  <p className="text-xs font-bold uppercase tracking-[.18em] text-amber-300">
-                    Promoted
-                  </p>
                   <h3 className="display mt-2 text-3xl font-bold">Blend Barber</h3>
                   <p className="mt-2 text-sm text-slate-200">
                     {tr(
                       'Prishtinë · Prerje, fade dhe mjekër',
                       'Prishtina · Cuts, fades and beard grooming',
                     )}
-                  </p>
+                  </p><span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-white">{tr('Shiko oraret e lira', 'See available times')} <ArrowRight size={16} /></span>
                 </div>
               </Link>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
-                <PromoSlot
-                  title={tr('Shfaq videon tënde këtu', 'Show your video here')}
-                  text={tr(
-                    'Një vend premium për ofertën e biznesit tënd.',
-                    'A premium place for your business offer.',
-                  )}
-                />
-                <PromoSlot
-                  title={tr('Dil i pari në kërkim', 'Appear first in search')}
-                  text={tr(
-                    'Promovimi e vendos biznesin tënd para rezultateve të zakonshme.',
-                    'Promotion puts your business ahead of standard results.',
-                  )}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="page-shell py-4 sm:py-8">
-          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-amber-100 via-white to-cyan-100 p-1 shadow-xl">
-            <div className="relative grid gap-6 rounded-[1.85rem] bg-white/75 p-6 backdrop-blur sm:grid-cols-[1fr_260px] sm:p-9">
-              <div>
-                <p className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-900">
-                  ★ {tr('Biznes i promovuar', 'Featured business')}
-                </p>
-                <h2 className="display mt-4 text-3xl font-bold text-ink">Blend Barber</h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                  {tr(
-                    'Prerje moderne, fade dhe rregullim mjekre në Prishtinë. Shiko oraret e lira dhe rezervo menjëherë.',
-                    'Modern cuts, fades and beard grooming in Prishtina. See free times and book instantly.',
-                  )}
-                </p>
-                <Link to="/blend-barber" className="mt-5 inline-block">
-                  <Button>
-                    {tr('Rezervo te Blend Barber', 'Book Blend Barber')} <ArrowRight size={16} />
-                  </Button>
-                </Link>
-              </div>
-              <div className="relative min-h-40 overflow-hidden rounded-2xl bg-[url('https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=900&q=80')] bg-cover bg-center">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <p className="absolute bottom-4 left-4 text-sm font-bold text-white">
-                  Prishtinë · Berber
-                </p>
+              <div className="rounded-[2rem] border border-white/10 bg-white/[.06] p-6 backdrop-blur-sm">
+                <span className="grid size-11 place-items-center rounded-2xl bg-cyan-300/15 text-cyan-200"><Sparkles size={20} /></span>
+                <p className="mt-5 text-xs font-extrabold uppercase tracking-[.16em] text-cyan-300">{tr('Për biznese', 'For businesses')}</p>
+                <h3 className="display mt-2 text-2xl font-bold">{tr('Bëhu më i dukshëm.', 'Be more visible.')}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-300">{tr('Vendosni biznesin tuaj në zonën premium të faqes kryesore dhe në krye të rezultateve të kërkimit.', 'Place your business in the premium area of the home page and at the top of search results.')}</p>
+                <ul className="mt-6 space-y-3 border-y border-white/10 py-5 text-sm text-slate-200"><li className="flex gap-2"><span className="text-emerald-300">✓</span>{tr('Shfaqje në faqen kryesore', 'Home page visibility')}</li><li className="flex gap-2"><span className="text-emerald-300">✓</span>{tr('Pozicion më i mirë në kërkim', 'Higher search position')}</li><li className="flex gap-2"><span className="text-emerald-300">✓</span>{tr('Profil dhe buton rezervimi', 'Profile and booking button')}</li></ul>
+                <Link to="/promote" className="mt-6 inline-flex text-sm font-bold text-cyan-200 hover:text-white">{tr('Mëso për promovimin', 'Learn about promotion')} <ArrowRight className="ml-2" size={16} /></Link>
               </div>
             </div>
           </div>
         </section>
         <section className="page-shell py-16 sm:py-24">
-          <p className="eyebrow">{tr('Eksploro sipas nevojës', 'Explore by need')}</p>
+          <div className="mx-auto max-w-2xl text-center"><p className="eyebrow">{tr('Eksploro sipas nevojës', 'Explore by need')}</p>
           <h2 className="display mt-3 text-3xl font-bold sm:text-4xl">
             {tr('Çfarë dëshiron të rezervosh?', 'What would you like to book?')}
-          </h2>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          </h2><p className="mt-3 text-sm leading-6 text-slate-500">{tr('Gjeni biznesin e duhur sipas shërbimit që kërkoni.', 'Find the right business based on the service you need.')}</p></div>
+          <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((category) => (
               <Link
                 key={category.sq}
                 to={`/businesses?category=${category.slug}`}
-                className="surface lift-3d group flex items-center justify-between p-5 hover:border-indigo-200"
+                className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_7px_20px_rgba(15,23,42,.05)] transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-[0_16px_30px_rgba(15,23,42,.10)]"
               >
                 <span className="font-bold">{tr(category.sq, category.en)}</span>
                 <ArrowRight
@@ -220,9 +179,11 @@ export function HomePage() {
             ))}
           </div>
         </section>
-        <section className="bg-ink py-16 text-white sm:py-20">
-          <div className="page-shell">
-            <div className="mx-auto max-w-4xl text-center">
+        <section className="page-shell pb-16 sm:pb-24">
+          <div className="relative overflow-hidden rounded-[2rem] bg-[#0a1728] px-6 py-10 text-white shadow-[0_22px_55px_rgba(15,23,42,.16)] sm:px-10 sm:py-14">
+            <div aria-hidden className="absolute -right-20 -top-20 size-64 rounded-full bg-cyan-400/15 blur-3xl" />
+            <div className="relative grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+              <div>
               <p className="eyebrow text-green-300">
                 {tr('E thjeshtë për klientin', 'Simple for customers')}
               </p>
@@ -232,9 +193,10 @@ export function HomePage() {
                   'Search, choose and manage every booking from one account.',
                 )}
               </h2>
-              <div className="mt-8 grid gap-4 text-left sm:grid-cols-2">
+              </div>
+              <div className="grid gap-3 text-left sm:grid-cols-2">
                 {benefits.map((text) => (
-                  <p key={text} className="flex gap-3 text-sm text-green-50">
+                  <p key={text} className="flex gap-3 rounded-xl border border-white/10 bg-white/[.06] p-4 text-sm text-green-50">
                     <ShieldCheck className="shrink-0 text-green-300" size={18} />
                     {text}
                   </p>
@@ -282,21 +244,5 @@ export function HomePage() {
         </div>
       </footer>
     </>
-  );
-}
-
-function PromoSlot({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-500/30 via-slate-900 to-cyan-400/20 p-6">
-      <div
-        aria-hidden
-        className="absolute -right-8 -top-8 size-28 rounded-full bg-cyan-300/25 blur-2xl"
-      />
-      <span className="relative grid size-10 place-items-center rounded-2xl bg-white/10 text-amber-300">
-        <Play size={18} fill="currentColor" />
-      </span>
-      <h3 className="relative mt-5 font-bold text-white">{title}</h3>
-      <p className="relative mt-2 text-sm leading-6 text-slate-300">{text}</p>
-    </div>
   );
 }
