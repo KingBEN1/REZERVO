@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Building2, CheckCircle2, Circle, CreditCard, ShieldCheck } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { CountryPhoneInput } from '../components/country-phone-input';
@@ -87,6 +88,7 @@ const makeSlug = (value: string) =>
 export function OnboardingPage() {
   const navigate = useNavigate();
   const client = useQueryClient();
+  const [editPageAddress, setEditPageAddress] = useState(false);
   const user = useQuery({
     queryKey: ['me'],
     queryFn: () => api<{ user: User }>('/auth/me'),
@@ -187,14 +189,13 @@ export function OnboardingPage() {
           <span className="text-sm text-slate-500">Krijoni biznesin tuaj</span>
         </div>
       </header>
-      <div className="page-shell grid gap-8 py-10 lg:grid-cols-[260px_1fr] lg:py-16">
+      <div className="page-shell grid gap-8 py-10 lg:grid-cols-[250px_1fr] lg:py-16">
         <aside className="surface h-fit p-5">
-          <p className="eyebrow">Konfigurimi</p>
+          <p className="eyebrow">4 hapa të thjeshtë</p>
           <div className="mt-5 space-y-4">
             {[
               'Të dhënat e biznesit',
-              'Shto shërbimet ose ofertat',
-              'Shto ekipin ose burimet',
+              'Template sipas kategorisë',
               'Vendos orarin',
               'Publiko faqen',
             ].map((item, index) => (
@@ -220,11 +221,11 @@ export function OnboardingPage() {
             <Building2 size={23} />
           </span>
           <p className="eyebrow mt-6">Le të fillojmë</p>
-          <h1 className="display mt-2 text-3xl font-bold">Na tregoni për biznesin tuaj.</h1>
+          <h1 className="display mt-2 text-3xl font-bold">Krijo faqen e biznesit në pak hapa.</h1>
           <p className="mt-3 text-slate-600">
             {selectedCategory
               ? selectedCategoryUi.onboarding
-              : 'Zgjidhni llojin e biznesit dhe paneli do të përgatitet me opsionet e duhura.'}
+              : 'Plotësoni katër të dhëna. Pastaj ne përgatisim automatikisht një model për kategorinë tuaj.'}
           </p>
           <form
             onSubmit={form.handleSubmit((values) => create.mutate(values))}
@@ -237,7 +238,7 @@ export function OnboardingPage() {
                 placeholder="p.sh. Hotel Dardania"
                 {...form.register('name', {
                   onChange: (event) => {
-                    if (!form.getValues('slug'))
+                    if (!editPageAddress)
                       form.setValue('slug', makeSlug(event.target.value));
                   },
                 })}
@@ -251,32 +252,16 @@ export function OnboardingPage() {
                 Çfarë lloj biznesi keni?
               </legend>
               <p className="mb-4 text-sm text-slate-500">
-                Zgjedhja përcakton emrat dhe opsionet që do të shihni në panel.
+                Zgjedhja përgatit automatikisht ofertën dhe burimin e parë për ju.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {categories.data?.categories.map((category) => (
-                  <label
-                    key={category.id}
-                    className={`group cursor-pointer rounded-2xl border p-4 transition ${selectedCategory === category.id ? 'border-forest bg-green-50 ring-2 ring-green-100' : 'border-line bg-white hover:-translate-y-0.5 hover:border-forest/40 hover:shadow-md'}`}
-                  >
-                    <input
-                      className="sr-only"
-                      type="radio"
-                      value={category.id}
-                      {...form.register('categoryId')}
-                    />
-                    <span className="flex gap-3">
-                      <b className={`grid size-10 shrink-0 place-items-center rounded-xl text-lg ${selectedCategory === category.id ? 'bg-forest text-white' : 'bg-sand text-forest group-hover:bg-green-50'}`}>
-                        {glyphs[category.icon ?? ''] ?? '•'}
-                      </b>
-                      <span>
-                        <b className="block text-sm">{category.name}</b>
-                        <small className="mt-1 block leading-5 text-slate-500">{categoryUi(category.slug).onboarding}</small>
-                      </span>
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <select className="input" {...form.register('categoryId')}>
+                <option value="">Zgjidh llojin e biznesit</option>
+                {categories.data?.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+              </select>
+              {selectedCategory && (() => {
+                const category = categories.data?.categories.find((item) => item.id === selectedCategory);
+                return category ? <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"><div className="flex items-start gap-3"><b className="grid size-10 shrink-0 place-items-center rounded-xl bg-forest text-lg text-white">{glyphs[category.icon ?? ''] ?? '•'}</b><div><p className="font-bold text-forest">Modeli për {category.name}</p><p className="mt-1 text-sm leading-5 text-emerald-900">Do të krijojmë një {selectedCategoryUi.serviceSingular} fillestar dhe një {selectedCategoryUi.resourceSingular} fillestar që mund t’i ndryshoni më pas.</p></div></div></div> : null;
+              })()}
               {categories.isLoading && <div className="h-20 animate-pulse rounded-2xl bg-sand" />}
               {categories.isError && (
                 <p className="text-sm text-red-600">Kategoritë nuk u ngarkuan. Provo përsëri.</p>
@@ -285,23 +270,7 @@ export function OnboardingPage() {
                 <small className="text-red-600">{form.formState.errors.categoryId.message}</small>
               )}
             </fieldset>
-            <label className="sm:col-span-2">
-              <span className="mb-1.5 block text-sm font-semibold">Adresa e faqes</span>
-              <div className="flex">
-                <span className="inline-flex h-11 items-center rounded-l-xl border border-r-0 border-line bg-sand px-3 text-sm text-slate-500">
-                  rezervoks.com/
-                </span>
-                <input
-                  className="input rounded-l-none"
-                  placeholder="hotel-xy"
-                  {...form.register('slug')}
-                />
-              </div>
-              <small className="mt-1 block text-slate-500">Shembull: rezervoks.com/hotel-xy</small>
-              {form.formState.errors.slug && (
-                <small className="text-red-600">{form.formState.errors.slug.message}</small>
-              )}
-            </label>
+            <div className="sm:col-span-2 rounded-xl bg-slate-50 p-4 text-sm"><p className="font-semibold text-slate-800">Adresa e faqes suaj</p><p className="mt-1 text-slate-500">rezervoks.com/<b className="text-slate-700">{form.watch('slug') || 'emri-i-biznesit'}</b></p><button type="button" className="mt-2 text-xs font-bold text-forest" onClick={() => setEditPageAddress(!editPageAddress)}>{editPageAddress ? 'Përdor adresën automatike' : 'Ndrysho adresën'}</button>{editPageAddress && <input className="input mt-3" placeholder="hotel-xy" {...form.register('slug')} />}{form.formState.errors.slug && <small className="mt-2 block text-red-600">{form.formState.errors.slug.message}</small>}</div>
             <label>
               <span className="mb-1.5 block text-sm font-semibold">Qyteti</span>
               <select className="input" {...form.register('city')}>
@@ -327,27 +296,7 @@ export function OnboardingPage() {
                 <small className="text-red-600">{form.formState.errors.phone.message}</small>
               )}
             </label>
-            <label className="sm:col-span-2">
-              <span className="mb-1.5 block text-sm font-semibold">
-                Adresa <small className="font-normal text-slate-400">(opsionale)</small>
-              </span>
-              <input
-                className="input"
-                placeholder="Rruga dhe numri"
-                {...form.register('address')}
-              />
-            </label>
-            <label className="sm:col-span-2">
-              <span className="mb-1.5 block text-sm font-semibold">
-                Çfarë {selectedCategory ? selectedCategoryUi.servicePlural.toLowerCase() : 'mund të rezervojnë klientët'}?{' '}
-                <small className="font-normal text-slate-400">(opsionale)</small>
-              </span>
-              <textarea
-                className="input min-h-24 py-3"
-                placeholder={selectedCategory ? `p.sh. ${selectedCategoryUi.serviceExample}` : 'p.sh. Dhoma hoteli, taksi ose shërbime'}
-                {...form.register('description')}
-              />
-            </label>
+            <details className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold text-slate-700">Shto adresën dhe përshkrimin tani <span className="font-normal text-slate-400">(opsionale — mund t’i plotësoni më vonë)</span></summary><div className="mt-4 grid gap-4"><label><span className="mb-1.5 block text-sm font-semibold">Adresa</span><input className="input" placeholder="Rruga dhe numri" {...form.register('address')} /></label><label><span className="mb-1.5 block text-sm font-semibold">Përshkrimi</span><textarea className="input min-h-24 py-3" placeholder={selectedCategory ? `p.sh. ${selectedCategoryUi.serviceExample}` : 'p.sh. Dhoma hoteli, taksi ose shërbime'} {...form.register('description')} /></label></div></details>
             {create.error && (
               <p className="text-sm text-red-600 sm:col-span-2">
                 {create.error instanceof ApiError
