@@ -145,10 +145,6 @@ export function OnboardingPage() {
         <Button onClick={() => user.refetch()}>Provo përsëri</Button>
       </main>
     );
-  if (user.data.user.memberships[0]) {
-    localStorage.setItem('rezervo-business-id', user.data.user.memberships[0].business.id);
-    return <Navigate to="/dashboard" replace />;
-  }
   if (!user.data.user.emailVerifiedAt)
     return (
       <main className="min-h-screen bg-sand px-4 py-12">
@@ -186,7 +182,9 @@ export function OnboardingPage() {
       <header className="border-b border-line bg-white">
         <div className="page-shell flex h-16 items-center justify-between">
           <Logo />
-          <span className="text-sm text-slate-500">Krijoni biznesin tuaj</span>
+          <span className="text-sm text-slate-500">
+            {user.data.user.memberships.length ? 'Shto një biznes tjetër' : 'Krijoni biznesin tuaj'}
+          </span>
         </div>
       </header>
       <div className="page-shell grid gap-8 py-10 lg:grid-cols-[250px_1fr] lg:py-16">
@@ -220,8 +218,14 @@ export function OnboardingPage() {
           <span className="grid size-12 place-items-center rounded-2xl bg-green-50 text-forest">
             <Building2 size={23} />
           </span>
-          <p className="eyebrow mt-6">Le të fillojmë</p>
-          <h1 className="display mt-2 text-3xl font-bold">Krijo faqen e biznesit në pak hapa.</h1>
+          <p className="eyebrow mt-6">
+            {user.data.user.memberships.length ? 'Biznes i ri' : 'Le të fillojmë'}
+          </p>
+          <h1 className="display mt-2 text-3xl font-bold">
+            {user.data.user.memberships.length
+              ? 'Shto një biznes tjetër në llogarinë tënde.'
+              : 'Krijo faqen e biznesit në pak hapa.'}
+          </h1>
           <p className="mt-3 text-slate-600">
             {selectedCategory
               ? selectedCategoryUi.onboarding

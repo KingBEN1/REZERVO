@@ -144,6 +144,35 @@ export function DashboardLayout() {
         <p className="truncate text-sm font-bold text-slate-950">{membership.business.name}</p>
         <p className="mt-0.5 text-xs font-semibold text-emerald-700">{membership.role.replace('_', ' ')}</p>
       </div>
+      {data.user.memberships.length > 1 && (
+        <label className="mx-4 mt-3 block">
+          <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[.12em] text-slate-400">
+            {locale === 'en' ? 'Switch business' : 'Ndrysho biznesin'}
+          </span>
+          <select
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-emerald-500"
+            value={membership.business.id}
+            onChange={(event) => {
+              localStorage.setItem('rezervo-business-id', event.target.value);
+              setMobileOpen(false);
+              window.location.assign('/dashboard');
+            }}
+          >
+            {data.user.memberships.map((item) => (
+              <option key={item.business.id} value={item.business.id}>
+                {item.business.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <Link
+        to="/onboarding"
+        onClick={() => setMobileOpen(false)}
+        className="mx-4 mt-3 flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 px-3 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
+      >
+        <Plus size={17} /> {locale === 'en' ? 'Add another business' : 'Shto biznes tjetër'}
+      </Link>
       <nav className="mt-6 space-y-1 px-4">
         {dynamicNav.map(({ to, icon: Icon, label, labelEn, end }) => (
           <NavLink

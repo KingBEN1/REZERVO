@@ -200,6 +200,35 @@ businessRouter.get(
   }),
 );
 
+businessRouter.delete(
+  '/current',
+  requireAuth,
+  requireTenant('BUSINESS_OWNER'),
+  asyncHandler(async (req, res) => {
+    const businessId = req.tenant!.businessId;
+
+    // Keep the operational record for bookings and audit purposes, but remove the
+    // business from the marketplace and from every member account immediately.
+    await prisma.$transaction(async (tx) => {
+      await tx.business.update({
+        where: { id: businessId },
+        data: { status: 'DELETED', deletedAt: new Date(), featured: false },
+      });
+      await tx.businessMember.deleteMany({ where: { businessId } });
+    });
+
+    await audit({
+      action: 'BUSINESS_DELETED',
+      entity: 'Business',
+      entityId: businessId,
+      businessId,
+      userId: req.auth!.userId,
+      ip: req.ip,
+    });
+    res.status(204).send();
+  }),
+);
+
 businessRouter.post(
   '/current/verification',
   requireAuth,

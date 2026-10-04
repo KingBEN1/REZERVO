@@ -15,11 +15,7 @@ export function BusinessStartPage() {
     staleTime: 30_000,
   });
   const hasBusiness = Boolean(me.data?.user.memberships.length);
-  const createLink = me.data
-    ? hasBusiness
-      ? '/dashboard'
-      : '/onboarding'
-    : '/register?intent=business';
+  const createLink = me.data ? '/onboarding' : '/register?intent=business';
   return (
     <>
       <SiteHeader />
@@ -37,7 +33,7 @@ export function BusinessStartPage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to={createLink}>
                 <Button size="lg">
-                  {hasBusiness ? 'Hap panelin e biznesit' : 'Krijo biznesin falas'}{' '}
+                  {hasBusiness ? 'Shto biznes tjetër' : 'Krijo biznesin falas'}{' '}
                   <ArrowRight size={16} />
                 </Button>
               </Link>

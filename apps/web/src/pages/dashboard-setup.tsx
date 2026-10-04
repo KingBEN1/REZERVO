@@ -4,14 +4,17 @@ import {
   Check,
   ClipboardCheck,
   Clock3,
+  AlertTriangle,
   Image,
   ExternalLink,
   LocateFixed,
   MapPin,
   Save,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { CountryPhoneInput } from '../components/country-phone-input';
 import { EmptyState } from '../components/ui/empty-state';
@@ -303,6 +306,9 @@ function PhotoUploader({
 export function BusinessProfilePage() {
   const { membership } = useTenant();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteName, setDeleteName] = useState('');
   const query = useQuery({
     queryKey: ['business-current', membership?.business.id],
     enabled: Boolean(membership),
@@ -325,6 +331,14 @@ export function BusinessProfilePage() {
         membership!.business.id,
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['business-current'] }),
+  });
+  const deleteBusiness = useMutation({
+    mutationFn: () => api('/business/current', { method: 'DELETE' }, membership!.business.id),
+    onSuccess: async () => {
+      localStorage.removeItem('rezervo-business-id');
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      navigate('/for-business', { replace: true });
+    },
   });
   if (query.isLoading) return <div className="h-96 animate-pulse rounded-3xl bg-white" />;
   if (!query.data)
@@ -702,9 +716,6 @@ export function BusinessProfilePage() {
             />
             <span>
               <b className="block text-sm">SMS</b>
-              <small className="text-slate-500">
-                Kërkon lidhjen e një ofruesi SMS para dërgimit real.
-              </small>
             </span>
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-sand p-3">
@@ -716,9 +727,6 @@ export function BusinessProfilePage() {
             />
             <span>
               <b className="block text-sm">WhatsApp</b>
-              <small className="text-slate-500">
-                Kërkon WhatsApp Business dhe një ofrues të konfiguruar.
-              </small>
             </span>
           </label>
         </div>
@@ -735,6 +743,52 @@ export function BusinessProfilePage() {
           </Button>
         </div>
       </form>
+      {membership?.role === 'BUSINESS_OWNER' && (
+      <section className="mt-6 max-w-3xl rounded-3xl border border-rose-200 bg-rose-50/70 p-5 sm:p-7">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-rose-100 text-rose-700">
+            <AlertTriangle size={19} />
+          </span>
+          <div>
+            <h2 className="font-bold text-rose-950">Fshi biznesin</h2>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-rose-800">
+              Faqja publike dhe qasja e ekipit hiqen menjëherë. Historiku ruhet vetëm për siguri dhe auditim.
+            </p>
+          </div>
+        </div>
+        {!deleteOpen ? (
+          <Button type="button" variant="secondary" className="mt-5 border-rose-200 text-rose-700 hover:bg-rose-100" onClick={() => setDeleteOpen(true)}>
+            <Trash2 size={16} /> Fshi këtë biznes
+          </Button>
+        ) : (
+          <div className="mt-5 rounded-2xl border border-rose-200 bg-white p-4">
+            <p className="text-sm font-semibold text-slate-800">
+              Për konfirmim, shkruani saktë <b>{business.name}</b>.
+            </p>
+            <input
+              className="input mt-3"
+              value={deleteName}
+              onChange={(event) => setDeleteName(event.target.value)}
+              placeholder={business.name}
+            />
+            <MutationError error={deleteBusiness.error} />
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button type="button" variant="secondary" onClick={() => { setDeleteOpen(false); setDeleteName(''); }}>
+                Anulo
+              </Button>
+              <button
+                type="button"
+                disabled={deleteName.trim() !== business.name || deleteBusiness.isPending}
+                onClick={() => deleteBusiness.mutate()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 size={16} /> {deleteBusiness.isPending ? 'Po fshihet…' : 'Fshi përgjithmonë nga faqja'}
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+      )}
     </>
   );
 }
