@@ -37,7 +37,7 @@ export function HomePage() {
     <>
       <SiteHeader />
       <main>
-        <section className="tech-grid relative isolate overflow-hidden bg-[#07111f] pb-16 pt-14 text-white sm:pb-24 sm:pt-20">
+        <section className="tech-grid relative isolate overflow-hidden bg-[#07111f] py-12 text-white sm:py-20">
           <div
             aria-hidden
             className="absolute -left-32 -top-28 -z-10 size-[30rem] rounded-full bg-indigo-600/30 blur-3xl"
@@ -50,25 +50,25 @@ export function HomePage() {
             aria-hidden
             className="absolute left-1/2 top-1/3 -z-10 h-48 w-48 -translate-x-1/2 rounded-full bg-teal-400/10 blur-3xl"
           />
-          <div className="page-shell relative">
-            <div className="mx-auto max-w-3xl text-center">
-              <p className="hero-reveal mx-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[.14em] text-cyan-200 shadow-xl backdrop-blur-xl">
+          <div className="page-shell relative grid items-center gap-10 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
+            <div className="max-w-2xl">
+              <p className="hero-reveal inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[.14em] text-cyan-200 shadow-xl backdrop-blur-xl">
                 {tr('Rezervo shpejt. Shko pa stres.', 'Book quickly. Arrive stress-free.')}
               </p>
-              <h1 className="hero-reveal hero-delay-1 display mx-auto mt-5 max-w-4xl text-[2.55rem] font-bold leading-[1.04] tracking-[-.025em] text-white sm:text-6xl lg:text-7xl">
+              <h1 className="hero-reveal hero-delay-1 display mt-5 text-[2.7rem] font-bold leading-[1.02] tracking-[-.035em] text-white sm:text-6xl">
                 {tr('Gjej, krahaso dhe', 'Find, compare and')}{' '}
                 <span className="bg-gradient-to-r from-cyan-300 to-indigo-300 bg-clip-text text-transparent">
                   {tr('rezervo', 'book')}
                 </span>{' '}
                 {tr('online.', 'online.')}
               </h1>
-              <p className="hero-reveal hero-delay-2 mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+              <p className="hero-reveal hero-delay-2 mt-5 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
                 {tr(
                   'Hotele, taksi, bukuri, klinika, restorante dhe shërbime pranë jush — me disponueshmëri, çmime dhe konfirmim të qartë.',
                   'Hotels, taxis, beauty salons, clinics, restaurants and nearby services — with clear availability, pricing and confirmation.',
                 )}
               </p>
-              <div className="hero-reveal hero-delay-3 mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <div className="hero-reveal hero-delay-3 mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link to="/businesses">
                   <Button size="lg" className="w-full sm:w-auto">
                     {tr('Gjej një rezervim', 'Find a booking')} <ArrowRight size={16} />
@@ -80,38 +80,29 @@ export function HomePage() {
                   </Button>
                 </Link>
               </div>
-              <p className="mt-4 text-xs text-slate-400">
-                {tr(
-                  'Rezervim i sigurt · Menaxho terminin nga llogaria jote',
-                  'Secure booking · Manage it from your account',
-                )}
-              </p>
+              <div className="mt-8 grid max-w-xl grid-cols-3 gap-2 border-t border-white/10 pt-5 text-xs text-slate-300 sm:gap-4">
+                <Link to="/businesses?category=hotels" className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10"><MapPin size={17} className="mb-2 text-cyan-300" /><b className="block text-white">{tr('Pranë teje', 'Nearby')}</b><span>{tr('Biznese lokale', 'Local businesses')}</span></Link>
+                <Link to="/businesses" className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10"><CalendarCheck2 size={17} className="mb-2 text-cyan-300" /><b className="block text-white">{tr('Në kohë reale', 'Real time')}</b><span>{tr('Orar i lirë', 'Free slots')}</span></Link>
+                <Link to="/account" className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10"><Heart size={17} className="mb-2 text-cyan-300" /><b className="block text-white">{tr('Një llogari', 'One account')}</b><span>{tr('Menaxho lehtë', 'Manage easily')}</span></Link>
+              </div>
             </div>
-            <div className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Preview
-                icon={MapPin}
-                title={tr('Gjej pranë teje', 'Find nearby')}
-                text={tr(
-                  'Kërko sipas qytetit, kategorisë, çmimit dhe vlerësimit.',
-                  'Search by city, category, price and rating.',
-                )}
-              />
-              <Preview
-                icon={CalendarCheck2}
-                title={tr('Rezervo në kohë reale', 'Book in real time')}
-                text={tr(
-                  'Zgjidh datën, orën ose qëndrimin dhe merr konfirmim.',
-                  'Choose a date, time or stay and receive confirmation.',
-                )}
-              />
-              <Preview
-                icon={Heart}
-                title={tr('Ruaj të preferuarat', 'Save favorites')}
-                text={tr(
-                  'Kthehu te bizneset që të pëlqejnë nga llogaria jote.',
-                  'Return to your favorite businesses from your account.',
-                )}
-              />
+            <div className="hero-reveal hero-delay-2 relative mx-auto w-full max-w-lg">
+              <div aria-hidden className="absolute -inset-6 rounded-[2.5rem] bg-cyan-400/15 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
+                <div className="rounded-[1.35rem] bg-white p-4 text-slate-900 shadow-xl sm:p-5">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div><p className="text-xs font-bold uppercase tracking-[.14em] text-emerald-700">{tr('Rezervim i thjeshtë', 'Simple booking')}</p><h2 className="mt-1 text-lg font-extrabold">{tr('Gjithçka në një vend', 'Everything in one place')}</h2></div>
+                    <span className="grid size-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-700"><CalendarCheck2 size={21} /></span>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><span className="grid size-8 place-items-center rounded-full bg-indigo-600 text-xs font-bold text-white">1</span><span><b className="block text-sm">{tr('Zgjidh biznesin', 'Choose a business')}</b><small className="text-slate-500">{tr('Sipas qytetit ose kategorisë', 'By city or category')}</small></span></div>
+                    <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><span className="grid size-8 place-items-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span><span><b className="block text-sm">{tr('Zgjidh kohën', 'Choose a time')}</b><small className="text-slate-500">{tr('Shih çmimin para konfirmimit', 'See price before confirming')}</small></span></div>
+                    <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3"><span className="grid size-8 place-items-center rounded-full bg-emerald-600 text-xs font-bold text-white">3</span><span><b className="block text-sm">{tr('Merr konfirmimin', 'Receive confirmation')}</b><small className="text-emerald-800">{tr('Direkt në email', 'Directly by email')}</small></span></div>
+                  </div>
+                  <Link to="/businesses" className="mt-4 flex items-center justify-between rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800"><span>{tr('Shiko bizneset', 'Browse businesses')}</span><ArrowRight size={17} /></Link>
+                </div>
+                <p className="px-2 pt-4 text-center text-xs text-cyan-100">{tr('Disponueshmëri, çmim dhe konfirmim i qartë.', 'Availability, price and clear confirmation.')}</p>
+              </div>
             </div>
           </div>
         </section>
@@ -291,26 +282,6 @@ export function HomePage() {
         </div>
       </footer>
     </>
-  );
-}
-
-function Preview({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: typeof MapPin;
-  title: string;
-  text: string;
-}) {
-  return (
-    <article className="glass-panel lift-3d rounded-3xl p-6 text-left">
-      <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-400/25 to-indigo-500/25 shadow-[inset_0_1px_0_rgba(255,255,255,.25)]">
-        <Icon className="text-cyan-200" size={22} />
-      </span>
-      <h2 className="mt-4 font-bold text-white">{title}</h2>
-      <p className="mt-1 text-sm leading-6 text-slate-300">{text}</p>
-    </article>
   );
 }
 
