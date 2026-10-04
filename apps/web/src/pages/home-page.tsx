@@ -105,7 +105,8 @@ export function HomePage() {
             </div>
           </div>
         </section>
-        <section className="bg-slate-950 py-14 text-white sm:py-20">
+        <div className="tech-grid bg-[#07111f] text-white">
+        <section className="border-t border-white/10 py-16 sm:py-24">
           <div className="page-shell">
             <p className="eyebrow text-amber-300">
               {tr('Vendi yt në qendër të vëmendjes', 'Your place in the spotlight')}
@@ -160,19 +161,19 @@ export function HomePage() {
         </section>
         <section className="page-shell py-16 sm:py-24">
           <div className="mx-auto max-w-2xl text-center"><p className="eyebrow">{tr('Eksploro sipas nevojës', 'Explore by need')}</p>
-          <h2 className="display mt-3 text-3xl font-bold sm:text-4xl">
+          <h2 className="display mt-3 text-3xl font-bold text-white sm:text-4xl">
             {tr('Çfarë dëshiron të rezervosh?', 'What would you like to book?')}
-          </h2><p className="mt-3 text-sm leading-6 text-slate-500">{tr('Gjeni biznesin e duhur sipas shërbimit që kërkoni.', 'Find the right business based on the service you need.')}</p></div>
+          </h2><p className="mt-3 text-sm leading-6 text-slate-300">{tr('Gjeni biznesin e duhur sipas shërbimit që kërkoni.', 'Find the right business based on the service you need.')}</p></div>
           <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {categories.map((category) => (
               <Link
                 key={category.sq}
                 to={`/businesses?category=${category.slug}`}
-                className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_7px_20px_rgba(15,23,42,.05)] transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-[0_16px_30px_rgba(15,23,42,.10)]"
+                className="group flex items-center justify-between rounded-2xl border border-white/10 bg-white/[.06] p-5 text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-white/10"
               >
                 <span className="font-bold">{tr(category.sq, category.en)}</span>
                 <ArrowRight
-                  className="text-forest transition group-hover:translate-x-1"
+                  className="text-cyan-300 transition group-hover:translate-x-1"
                   size={18}
                 />
               </Link>
@@ -180,7 +181,7 @@ export function HomePage() {
           </div>
         </section>
         <section className="page-shell pb-16 sm:pb-24">
-          <div className="relative overflow-hidden rounded-[2rem] bg-[#0a1728] px-6 py-10 text-white shadow-[0_22px_55px_rgba(15,23,42,.16)] sm:px-10 sm:py-14">
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.06] px-6 py-10 text-white shadow-[0_22px_55px_rgba(15,23,42,.16)] backdrop-blur-sm sm:px-10 sm:py-14">
             <div aria-hidden className="absolute -right-20 -top-20 size-64 rounded-full bg-cyan-400/15 blur-3xl" />
             <div className="relative grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
               <div>
@@ -206,13 +207,13 @@ export function HomePage() {
           </div>
         </section>
         <section className="page-shell py-16 sm:py-24">
-          <div className="surface lift-3d relative grid gap-6 overflow-hidden bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_58%,#ecfeff_100%)] p-7 sm:grid-cols-[1fr_auto] sm:p-10">
+          <div className="relative grid gap-6 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[.06] p-7 backdrop-blur-sm sm:grid-cols-[1fr_auto] sm:p-10">
             <div>
-              <p className="eyebrow">{tr('Ke biznes?', 'Own a business?')}</p>
-              <h2 className="display mt-2 text-3xl font-bold">
+              <p className="text-xs font-extrabold uppercase tracking-[.18em] text-cyan-300">{tr('Ke biznes?', 'Own a business?')}</p>
+              <h2 className="display mt-2 text-3xl font-bold text-white">
                 {tr('Hape faqen tënde të rezervimeve.', 'Launch your booking page.')}
               </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
                 {tr(
                   'Shtoni ofertat, dhomat, automjetet ose ekipin tuaj. Merrni 30 ditë falas për ta provuar platformën.',
                   'Add your offers, rooms, vehicles or team. Try the platform free for 30 days.',
@@ -225,16 +226,17 @@ export function HomePage() {
                 </Button>
               </Link>
             </div>
-            <div className="flex items-end gap-3 text-forest">
+            <div className="flex items-end gap-3 text-cyan-300">
               <Store size={38} />
               <Star size={32} />
               <CalendarCheck2 size={42} />
             </div>
           </div>
         </section>
+        </div>
       </main>
-      <footer className="border-t border-line py-8">
-        <div className="page-shell flex flex-col gap-3 text-sm text-slate-500 sm:flex-row sm:justify-between">
+      <footer className="border-t border-white/10 bg-[#07111f] py-8 text-slate-400">
+        <div className="page-shell flex flex-col gap-3 text-sm sm:flex-row sm:justify-between">
           <span>© {new Date().getFullYear()} Rezervo</span>
           <div className="flex gap-4">
             <Link to="/terms">{tr('Kushtet', 'Terms')}</Link>
