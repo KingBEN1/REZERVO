@@ -128,8 +128,8 @@ export function DashboardLayout() {
       : item);
   const sidebar = (
     <>
-      <div className="flex items-center justify-between px-4 py-5">
-        <Link to="/" className="display text-lg font-extrabold text-white">
+      <div className="flex items-center justify-between px-5 py-6">
+        <Link to="/" className="display text-lg font-extrabold text-slate-950">
           rezervo
         </Link>
         <button
@@ -140,11 +140,11 @@ export function DashboardLayout() {
           <X />
         </button>
       </div>
-      <div className="mx-3 rounded-2xl border border-white/10 bg-white/[.07] p-3.5 shadow-inner backdrop-blur">
-        <p className="truncate text-sm font-bold text-white">{membership.business.name}</p>
-        <p className="mt-0.5 text-xs text-cyan-300">{membership.role.replace('_', ' ')}</p>
+      <div className="mx-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+        <p className="truncate text-sm font-bold text-slate-950">{membership.business.name}</p>
+        <p className="mt-0.5 text-xs font-semibold text-emerald-700">{membership.role.replace('_', ' ')}</p>
       </div>
-      <nav className="mt-5 space-y-1 px-3">
+      <nav className="mt-6 space-y-1 px-4">
         {dynamicNav.map(({ to, icon: Icon, label, labelEn, end }) => (
           <NavLink
             end={end}
@@ -152,7 +152,7 @@ export function DashboardLayout() {
             to={to}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white shadow-lg' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/15' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}`
             }
           >
             <Icon size={18} />
@@ -160,18 +160,18 @@ export function DashboardLayout() {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto border-t border-white/10 p-3">
+      <div className="mt-auto border-t border-slate-100 p-4">
         <Link
           to={`/${membership.business.slug}`}
           target="_blank"
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
         >
           <ExternalLink size={18} />
           {locale === 'en' ? 'Booking page' : 'Faqja e rezervimeve'}
         </Link>
         <button
           onClick={() => logout.mutate()}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-700"
         >
           <LogOut size={18} />
           {locale === 'en' ? 'Log out' : 'Dil'}
@@ -180,13 +180,13 @@ export function DashboardLayout() {
     </>
   );
   return (
-    <div className="min-h-screen bg-sand">
-      <aside className="tech-grid fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-y-auto border-r border-white/10 bg-[#081321] lg:flex">
+    <div className="min-h-screen bg-[#f4f6fb]">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-y-auto border-r border-slate-200 bg-white lg:flex">
         {sidebar}
       </aside>
       {mobileOpen && (
         <div className="fixed inset-0 z-40 flex bg-ink/30 lg:hidden">
-          <aside className="tech-grid flex w-72 flex-col overflow-y-auto bg-[#081321] shadow-2xl">{sidebar}</aside>
+          <aside className="flex w-72 flex-col overflow-y-auto bg-white shadow-2xl">{sidebar}</aside>
           <button
             className="flex-1"
             aria-label="Mbyll menunë"
@@ -194,12 +194,12 @@ export function DashboardLayout() {
           />
         </div>
       )}
-      <main className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/70 bg-white/80 px-4 shadow-sm backdrop-blur-2xl sm:px-7">
+      <main className="lg:pl-72">
+        <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-slate-200 bg-[#fdfdff]/90 px-4 backdrop-blur-2xl sm:px-8">
           <button onClick={() => setMobileOpen(true)} className="lg:hidden" aria-label="Hap menunë">
             <Menu />
           </button>
-          <span className="hidden text-sm text-slate-500 lg:block">Europe/Pristina · EUR</span>
+          <span className="hidden rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 lg:block">Europe/Pristina · EUR</span>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setLocale(locale === 'sq' ? 'en' : 'sq')} title={locale === 'sq' ? 'Switch to English' : 'Kalo në shqip'} className="flex h-9 items-center gap-1.5 rounded-xl border border-line bg-white px-3 text-xs font-bold text-slate-600 shadow-sm hover:border-indigo-200 hover:text-indigo-700"><Languages size={15} /> {locale === 'sq' ? 'EN' : 'SQ'}</button>
             <span className="hidden text-sm font-medium sm:inline">{data.user.firstName}</span>
@@ -208,7 +208,7 @@ export function DashboardLayout() {
             </span>
           </div>
         </header>
-        <div className="p-4 sm:p-7">
+        <div className="p-4 sm:p-8">
           <Outlet context={{ tenantId: membership.business.id, membership }} />
         </div>
       </main>

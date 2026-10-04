@@ -230,8 +230,8 @@ export function BookingsPage({ calendar = false }: { calendar?: boolean }) {
     <>
       <div className="catalog-hero flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="eyebrow">Rezervimet</p>
-          <h1 className="display mt-1 text-3xl font-bold">Të gjitha rezervimet</h1>
+          <p className="text-xs font-extrabold uppercase tracking-[.18em] text-cyan-300">Rezervimet</p>
+          <h1 className="display mt-2 text-3xl font-bold text-white">Të gjitha rezervimet</h1>
         </div>
         <Link to={`/${membership?.business.slug}`} target="_blank">
           <Button size="sm">
@@ -581,17 +581,20 @@ export function ServicesPage() {
   };
   return (
     <>
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="eyebrow">{copy.eyebrow}</p>
-          <h1 className="display mt-1 text-3xl font-bold">{copy.title}</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+      <div className="catalog-hero flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="relative">
+          <p className="text-xs font-extrabold uppercase tracking-[.18em] text-cyan-300">{copy.eyebrow}</p>
+          <h1 className="display mt-2 text-3xl font-bold text-white">{copy.title}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
             {copy.intro}
           </p>
         </div>
-        <Button size="sm" title="Hap formularin për të krijuar një ofertë të re" onClick={() => setOpen(!open)}>
-          <Plus size={15} /> {copy.add}
-        </Button>
+        <div className="relative flex items-center gap-3">
+          <div className="hidden rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-right text-xs text-slate-300 backdrop-blur sm:block"><b className="block text-sm text-white">{services.data?.services.length ?? 0}</b> oferta aktive</div>
+          <Button size="sm" title="Hap formularin për të krijuar një ofertë të re" onClick={() => setOpen(!open)}>
+            <Plus size={15} /> {copy.add}
+          </Button>
+        </div>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-sm text-slate-600">
