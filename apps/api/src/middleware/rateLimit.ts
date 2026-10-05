@@ -16,12 +16,20 @@ export const bookingLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Shumë kërkesa për rezervim. Provoni përsëri më vonë.' } },
 });
 
-export const bookingVerificationLimiter = rateLimit({
+export const bookingVerificationRequestLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Janë dërguar shumë kode. Provoni përsëri pas pak minutash.' } },
+});
+
+export const bookingVerificationConfirmLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 15,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Shumë prova verifikimi. Provoni përsëri pas pak minutash.' } },
 });
 
 export const publicApiLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false });

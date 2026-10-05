@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { CalendarDays, CheckCircle2, ChevronLeft, Clock3, MapPin, Moon, Phone, Star, Sun } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronLeft, Clock3, Mail, MapPin, Moon, Phone, RotateCcw, ShieldCheck, Star, Sun } from 'lucide-react';
 import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import QRCode from 'qrcode';
@@ -319,6 +319,14 @@ function BookingFlow() {
     }),
     onSuccess: () => verification && setVerification({ ...verification, verified: true }),
   });
+  const resetVerification = () => {
+    setVerification(undefined);
+    setVerificationCode('');
+    setTurnstileToken('');
+    setTurnstileAttempt((current) => current + 1);
+    requestVerification.reset();
+    confirmVerification.reset();
+  };
   const booking = useMutation({
     mutationFn: () =>
       api<{
@@ -921,7 +929,7 @@ function BookingFlow() {
                       value={details.phone}
                       onChange={(phone) => {
                         setDetails({ ...details, phone });
-                        if (verification?.channel === 'SMS' && verification.contact !== phone.trim().toLowerCase()) setVerification(undefined);
+                        if (verification?.channel === 'SMS' && verification.contact !== phone.trim().toLowerCase()) resetVerification();
                       }}
                     />
                   </label>
@@ -936,18 +944,21 @@ function BookingFlow() {
                       value={details.email}
                       onChange={(event) => {
                         setDetails({ ...details, email: event.target.value });
-                        if (verification?.channel === 'EMAIL' && verification.contact !== event.target.value.trim().toLowerCase()) setVerification(undefined);
+                        if (verification?.channel === 'EMAIL' && verification.contact !== event.target.value.trim().toLowerCase()) resetVerification();
                       }}
                     />
                   </label>
-                  <div className="rounded-xl border border-line bg-sand p-4">
-                    <p className="font-semibold">Verifiko kontaktin për rezervim</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Për siguri, kodi 6-shifror është i detyrueshëm para se të dërgoni rezervimin.
-                    </p>
+                  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 via-white to-teal-50 p-4 shadow-sm sm:p-5">
+                    <div className="flex items-start gap-3">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"><ShieldCheck size={19} /></span>
+                      <div>
+                        <p className="font-bold text-slate-950">Verifiko emailin për rezervim</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">Kodi 6-shifror mbron rezervimin tuaj dhe konfirmon kontaktin e saktë.</p>
+                      </div>
+                    </div>
                     <div className="mt-3"><TurnstileWidget key={turnstileAttempt} onToken={setTurnstileToken} /></div>
                     <div className="mt-3 flex gap-2 text-sm">
-                      <button type="button" onClick={() => { setVerificationChannel('EMAIL'); setVerification(undefined); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'EMAIL' ? 'bg-forest text-white' : 'bg-white text-slate-600 ring-1 ring-line'}`}>Me email</button>
+                      <button type="button" onClick={() => { setVerificationChannel('EMAIL'); resetVerification(); }} className={`rounded-lg px-3 py-2 font-semibold ${verificationChannel === 'EMAIL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-white text-slate-600 ring-1 ring-line'}`}><Mail className="mr-1 inline" size={14} /> Me email</button>
                       <button
                         type="button"
                         onClick={() => setSmsUnavailableOpen(true)}
@@ -982,7 +993,12 @@ function BookingFlow() {
                           </p>
                         )}
                       </>
-                    ) : <p className="mt-3 text-sm font-semibold text-forest">✓ {verification?.channel === 'SMS' ? 'Telefoni' : 'Emaili'} u verifikua.</p>}
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                        <p className="flex items-center gap-2 text-sm font-bold text-emerald-900"><CheckCircle2 size={17} /> {verification?.channel === 'SMS' ? 'Telefoni' : 'Emaili'} u verifikua.</p>
+                        <button type="button" onClick={resetVerification} className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-950"><RotateCcw size={13} /> Ndrysho kontaktin ose kërko kod të ri</button>
+                      </div>
+                    )}
                   </div>
                   <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" name="website"
                     value={details.website} onChange={(event) => setDetails({ ...details, website: event.target.value })} />

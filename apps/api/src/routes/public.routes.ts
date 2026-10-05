@@ -4,7 +4,8 @@ import { asyncHandler } from '../lib/async.js';
 import { AppError } from '../lib/errors.js';
 import {
   bookingLimiter,
-  bookingVerificationLimiter,
+  bookingVerificationConfirmLimiter,
+  bookingVerificationRequestLimiter,
   publicApiLimiter,
 } from '../middleware/rateLimit.js';
 import { optionalAuth } from '../middleware/auth.js';
@@ -112,7 +113,7 @@ publicRouter.post(
 
 publicRouter.post(
   '/booking-verification/request',
-  bookingVerificationLimiter,
+  bookingVerificationRequestLimiter,
   validate(bookingVerificationRequestSchema),
   asyncHandler(async (req, res) => {
     await verifyHuman(req.body.turnstileToken, req.ip);
@@ -123,7 +124,7 @@ publicRouter.post(
 
 publicRouter.post(
   '/booking-verification/confirm',
-  bookingVerificationLimiter,
+  bookingVerificationConfirmLimiter,
   validate(bookingVerificationConfirmSchema),
   asyncHandler(async (req, res) => {
     const result = await confirmBookingEmailVerification(req.body.challengeId, req.body.code);
