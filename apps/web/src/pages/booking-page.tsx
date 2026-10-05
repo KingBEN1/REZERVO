@@ -77,32 +77,6 @@ const detailsSchema = z.object({
   phone: z.string().trim().max(32).refine((value) => !value || value.length >= 6, 'Shkruani numrin e telefonit.'),
 });
 
-function Step({
-  number,
-  title,
-  active,
-  done,
-}: {
-  number: number;
-  title: string;
-  active: boolean;
-  done: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className={`grid size-7 place-items-center rounded-full text-xs font-bold shadow-sm ${done ? 'bg-emerald-600 text-white' : active ? 'bg-indigo-600 text-white ring-4 ring-indigo-100' : 'border border-slate-200 bg-white text-slate-400'}`}
-      >
-        {done ? '✓' : number}
-      </span>
-      <span
-        className={`hidden text-xs font-semibold sm:block ${active ? 'text-ink' : 'text-slate-400'}`}
-      >
-        {title}
-      </span>
-    </div>
-  );
-}
 class BookingErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state: { error: Error | null } = { error: null };
 
@@ -373,6 +347,7 @@ function BookingFlow() {
     onSuccess: (data) => setSubmitted(data.booking),
   });
   const step = submitted ? 5 : slot ? 4 : staffId ? 3 : serviceId ? 2 : 1;
+  const stepTitles = ['Zgjidh shërbimin', 'Zgjidh ofruesin', 'Zgjidh kohën', 'Plotëso të dhënat'];
   if (businessQuery.isLoading)
     return (
       <div className="grid min-h-screen place-items-center bg-sand">
@@ -548,15 +523,18 @@ function BookingFlow() {
         <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_310px]">
           <section className="booking-panel">
             <div className="booking-stepper">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-bold text-ink">Rezervo në 4 hapa të thjeshtë</p>
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-forest">Hapi {step} / 4</span>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[.14em] text-indigo-600">Hapi {step} nga 4</p>
+                  <p className="mt-1 font-bold text-slate-950">{stepTitles[step - 1]}</p>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-extrabold text-indigo-700 shadow-sm">{step * 25}%</span>
               </div>
-              <div className="flex justify-between">
-              <Step number={1} title="Oferta" active={step === 1} done={step > 1} />
-              <Step number={2} title="Ofruesi" active={step === 2} done={step > 2} />
-              <Step number={3} title="Koha" active={step === 3} done={step > 3} />
-              <Step number={4} title="Të dhënat" active={step === 4} done={step > 4} />
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/90">
+                <span className="block h-full rounded-full bg-gradient-to-r from-teal-500 to-indigo-600 transition-all duration-500" style={{ width: `${step * 25}%` }} />
+              </div>
+              <div className="mt-3 flex justify-between text-[11px] font-semibold text-slate-500">
+                <span>Shërbimi</span><span className="hidden sm:block">Ofruesi</span><span className="hidden sm:block">Koha</span><span>Të dhënat</span>
               </div>
             </div>
             {!serviceId && (
