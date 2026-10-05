@@ -452,15 +452,15 @@ function BookingFlow() {
     );
   return (
     <main className="booking-page">
-      <header className="border-b border-white/70 bg-white/80 backdrop-blur-xl">
+      <header className="border-b border-slate-800 bg-[#0b1220] text-white shadow-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <Link
             to="/businesses"
-            className="flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-ink"
+            className="flex items-center gap-1 text-sm font-semibold text-slate-300 transition hover:text-white"
           >
             <ChevronLeft size={18} /> Të gjitha bizneset
           </Link>
-          <span className="inline-flex items-center gap-2 text-sm font-bold text-ink">
+          <span className="inline-flex items-center gap-2 text-sm font-bold text-white">
             <span className="grid size-7 place-items-center rounded-lg bg-gradient-to-br from-teal-600 to-indigo-600 text-xs text-white">R</span>
             rezervo
           </span>
@@ -525,16 +525,17 @@ function BookingFlow() {
             <div className="booking-stepper">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[.14em] text-indigo-600">Hapi {step} nga 4</p>
-                  <p className="mt-1 font-bold text-slate-950">{stepTitles[step - 1]}</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[.14em] text-slate-500">Rezervimi yt</p>
+                  <p className="mt-1 text-lg font-bold tracking-tight text-slate-950">{stepTitles[step - 1]}</p>
                 </div>
-                <span className="rounded-full bg-white px-3 py-1.5 text-xs font-extrabold text-indigo-700 shadow-sm">{step * 25}%</span>
+                <span className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-extrabold text-white">Hapi {step} / 4</span>
               </div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/90">
-                <span className="block h-full rounded-full bg-gradient-to-r from-teal-500 to-indigo-600 transition-all duration-500" style={{ width: `${step * 25}%` }} />
-              </div>
-              <div className="mt-3 flex justify-between text-[11px] font-semibold text-slate-500">
-                <span>Shërbimi</span><span className="hidden sm:block">Ofruesi</span><span className="hidden sm:block">Koha</span><span>Të dhënat</span>
+              <div className="mt-5 grid grid-cols-4 gap-2">
+                {['Shërbimi', 'Ofruesi', 'Koha', 'Konfirmo'].map((label, index) => {
+                  const completed = step > index + 1;
+                  const active = step === index + 1;
+                  return <div key={label} className={`min-w-0 rounded-xl px-2 py-2 text-center text-[10px] font-bold sm:text-xs ${completed ? 'bg-emerald-50 text-emerald-700' : active ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-slate-100 text-slate-400'}`}><span className="mr-1">{completed ? '✓' : index + 1}</span>{label}</div>;
+                })}
               </div>
             </div>
             {!serviceId && (
@@ -1069,9 +1070,12 @@ function BookingFlow() {
             )}
           </section>
           <aside className="booking-summary">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold">Përmbledhja</h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-forest"><CheckCircle2 size={13} /> E sigurt</span>
+            <div className="booking-summary-heading">
+              <div>
+                <p className="text-[11px] font-extrabold uppercase tracking-[.14em] text-indigo-600">Rezervo</p>
+                <h2 className="mt-1 font-bold text-slate-950">Përmbledhja</h2>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700"><CheckCircle2 size={13} /> E sigurt</span>
             </div>
             {service ? (
               <div className="mt-4 space-y-3 text-sm">
