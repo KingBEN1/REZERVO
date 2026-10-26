@@ -48,7 +48,7 @@ function BusinessCard({
   onFavorite?: () => void;
 }) {
   return (
-    <article className="surface overflow-hidden">
+    <article className="account-business-card overflow-hidden">
       <Link to={`/${business.slug}`} className="group block">
         <div className="h-28 bg-green-100">
           {business.coverImage && (
@@ -125,14 +125,14 @@ export function CustomerAccountPage() {
   return (
     <>
       <SiteHeader />
-      <main className="page-shell py-9 sm:py-12">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <main className="account-page page-shell py-7 sm:py-10">
+        <div className="account-hero flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="eyebrow">Llogaria e klientit</p>
-            <h1 className="display mt-2 text-3xl font-bold">
+            <p className="eyebrow text-cyan-200">Llogaria e klientit</p>
+            <h1 className="display mt-2 text-3xl font-bold text-white sm:text-4xl">
               Përshëndetje, {account.data.user.firstName}
             </h1>
-            <p className="mt-2 text-slate-600">
+            <p className="mt-2 max-w-xl text-slate-300">
               Rezervimet, bizneset e ruajtura dhe sugjerimet tuaja në një vend.
             </p>
           </div>
@@ -142,8 +142,8 @@ export function CustomerAccountPage() {
             </Button>
           </Link>
         </div>
-        <section className="surface mt-8 overflow-hidden">
-          <div className="flex flex-col justify-between gap-4 border-b border-line bg-green-50 p-5 sm:flex-row sm:items-center">
+        <section className="account-profile mt-8 overflow-hidden">
+          <div className="account-profile-header flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-full bg-forest font-bold text-white">{account.data.user.firstName.slice(0, 1)}{account.data.user.lastName.slice(0, 1)}</span><div><h2 className="font-bold">Profili im</h2><p className="text-sm text-slate-600">Të dhënat që përdoren në rezervimet tuaja.</p></div></div>
             <Button variant="secondary" onClick={() => { setProfile({ firstName: account.data!.user.firstName, lastName: account.data!.user.lastName, phone: account.data!.user.phone ?? '' }); setEditingProfile(!editingProfile); }}>{editingProfile ? 'Mbyll' : 'Ndrysho profilin'}</Button>
           </div>
@@ -160,7 +160,7 @@ export function CustomerAccountPage() {
                 <Link
                   key={booking.id}
                   to={`/manage/${booking.manageToken}`}
-                  className="surface flex gap-4 p-4 transition hover:border-forest"
+                  className="account-booking flex gap-4 p-4"
                 >
                   <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-green-50 text-forest">
                     <CalendarDays size={20} />
@@ -247,7 +247,7 @@ export function CustomerAccountPage() {
         {account.data.past.length > 0 && (
           <section className="mt-10">
             <h2 className="text-lg font-bold">Historia e rezervimeve</h2>
-            <div className="surface mt-4 divide-y divide-line">
+            <div className="account-history mt-4 divide-y divide-line">
               {account.data.past.slice(0, 5).map((booking) => (
                 <Link
                   key={booking.id}

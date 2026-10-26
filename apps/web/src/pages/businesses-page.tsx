@@ -60,8 +60,8 @@ export function BusinessesPage() {
   return (
     <>
       <SiteHeader />
-      <main className="page-shell py-7 sm:py-10">
-        <div className="tech-grid relative overflow-hidden rounded-[2rem] bg-[#081321] px-6 py-10 text-white shadow-2xl sm:px-10 sm:py-14">
+      <main className="discovery-page page-shell py-7 sm:py-10">
+        <div className="discovery-hero">
           <div
             aria-hidden
             className="absolute -right-20 -top-24 size-72 rounded-full bg-indigo-500/25 blur-3xl"
@@ -79,10 +79,7 @@ export function BusinessesPage() {
             lira para rezervimit.
           </p>
         </div>
-        <form
-          onSubmit={submit}
-          className="surface relative -mt-5 mx-3 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]"
-        >
+        <form onSubmit={submit} className="discovery-search relative -mt-5 mx-3 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]">
           <label className="relative">
             <Search className="absolute left-3 top-3 text-slate-400" size={18} />
             <input
@@ -118,7 +115,7 @@ export function BusinessesPage() {
           </select>
           <Button type="submit">Kërko</Button>
         </form>
-        <section className="surface mt-4 p-4">
+        <section className="discovery-filters mt-4 p-4">
           <div className="flex items-center gap-2">
             <SlidersHorizontal size={18} className="text-forest" />
             <b className="text-sm">Filtro rezultatet</b>
@@ -241,7 +238,7 @@ export function BusinessesPage() {
               {query.data.businesses.map((business) => (
                 <article
                   key={business.id}
-                  className="group surface lift-3d overflow-hidden hover:border-indigo-200"
+                  className="discovery-card group overflow-hidden"
                 >
                   <Link to={`/${business.slug}`}>
                     <div className="relative h-40 bg-green-100">

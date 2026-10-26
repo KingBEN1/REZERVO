@@ -118,8 +118,8 @@ export function AboutPage() {
   return (
     <>
       <SiteHeader />
-      <main className="overflow-hidden">
-        <section className="relative border-b border-white/10 bg-forest py-20 text-white sm:py-28">
+      <main className="about-page overflow-hidden">
+        <section className="about-hero relative py-20 text-white sm:py-28">
           <div className="tech-grid absolute inset-0 opacity-50" />
           <div className="absolute -left-24 top-10 size-80 rounded-full bg-cyan-400/15 blur-3xl" />
           <div className="absolute -right-20 bottom-0 size-96 rounded-full bg-indigo-500/20 blur-3xl" />
@@ -158,19 +158,19 @@ export function AboutPage() {
             <p className="mt-5 text-lg leading-8 text-slate-600">{tr('Shumë biznese ende humbin kohë me telefonata, mesazhe dhe kalendarë të shpërndarë. Klientët presin përgjigje dhe nuk e dinë gjithmonë kur ka vende të lira. Rezervo i bashkon këto pjesë në një përvojë të vetme dhe të kuptueshme.', 'Too many businesses still lose time to calls, messages and disconnected calendars. Customers wait for replies and cannot always see what is available. Rezervo brings those pieces together in one clear experience.')}</p>
           </div>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {values.map(({ icon: Icon, title, text }) => <article key={title} className="surface lift-3d p-6 sm:p-7"><span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-100 to-cyan-50 text-forest"><Icon size={22} /></span><h3 className="mt-6 text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{text}</p></article>)}
+            {values.map(({ icon: Icon, title, text }) => <article key={title} className="about-value-card p-6 sm:p-7"><span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-emerald-100 to-cyan-50 text-forest"><Icon size={22} /></span><h3 className="mt-6 text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{text}</p></article>)}
           </div>
         </section>
 
-        <section className="border-y border-line bg-white/70 py-16 sm:py-24">
+        <section className="about-story py-16 sm:py-24">
           <div className="page-shell grid gap-12 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
             <div><p className="eyebrow">{tr('Si funksionon', 'How it works')}</p><h2 className="display mt-4 text-3xl font-bold sm:text-5xl">{tr('Nga kërkimi te rezervimi, pa kaos.', 'From discovery to booking, without the chaos.')}</h2><p className="mt-5 leading-7 text-slate-600">{tr('Rezervo u jep klientëve qartësi dhe bizneseve kontroll—pa procese të panevojshme.', 'Rezervo gives customers clarity and businesses control—without unnecessary process.')}</p></div>
-            <div className="space-y-4">{steps.map(([title, text], index) => <article key={title} className="surface flex gap-5 p-5 sm:p-6"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-forest font-bold text-white">{index + 1}</span><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{text}</p></div></article>)}</div>
+            <div className="space-y-4">{steps.map(([title, text], index) => <article key={title} className="about-step-card flex gap-5 p-5 sm:p-6"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-forest font-bold text-white">{index + 1}</span><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{text}</p></div></article>)}</div>
           </div>
         </section>
 
         <section className="page-shell py-16 sm:py-24">
-          <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-cyan-700 to-forest px-6 py-12 text-center text-white shadow-2xl sm:px-12 sm:py-16">
+          <div className="about-cta relative overflow-hidden rounded-[2rem] px-6 py-12 text-center text-white sm:px-12 sm:py-16">
             <div className="tech-grid absolute inset-0 opacity-30" />
             <Building2 className="relative mx-auto text-emerald-200" size={34} />
             <h2 className="display relative mx-auto mt-5 max-w-3xl text-3xl font-bold sm:text-5xl">{tr('Po ndërtojmë infrastrukturën e rezervimeve për bizneset e Kosovës.', 'We are building booking infrastructure for Kosovo businesses.')}</h2>

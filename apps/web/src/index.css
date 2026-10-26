@@ -34,6 +34,34 @@
   .booking-option { @apply relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_4px_12px_rgba(15,23,42,.035)] transition duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-[0_14px_28px_rgba(79,70,229,.10)]; }
   .catalog-hero { @apply relative overflow-hidden rounded-[1.75rem] border border-slate-800 bg-[#0a1728] p-6 text-white shadow-[0_22px_55px_rgba(15,23,42,.16)] sm:p-7; background-image: radial-gradient(circle at 85% 20%, rgba(34,211,238,.25), transparent 20rem), radial-gradient(circle at 15% 100%, rgba(16,185,129,.2), transparent 22rem); }
   .catalog-card { @apply overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_7px_20px_rgba(15,23,42,.05)] transition duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_18px_35px_rgba(15,23,42,.10)]; }
+  .discovery-page { @apply relative; }
+  .discovery-page::before, .account-page::before { content: ''; position: fixed; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(circle at 10% 13%, rgba(99,102,241,.12), transparent 23rem), radial-gradient(circle at 92% 26%, rgba(45,212,191,.12), transparent 28rem); }
+  .discovery-hero { @apply relative overflow-hidden rounded-[2rem] px-6 py-10 text-white shadow-[0_30px_80px_rgba(15,23,42,.22)] sm:px-10 sm:py-14; background: linear-gradient(125deg, #071223 0%, #102852 49%, #075f68 100%); transform: perspective(1200px) rotateX(1deg); }
+  .discovery-hero::after { content: ''; position: absolute; inset: auto -6rem -9rem auto; width: 22rem; height: 22rem; border-radius: 999px; background: linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,0)); transform: rotate(25deg); }
+  .discovery-search { @apply rounded-2xl border border-white/60 bg-white/90 shadow-[0_20px_45px_rgba(15,23,42,.12)] backdrop-blur-xl; }
+  .discovery-filters { @apply rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_14px_36px_rgba(15,23,42,.06)] backdrop-blur-xl; }
+  .discovery-card { @apply relative rounded-[1.45rem] border border-white/70 bg-white shadow-[0_14px_35px_rgba(15,23,42,.08)] transition duration-300; transform: perspective(900px) rotateX(0) translateY(0); }
+  .discovery-card::after { content: ''; position: absolute; left: 1rem; right: 1rem; bottom: -.55rem; height: 1rem; z-index: -1; border-radius: 999px; background: rgba(15,23,42,.13); filter: blur(9px); opacity: .45; transition: opacity .3s ease; }
+  .discovery-card:hover { @apply border-cyan-300/70 shadow-[0_28px_52px_rgba(30,64,175,.16)]; transform: perspective(900px) rotateX(2.2deg) rotateY(-1.4deg) translateY(-7px); }
+  .discovery-card:hover::after { opacity: .75; }
+  .account-hero { @apply relative overflow-hidden rounded-[2rem] px-6 py-8 shadow-[0_28px_75px_rgba(15,23,42,.18)] sm:px-8 sm:py-10; background: linear-gradient(128deg, #0b1730, #263e78 58%, #0f766e); }
+  .account-hero::after { content: ''; position: absolute; width: 15rem; height: 15rem; right: -5rem; top: -7rem; border: 1px solid rgba(255,255,255,.24); border-radius: 2.5rem; transform: rotate(32deg); box-shadow: -2rem 3rem 0 rgba(45,212,191,.10); }
+  .account-hero > * { @apply relative z-10; }
+  .account-profile, .account-history { @apply rounded-[1.45rem] border border-white/80 bg-white/90 shadow-[0_18px_45px_rgba(15,23,42,.08)] backdrop-blur-xl; }
+  .account-profile-header { @apply border-b border-slate-100; background: linear-gradient(105deg, rgba(236,253,245,.95), rgba(239,246,255,.86)); }
+  .account-booking { @apply rounded-2xl border border-slate-200/90 bg-white shadow-[0_8px_24px_rgba(15,23,42,.05)] transition duration-300; }
+  .account-booking:hover { @apply border-indigo-300 shadow-[0_22px_42px_rgba(79,70,229,.13)]; transform: translateY(-3px); }
+  .account-business-card { @apply rounded-[1.35rem] border border-white/80 bg-white shadow-[0_12px_30px_rgba(15,23,42,.07)] transition duration-300; }
+  .account-business-card:hover { @apply border-cyan-300/60 shadow-[0_24px_46px_rgba(15,23,42,.14)]; transform: translateY(-5px) rotateX(1.5deg); }
+  .about-page { background: radial-gradient(circle at 7% 30%, rgba(34,211,238,.08), transparent 28rem), radial-gradient(circle at 96% 58%, rgba(129,140,248,.1), transparent 32rem); }
+  .about-hero { background: radial-gradient(circle at 83% 20%, rgba(34,211,238,.22), transparent 20rem), radial-gradient(circle at 7% 94%, rgba(79,70,229,.25), transparent 24rem), linear-gradient(135deg, #06101f, #0c2745 55%, #075f68); box-shadow: inset 0 -1px 0 rgba(255,255,255,.1); }
+  .about-value-card { @apply relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-white shadow-[0_18px_42px_rgba(15,23,42,.08)] transition duration-300; }
+  .about-value-card::after { content: ''; position: absolute; width: 7rem; height: 7rem; right: -2rem; bottom: -3rem; border-radius: 999px; background: linear-gradient(135deg, rgba(34,211,238,.18), rgba(99,102,241,.08)); }
+  .about-value-card:hover { @apply border-cyan-300/60 shadow-[0_28px_55px_rgba(15,23,42,.15)]; transform: translateY(-7px) perspective(900px) rotateX(2deg); }
+  .about-story { background: linear-gradient(135deg, rgba(224,242,254,.66), rgba(255,255,255,.78) 42%, rgba(238,242,255,.85)); box-shadow: inset 0 1px rgba(255,255,255,.9), inset 0 -1px rgba(203,213,225,.55); }
+  .about-step-card { @apply rounded-[1.35rem] border border-white/80 bg-white/90 shadow-[0_12px_30px_rgba(15,23,42,.07)] transition duration-300; }
+  .about-step-card:hover { @apply border-indigo-200 shadow-[0_24px_48px_rgba(79,70,229,.13)]; transform: translateX(-4px); }
+  .about-cta { background: radial-gradient(circle at 20% 0, rgba(255,255,255,.19), transparent 18rem), radial-gradient(circle at 95% 110%, rgba(34,211,238,.3), transparent 22rem), linear-gradient(125deg, #172554, #4338ca 47%, #0f766e); box-shadow: 0 28px 70px rgba(30,41,59,.24); }
 }
 
 @keyframes hero-reveal {
