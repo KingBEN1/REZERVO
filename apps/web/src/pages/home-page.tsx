@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/site-header';
 import { Button } from '../components/ui/button';
 import { useI18n } from '../lib/i18n';
+import { Seo, rezervoSiteUrl } from '../components/seo';
 
 const categories = [
   { sq: 'Hotele & akomodim', en: 'Hotels & stays', slug: 'hotels' },
@@ -34,6 +35,32 @@ export function HomePage() {
   ];
   return (
     <>
+      <Seo
+        title="Rezervo - Rezervime online në Kosovë"
+        description="Gjeni, krahasoni dhe rezervoni hotele, berberë, taksi, klinika, restorante dhe shërbime në Kosovë."
+        canonical={rezervoSiteUrl}
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'Organization',
+              name: 'Rezervo',
+              url: rezervoSiteUrl,
+              areaServed: { '@type': 'Country', name: 'Kosovo' },
+            },
+            {
+              '@type': 'WebSite',
+              name: 'Rezervo',
+              url: rezervoSiteUrl,
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: `${rezervoSiteUrl}/businesses?q={search_term_string}`,
+                'query-input': 'required name=search_term_string',
+              },
+            },
+          ],
+        }}
+      />
       <SiteHeader />
       <main className="overflow-hidden bg-[#070d1a] text-white">
         <section className="relative isolate overflow-hidden bg-[#070d1a] py-14 sm:py-24">

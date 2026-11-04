@@ -9,6 +9,7 @@ import { CountryPhoneInput } from '../components/country-phone-input';
 import { TurnstileWidget } from '../components/security-widgets';
 import { api, ApiError } from '../lib/api';
 import { dateTime, localIsoDate, money } from '../lib/utils';
+import { Seo, rezervoSiteUrl } from '../components/seo';
 
 type Staff = {
   id: string;
@@ -178,6 +179,32 @@ function BookingFlow() {
     queryFn: () => api<{ business: PublicBusiness }>(`/public/businesses/${slug}`),
   });
   const business = businessQuery.data?.business;
+  const businessSeo = business
+    ? {
+        title: `${business.name}${business.city ? ` në ${business.city}` : ''}`,
+        description:
+          business.description?.slice(0, 155) ||
+          `Rezervo ${business.name}${business.city ? ` në ${business.city}` : ''} online në Rezervo.`,
+        canonical: `${rezervoSiteUrl}/${business.slug}`,
+        image: business.coverImage ?? business.logo,
+        structuredData: {
+          '@context': 'https://schema.org',
+          '@type': business.category?.slug === 'hotels' ? 'LodgingBusiness' : business.category?.slug === 'restaurants' ? 'Restaurant' : 'LocalBusiness',
+          name: business.name,
+          description: business.description ?? undefined,
+          url: `${rezervoSiteUrl}/${business.slug}`,
+          image: business.coverImage ?? business.logo ?? undefined,
+          telephone: business.phone ?? undefined,
+          address: business.address
+            ? { '@type': 'PostalAddress', streetAddress: business.address, addressLocality: business.city, addressCountry: 'XK' }
+            : undefined,
+          geo: business.latitude && business.longitude
+            ? { '@type': 'GeoCoordinates', latitude: business.latitude, longitude: business.longitude }
+            : undefined,
+          priceRange: business.services.some((item) => Number(item.price) > 0) ? '€€' : undefined,
+        },
+      }
+    : null;
   const mapLink = business
     ? business.latitude && business.longitude
       ? `https://www.google.com/maps/search/?api=1&query=${business.latitude},${business.longitude}`
@@ -373,6 +400,8 @@ function BookingFlow() {
     );
   if (submitted)
     return (
+      <>
+      {businessSeo && <Seo {...businessSeo} noIndex />}
       <main className="tech-grid grid min-h-screen place-items-center bg-[#07111f] p-4">
         <section className="surface w-full max-w-lg p-7 text-center sm:p-10">
           <span className="mx-auto grid size-16 place-items-center rounded-full bg-green-100 text-forest">
@@ -449,8 +478,11 @@ function BookingFlow() {
           </Link>
         </section>
       </main>
+      </>
     );
   return (
+    <>
+    {businessSeo && <Seo {...businessSeo} />}
     <main className="booking-page">
       <header className="border-b border-slate-800 bg-[#0b1220] text-white shadow-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
@@ -1192,6 +1224,7 @@ function BookingFlow() {
         </div>
       )}
     </main>
+    </>
   );
 }
 

@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { GlobalLanguageSwitch, I18nProvider } from './lib/i18n';
 import { HomePage } from './pages/home-page';
 import { SupportChatbot } from './components/support-chatbot';
+import { RouteSeo } from './components/seo';
 
 /**
  * Vercel replaces hashed JavaScript files on every deployment. A visitor who
@@ -191,6 +192,7 @@ export function App() {
       <I18nProvider>
         <BrowserRouter>
           <GlobalLanguageSwitch />
+          <RouteSeo />
           <AppErrorBoundary>
             <Suspense fallback={<AppLoadingScreen />}>
               <Routes>

@@ -1,9 +1,10 @@
-import { ArrowRight, BarChart3, CalendarCheck2, Store, UsersRound } from 'lucide-react';
+import { ArrowRight, BadgeCheck, BarChart3, CalendarCheck2, CircleCheck, ShieldCheck, Store, UsersRound } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { SiteHeader } from '../components/site-header';
 import { Button } from '../components/ui/button';
 import { api } from '../lib/api';
+import { Seo, rezervoSiteUrl } from '../components/seo';
 
 type Me = { user: { memberships: Array<{ business: { id: string } }> } };
 
@@ -18,8 +19,13 @@ export function BusinessStartPage() {
   const createLink = me.data ? '/onboarding' : '/register?intent=business';
   return (
     <>
+      <Seo
+        title="Rezervime online për biznesin tënd"
+        description="Krijo faqen e biznesit, menaxho kalendarin, ekipin dhe rezervimet nga një panel profesional në Rezervo."
+        canonical={`${rezervoSiteUrl}/for-business`}
+      />
       <SiteHeader />
-      <main className="bg-sand">
+      <main className="overflow-hidden bg-sand">
         <section className="page-shell grid gap-10 py-14 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:py-24">
           <div>
             <p className="eyebrow">Për pronarët e bizneseve</p>
@@ -45,9 +51,11 @@ export function BusinessStartPage() {
                 </Link>
               )}
             </div>
-            <p className="mt-4 text-sm text-slate-500">
-              30 ditë falas · pastaj 30 € / muaj · pa kartelë sot
-            </p>
+            <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-1.5"><CircleCheck size={16} className="text-forest" /> 30 ditë falas</span>
+              <span className="inline-flex items-center gap-1.5"><ShieldCheck size={16} className="text-forest" /> Pa kartelë sot</span>
+              <span className="inline-flex items-center gap-1.5"><BadgeCheck size={16} className="text-forest" /> Aktivizim pas verifikimit</span>
+            </div>
           </div>
           <div className="surface grid gap-4 p-6 sm:grid-cols-2">
             {[
@@ -78,6 +86,25 @@ export function BusinessStartPage() {
                 <p className="mt-1 text-sm leading-6 text-slate-600">{text}</p>
               </article>
             ))}
+          </div>
+        </section>
+        <section className="border-y border-slate-200/80 bg-white/70 py-12">
+          <div className="page-shell">
+            <p className="eyebrow">Filloni pa paqartësi</p>
+            <h2 className="display mt-2 text-3xl font-bold">Tre hapa deri te faqja juaj e rezervimeve.</h2>
+            <div className="mt-7 grid gap-4 md:grid-cols-3">
+              {[
+                ['01', 'Krijo biznesin', 'Zgjidh kategorinë dhe plotëso profilin bazë.'],
+                ['02', 'Shto ofertat', 'Vendos shërbimet, dhomat, linjat ose ekipin.'],
+                ['03', 'Publikoje', 'Dërgoje për verifikim dhe prano rezervime online.'],
+              ].map(([number, title, text]) => (
+                <article key={number} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <span className="text-xs font-extrabold tracking-[.16em] text-indigo-600">{number}</span>
+                  <h3 className="mt-4 font-bold">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
       </main>
