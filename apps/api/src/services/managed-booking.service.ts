@@ -4,7 +4,7 @@ import { prisma } from '../db.js';
 import { AppError } from '../lib/errors.js';
 import { runtimeTimezone } from '../lib/timezone.js';
 import { getPublicAvailability } from './availability.service.js';
-import { notifyBookingEvent } from './notification.service.js';
+import { notifyBookingEvent, notifyNextCustomerOfOpenSlot } from './notification.service.js';
 
 const activeStatuses = ['PENDING', 'CONFIRMED'] as const;
 
@@ -73,6 +73,7 @@ export async function cancelManagedBooking(token: string, reason?: string) {
     include: { business: true, service: true, staff: true, customer: true },
   });
   await notifyBookingEvent(booking.id, 'cancelled');
+  await notifyNextCustomerOfOpenSlot(booking.id);
   return cancelled;
 }
 

@@ -55,21 +55,27 @@ async function sendOwnerBookingNotice(booking: {
   service: { name: string };
   staff: { name: string };
   customer: { name: string; email: string | null; phone: string | null };
-}) {
+}, event: BookingEvent) {
   const recipients = ownerEmails(booking);
   if (!recipients.length) return;
-  const subject =
-    booking.status === 'PENDING'
+  const isNew = event === 'confirmed' || event === 'pending';
+  const subject = isNew
+    ? booking.status === 'PENDING'
       ? `Kërkesë e re për rezervim · ${booking.business.name}`
-      : `Rezervim i ri · ${booking.business.name}`;
-  const message = `Rezervim i ri nga ${booking.customer.name} për ${booking.service.name} me ${booking.staff.name}. Koha: ${bookingDate(booking.startAt, booking.business.timezone)}. Referenca: ${booking.reference}. Kontakt: ${booking.customer.email ?? booking.customer.phone ?? '—'}.`;
+      : `Rezervim i ri · ${booking.business.name}`
+    : event === 'cancelled'
+      ? `Rezervim i anuluar · ${booking.business.name}`
+      : `Rezervim i ndryshuar · ${booking.business.name}`;
+  const message = isNew
+    ? `Rezervim i ri nga ${booking.customer.name} për ${booking.service.name} me ${booking.staff.name}. Koha: ${bookingDate(booking.startAt, booking.business.timezone)}. Referenca: ${booking.reference}. Kontakt: ${booking.customer.email ?? booking.customer.phone ?? '—'}.`
+    : `${booking.customer.name} e ka ${event === 'cancelled' ? 'anuluar' : 'ndryshuar'} rezervimin për ${booking.service.name} me ${booking.staff.name}. Koha: ${bookingDate(booking.startAt, booking.business.timezone)}. Referenca: ${booking.reference}.`;
   try {
     const notification = await prisma.notification.create({
       data: {
         businessId: booking.businessId,
         bookingId: booking.id,
         channel: 'EMAIL',
-        template: 'business-booking-created',
+        template: `business-booking-${event}`,
         payload: { recipients, subject, message },
       },
     });
@@ -101,6 +107,68 @@ async function sendOwnerBookingNotice(booking: {
 }
 
 /**
+ * When an appointment is cancelled, the next appointment on the same resource
+ * can use that freshly opened slot. We only notify a directly adjacent booking;
+ * customers with a much later booking should not receive a misleading alert.
+ */
+export async function notifyNextCustomerOfOpenSlot(cancelledBookingId: string) {
+  try {
+    const cancelled = await prisma.booking.findUnique({
+      where: { id: cancelledBookingId },
+      include: { business: { include: { settings: true } }, staff: true },
+    });
+    if (
+      !cancelled ||
+      cancelled.status !== 'CANCELLED' ||
+      cancelled.kind !== 'APPOINTMENT' ||
+      !cancelled.business.settings?.emailEnabled
+    )
+      return;
+
+    const nextBooking = await prisma.booking.findFirst({
+      where: {
+        businessId: cancelled.businessId,
+        staffId: cancelled.staffId,
+        kind: 'APPOINTMENT',
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        startAt: { gte: cancelled.endAt, lte: cancelled.bufferEndAt },
+      },
+      orderBy: { startAt: 'asc' },
+      include: { business: true, service: true, staff: true, customer: true },
+    });
+    if (!nextBooking?.customer.email) return;
+
+    const subject = `Termin më i hershëm i lirë · ${nextBooking.business.name}`;
+    const message = `Përshëndetje ${nextBooking.customer.name}, termini para rezervimit tuaj për ${nextBooking.service.name} me ${nextBooking.staff.name} është liruar. Nëse ju përshtatet, mund të vini më herët pasi të kontaktoni ${nextBooking.business.name}. Termini juaj mbetet ${bookingDate(nextBooking.startAt, nextBooking.business.timezone)}. Referenca: ${nextBooking.reference}.`;
+    const notification = await prisma.notification.create({
+      data: {
+        businessId: nextBooking.businessId,
+        bookingId: nextBooking.id,
+        channel: 'EMAIL',
+        template: 'booking-earlier-slot-opened',
+        payload: { recipient: nextBooking.customer.email, subject, message, cancelledBookingId },
+      },
+    });
+    try {
+      await sendTransactionalEmail({ to: nextBooking.customer.email, subject, text: message });
+      await prisma.notification.update({
+        where: { id: notification.id },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
+    } catch (error) {
+      console.error('Earlier-slot email could not be sent', error);
+      await prisma.notification.update({ where: { id: notification.id }, data: { status: 'FAILED' } });
+    }
+  } catch (error) {
+    // A cancellation must always complete even if the optional courtesy email fails.
+    if (!(
+      typeof error === 'object' && error && 'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    )) console.error('Earlier-slot notification could not be queued', error);
+  }
+}
+
+/**
  * Creates an auditable outbox entry. The `console` adapter deliberately sends
  * only to the server log, which makes local development safe and predictable.
  * Other providers remain queued until their adapter and credentials are added.
@@ -125,7 +193,7 @@ export async function notifyBookingEvent(bookingId: string, event: BookingEvent)
       },
     });
     if (!booking) return;
-    await sendOwnerBookingNotice(booking);
+    await sendOwnerBookingNotice(booking, event);
     const copy = eventCopy(
       event === 'confirmed' && booking.status === 'PENDING' ? 'pending' : event,
     );

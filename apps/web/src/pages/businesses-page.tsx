@@ -33,7 +33,8 @@ export function BusinessesPage() {
   const client = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState(params.get('q') ?? '');
-  const hotelSearch = params.get('category') === 'hotels';
+  const selectedCategorySlug = params.get('category') ?? '';
+  const hotelSearch = selectedCategorySlug === 'hotels';
   const query = useQuery({
     queryKey: ['businesses', params.toString()],
     queryFn: () => api<{ businesses: Business[] }>(`/public/businesses?${params.toString()}`),
@@ -53,6 +54,12 @@ export function BusinessesPage() {
     value ? next.set(key, value) : next.delete(key);
     setParams(next);
   };
+  const selectedCategory = categories.data?.categories.find(
+    (category) => category.slug === selectedCategorySlug,
+  );
+  const directoryTitle = selectedCategory
+    ? selectedCategory.name
+    : 'Bizneset pranë jush';
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     update('q', search);
@@ -72,14 +79,32 @@ export function BusinessesPage() {
           />
           <p className="eyebrow relative text-cyan-300">Gjej dhe rezervo</p>
           <h1 className="display relative mt-2 text-4xl font-bold sm:text-5xl">
-            Bizneset pranë jush
+            {directoryTitle}
           </h1>
           <p className="relative mt-3 max-w-2xl text-slate-300">
-            Krahaso sipas qytetit, çmimit dhe vlerësimeve. Për hotele, kontrollo datat dhe dhomat e
-            lira para rezervimit.
+            {selectedCategory
+              ? `Po shfaqim vetëm bizneset e kategorisë “${selectedCategory.name}”.`
+              : 'Krahaso sipas qytetit, çmimit dhe vlerësimeve. Për hotele, kontrollo datat dhe dhomat e lira para rezervimit.'}
           </p>
         </div>
-        <form onSubmit={submit} className="discovery-search relative -mt-5 mx-3 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]">
+        <nav aria-label="Kategoritë e bizneseve" className="relative mt-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Link
+            to="/businesses"
+            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition ${!selectedCategorySlug ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-white/20 bg-white/5 text-white hover:border-cyan-300/60'}`}
+          >
+            Të gjitha
+          </Link>
+          {categories.data?.categories.map((category) => (
+            <Link
+              key={category.id}
+              to={`/businesses?category=${encodeURIComponent(category.slug)}`}
+              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition ${selectedCategorySlug === category.slug ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-white/20 bg-white/5 text-white hover:border-cyan-300/60'}`}
+            >
+              {category.name}
+            </Link>
+          ))}
+        </nav>
+        <form onSubmit={submit} className="discovery-search relative mt-4 mx-3 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]">
           <label className="relative">
             <Search className="absolute left-3 top-3 text-slate-400" size={18} />
             <input
@@ -103,7 +128,7 @@ export function BusinessesPage() {
           </select>
           <select
             className="input"
-            value={params.get('category') ?? ''}
+            value={selectedCategorySlug}
             onChange={(event) => update('category', event.target.value)}
           >
             <option value="">Të gjitha kategoritë</option>

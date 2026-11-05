@@ -6,6 +6,7 @@ import { audit } from '../lib/audit.js';
 import { AppError } from '../lib/errors.js';
 import { starterTemplateForCategory } from '../lib/business-templates.js';
 import { removeStoredImage, storeBusinessImage } from '../lib/storage.js';
+import { notifyBookingEvent, notifyNextCustomerOfOpenSlot } from '../services/notification.service.js';
 import { requireAuth, requireTenant } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -772,15 +773,23 @@ businessRouter.patch(
     if (!['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(status))
       throw new AppError(422, 'INVALID_STATUS', 'Statusi nuk është i vlefshëm.');
     const bookingId = String(req.params.id);
-    const booking = await prisma.booking.updateMany({
+    const existing = await prisma.booking.findFirst({
       where: { id: bookingId, businessId: req.tenant!.businessId },
+      select: { id: true, status: true },
+    });
+    if (!existing) throw new AppError(404, 'BOOKING_NOT_FOUND', 'Rezervimi nuk u gjet.');
+    await prisma.booking.update({
+      where: { id: bookingId },
       data: {
         status: status as never,
         ...(status === 'CANCELLED' ? { cancelledAt: new Date() } : {}),
         ...(status === 'COMPLETED' ? { completedAt: new Date() } : {}),
       },
     });
-    if (!booking.count) throw new AppError(404, 'BOOKING_NOT_FOUND', 'Rezervimi nuk u gjet.');
+    if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+      await notifyBookingEvent(bookingId, 'cancelled');
+      await notifyNextCustomerOfOpenSlot(bookingId);
+    }
     await audit({
       action: `BOOKING_${status}`,
       entity: 'Booking',
