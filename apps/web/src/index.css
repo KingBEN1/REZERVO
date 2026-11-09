@@ -141,11 +141,14 @@
 .home-footer a:hover { color: white; }
 
 /* Public pages share the same visual language as the home experience. */
-.unified-page { position: relative; isolation: isolate; min-height: calc(100vh - 4rem); color: #f8fafc; background: #07111f; }
+.unified-page { position: relative; isolation: isolate; min-height: calc(100vh - 4rem); color: #f8fafc; background: #07111f; box-shadow: 0 0 0 100vmax #07111f; clip-path: inset(0 -100vmax); }
 .unified-page::before { position: absolute; z-index: -2; inset: 0; content: ''; background: radial-gradient(circle at 8% 7%, rgba(59,130,246,.15), transparent 27rem), radial-gradient(circle at 94% 19%, rgba(20,184,166,.13), transparent 31rem), linear-gradient(150deg, #07111f, #09192c 55%, #07121f); }
 .unified-page::after { position: absolute; z-index: -1; inset: 0; pointer-events: none; content: ''; opacity: .15; background-image: linear-gradient(rgba(148,163,184,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.11) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 85%); }
 .unified-page .eyebrow { color: #67e8f9; }
+.unified-page h1, .unified-page h2, .unified-page h3 { color: #f8fafc; }
 .unified-section-title { color: white; }
+.unified-page .empty-state { min-height: 13rem; border-color: rgba(103,232,249,.18); background: linear-gradient(135deg, rgba(14,36,61,.93), rgba(22,37,75,.88)); box-shadow: inset 0 1px rgba(255,255,255,.07), 0 20px 45px rgba(0,0,0,.22); }
+.unified-page .empty-state p { color: #cbd5e1; }
 .unified-page .account-profile, .unified-page .account-history, .unified-page .account-business-card, .unified-page .account-booking { border-color: rgba(148,163,184,.18); background: rgba(15,30,50,.76); color: #f8fafc; box-shadow: inset 0 1px rgba(255,255,255,.06), 0 18px 38px rgba(0,0,0,.16); backdrop-filter: blur(16px); }
 .unified-page .account-profile-header { border-color: rgba(148,163,184,.16); background: linear-gradient(110deg, rgba(16,53,77,.86), rgba(21,42,82,.8)); }
 .unified-page .account-profile p, .unified-page .account-booking p, .unified-page .account-business-card p, .unified-page .account-history small { color: #cbd5e1; }
@@ -159,6 +162,7 @@
 .unified-page .discovery-card { border-color: rgba(148,163,184,.16); background: rgba(15,30,50,.88); color: #f8fafc; box-shadow: inset 0 1px rgba(255,255,255,.05), 0 18px 38px rgba(0,0,0,.17); }
 .unified-page .discovery-card p, .unified-page .discovery-card span.text-slate-500 { color: #cbd5e1; }
 .unified-page .discovery-card .border-t { border-color: rgba(148,163,184,.18); }
+.unified-page .discovery-page .home-section-heading h2 { color: white; }
 .faq-page .tech-grid { border-bottom: 1px solid rgba(148,163,184,.17); background: transparent; }
 .faq-page .page-shell section h2 { color: white; }
 .faq-page details { border-color: rgba(148,163,184,.16); background: rgba(15,30,50,.78); }
