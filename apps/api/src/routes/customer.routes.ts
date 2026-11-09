@@ -58,6 +58,7 @@ customerRouter.get(
           business: { select: { id: true, name: true, slug: true, city: true, coverImage: true } },
           service: { select: { name: true } },
           staff: { select: { name: true } },
+          review: { select: { id: true, rating: true } },
         },
         orderBy: { startAt: 'desc' },
         take: 20,

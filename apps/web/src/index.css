@@ -140,6 +140,40 @@
 .home-footer a { transition: color .2s ease; }
 .home-footer a:hover { color: white; }
 
+/* Public pages share the same visual language as the home experience. */
+.unified-page { position: relative; isolation: isolate; min-height: calc(100vh - 4rem); color: #f8fafc; background: #07111f; }
+.unified-page::before { position: absolute; z-index: -2; inset: 0; content: ''; background: radial-gradient(circle at 8% 7%, rgba(59,130,246,.15), transparent 27rem), radial-gradient(circle at 94% 19%, rgba(20,184,166,.13), transparent 31rem), linear-gradient(150deg, #07111f, #09192c 55%, #07121f); }
+.unified-page::after { position: absolute; z-index: -1; inset: 0; pointer-events: none; content: ''; opacity: .15; background-image: linear-gradient(rgba(148,163,184,.11) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.11) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, black, transparent 85%); }
+.unified-page .eyebrow { color: #67e8f9; }
+.unified-section-title { color: white; }
+.unified-page .account-profile, .unified-page .account-history, .unified-page .account-business-card, .unified-page .account-booking { border-color: rgba(148,163,184,.18); background: rgba(15,30,50,.76); color: #f8fafc; box-shadow: inset 0 1px rgba(255,255,255,.06), 0 18px 38px rgba(0,0,0,.16); backdrop-filter: blur(16px); }
+.unified-page .account-profile-header { border-color: rgba(148,163,184,.16); background: linear-gradient(110deg, rgba(16,53,77,.86), rgba(21,42,82,.8)); }
+.unified-page .account-profile p, .unified-page .account-booking p, .unified-page .account-business-card p, .unified-page .account-history small { color: #cbd5e1; }
+.unified-page .account-history > a:hover { background: rgba(255,255,255,.05); }
+.unified-page .account-business-card { overflow: hidden; }
+.unified-page .account-business-card:hover, .unified-page .account-booking:hover { border-color: rgba(103,232,249,.48); box-shadow: 0 24px 48px rgba(0,0,0,.25); }
+.unified-page .input { border-color: rgba(148,163,184,.2); background: rgba(255,255,255,.96); }
+.unified-page .discovery-hero { border-color: rgba(148,163,184,.2); background: radial-gradient(circle at 88% 17%, rgba(34,211,238,.25), transparent 23rem), linear-gradient(125deg, #081425, #11345b 55%, #075b66); }
+.unified-page .discovery-search, .unified-page .discovery-filters { border-color: rgba(148,163,184,.17); background: rgba(11,27,47,.84); box-shadow: inset 0 1px rgba(255,255,255,.05), 0 18px 42px rgba(0,0,0,.16); }
+.unified-page .discovery-filters b, .unified-page .discovery-filters label span { color: #e2e8f0; }
+.unified-page .discovery-card { border-color: rgba(148,163,184,.16); background: rgba(15,30,50,.88); color: #f8fafc; box-shadow: inset 0 1px rgba(255,255,255,.05), 0 18px 38px rgba(0,0,0,.17); }
+.unified-page .discovery-card p, .unified-page .discovery-card span.text-slate-500 { color: #cbd5e1; }
+.unified-page .discovery-card .border-t { border-color: rgba(148,163,184,.18); }
+.faq-page .tech-grid { border-bottom: 1px solid rgba(148,163,184,.17); background: transparent; }
+.faq-page .page-shell section h2 { color: white; }
+.faq-page details { border-color: rgba(148,163,184,.16); background: rgba(15,30,50,.78); }
+.faq-page details summary { color: white; }
+.faq-page details p { color: #cbd5e1; }
+.faq-page .rounded-3xl.border { border-color: rgba(148,163,184,.18); background: rgba(15,30,50,.8); color: white; box-shadow: 0 18px 38px rgba(0,0,0,.16); }
+.faq-page .rounded-3xl.bg-green-50 { border: 1px solid rgba(103,232,249,.18); background: linear-gradient(120deg, rgba(17,51,76,.86), rgba(29,47,94,.82)); color: white; }
+.faq-page .rounded-3xl.bg-green-50 p { color: #cbd5e1; }
+.unified-page.about-page { background: #07111f; }
+.unified-page .about-hero { background: radial-gradient(circle at 83% 20%, rgba(34,211,238,.22), transparent 20rem), radial-gradient(circle at 7% 94%, rgba(79,70,229,.25), transparent 24rem), linear-gradient(135deg, #06101f, #0c2745 55%, #075f68); }
+.unified-page .about-value-card, .unified-page .about-step-card { border-color: rgba(148,163,184,.16); background: rgba(15,30,50,.78); color: white; box-shadow: inset 0 1px rgba(255,255,255,.055), 0 18px 38px rgba(0,0,0,.16); }
+.unified-page .about-value-card p, .unified-page .about-step-card p, .unified-page .about-story p { color: #cbd5e1; }
+.unified-page .about-story { background: rgba(7,17,31,.18); border-block: 1px solid rgba(148,163,184,.12); }
+.unified-page .about-story h2, .unified-page .about-page h2 { color: white; }
+
 @keyframes home-reveal { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes home-orbit { to { transform: translate(3rem, -2rem) scale(1.13); } }
 @keyframes home-pulse { 50% { opacity: .55; transform: translate(-50%, -50%) scale(1.17); } }

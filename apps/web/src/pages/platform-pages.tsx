@@ -118,7 +118,7 @@ export function AboutPage() {
   return (
     <>
       <SiteHeader />
-      <main className="about-page overflow-hidden">
+      <main className="unified-page about-page overflow-hidden">
         <section className="about-hero relative py-20 text-white sm:py-28">
           <div className="tech-grid absolute inset-0 opacity-50" />
           <div className="absolute -left-24 top-10 size-80 rounded-full bg-cyan-400/15 blur-3xl" />

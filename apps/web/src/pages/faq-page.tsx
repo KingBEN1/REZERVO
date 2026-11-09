@@ -107,7 +107,7 @@ export function FaqPage() {
   return (
     <>
       <SiteHeader />
-      <main>
+      <main className="unified-page faq-page">
         <section className="tech-grid relative overflow-hidden bg-slate-950 py-16 text-white sm:py-20">
           <div className="absolute -left-20 top-0 size-80 rounded-full bg-cyan-400/20 blur-3xl" />
           <div className="page-shell relative mx-auto max-w-3xl text-center">

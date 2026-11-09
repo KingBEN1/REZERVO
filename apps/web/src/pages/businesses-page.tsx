@@ -99,7 +99,7 @@ export function BusinessesPage() {
   return (
     <>
       <SiteHeader />
-      <main className="discovery-page page-shell py-7 sm:py-10">
+      <main className="unified-page discovery-page page-shell py-7 sm:py-10">
         <div className="discovery-hero">
           <div
             aria-hidden
@@ -346,12 +346,10 @@ export function BusinessesPage() {
                           </p>
                           <h2 className="mt-1 font-bold">{business.name}</h2>
                         </div>
-                        {business.rating && (
-                          <span className="flex items-center gap-1 text-xs font-semibold">
-                            <Star size={14} className="fill-amber-400 text-amber-400" />
-                            {business.rating.toFixed(1)}
-                          </span>
-                        )}
+                        <span className={`flex items-center gap-1 text-xs font-semibold ${business.rating ? '' : 'text-slate-400'}`}>
+                          <Star size={14} className={business.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-400'} />
+                          {business.rating ? business.rating.toFixed(1) : 'I ri'}
+                        </span>
                       </div>
                       <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
                         <MapPin size={14} />

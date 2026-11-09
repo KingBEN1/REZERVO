@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, ChevronRight, Heart, Mail, MapPin, Phone, ShieldCheck, Sparkles } from 'lucide-react';
+import { CalendarDays, ChevronRight, Heart, Mail, MapPin, Phone, ShieldCheck, Sparkles, Star } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { SiteHeader } from '../components/site-header';
@@ -30,6 +30,7 @@ type Booking = {
   business: Business;
   service: { name: string };
   staff: { name: string };
+  review?: { id: string; rating: number } | null;
 };
 type Account = {
   user: { firstName: string; lastName: string; email: string; phone?: string | null; emailVerifiedAt?: string | null; createdAt?: string };
@@ -125,7 +126,7 @@ export function CustomerAccountPage() {
   return (
     <>
       <SiteHeader />
-      <main className="account-page page-shell py-7 sm:py-10">
+      <main className="unified-page account-page page-shell py-7 sm:py-10">
         <div className="account-hero flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
             <p className="eyebrow text-cyan-200">Llogaria e klientit</p>
@@ -151,7 +152,7 @@ export function CustomerAccountPage() {
         </section>
         <section className="mt-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Rezervimet e ardhshme</h2>
+            <h2 className="unified-section-title text-lg font-bold">Rezervimet e ardhshme</h2>
             <CalendarDays className="text-forest" size={21} />
           </div>
           {account.data.upcoming.length ? (
@@ -201,7 +202,7 @@ export function CustomerAccountPage() {
         <section className="mt-10">
           <div className="flex items-center gap-2">
             <Heart className="text-forest" size={21} />
-            <h2 className="text-lg font-bold">Të preferuarat</h2>
+            <h2 className="unified-section-title text-lg font-bold">Të preferuarat</h2>
           </div>
           {account.data.favorites.length ? (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -223,7 +224,7 @@ export function CustomerAccountPage() {
         <section className="mt-10">
           <div className="flex items-center gap-2">
             <Sparkles className="text-forest" size={21} />
-            <h2 className="text-lg font-bold">Sugjeruar për ju</h2>
+            <h2 className="unified-section-title text-lg font-bold">Sugjeruar për ju</h2>
           </div>
           {recommendations.data?.recommendations.length ? (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -246,7 +247,7 @@ export function CustomerAccountPage() {
         </section>
         {account.data.past.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-lg font-bold">Historia e rezervimeve</h2>
+            <h2 className="unified-section-title text-lg font-bold">Historia e rezervimeve</h2>
             <div className="account-history mt-4 divide-y divide-line">
               {account.data.past.slice(0, 5).map((booking) => (
                 <Link
@@ -260,8 +261,12 @@ export function CustomerAccountPage() {
                       {booking.service.name} · {dateTime(booking.startAt)}
                     </small>
                   </span>
-                  <span className="text-sm font-semibold">
-                    {money(booking.price, booking.currency)}
+                  <span className="flex flex-col items-end gap-1 text-sm font-semibold">
+                    <span>{money(booking.price, booking.currency)}</span>
+                    {booking.status === 'COMPLETED' && !booking.review && (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600"><Star size={13} className="fill-amber-400" /> Vlerëso</span>
+                    )}
+                    {booking.review && <span className="text-xs font-bold text-amber-600">★ {booking.review.rating}/5</span>}
                   </span>
                 </Link>
               ))}

@@ -538,16 +538,14 @@ function BookingFlow() {
                     {business.phone}
                   </span>
                 )}
-                {business.reviews.length > 0 && (
-                  <span className="flex items-center gap-1">
-                    <Star size={14} className="fill-amber-400 text-amber-400" />
-                    {(
+                <span className={`flex items-center gap-1 ${business.reviews.length ? '' : 'text-slate-400'}`}>
+                    <Star size={14} className={business.reviews.length ? 'fill-amber-400 text-amber-400' : 'text-slate-400'} />
+                    {business.reviews.length ? (
                       business.reviews.reduce((sum, review) => sum + review.rating, 0) /
                       business.reviews.length
-                    ).toFixed(1)}{' '}
-                    ({business.reviews.length})
+                    ).toFixed(1) : 'I ri'}{' '}
+                    {business.reviews.length > 0 && `(${business.reviews.length})`}
                   </span>
-                )}
               </div>
             </div>
           </div>
