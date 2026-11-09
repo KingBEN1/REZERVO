@@ -69,6 +69,7 @@ export function BusinessesPage() {
   const query = useQuery({
     queryKey: ['businesses', params.toString()],
     queryFn: () => api<{ businesses: Business[] }>(`/public/businesses?${params.toString()}`),
+    enabled: Boolean(selectedCategorySlug),
   });
   const categories = useQuery({
     queryKey: ['business-categories'],
@@ -157,6 +158,8 @@ export function BusinessesPage() {
             </div>
           </section>
         )}
+        {selectedCategorySlug && (
+          <>
         <form onSubmit={submit} className="discovery-search relative mt-7 grid gap-3 p-3 lg:grid-cols-[1fr_170px_200px_auto]">
           <label className="relative">
             <Search className="absolute left-3 top-3 text-slate-400" size={18} />
@@ -388,6 +391,8 @@ export function BusinessesPage() {
               />
             </div>
           ))}
+          </>
+        )}
       </main>
     </>
   );
